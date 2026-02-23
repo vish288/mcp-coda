@@ -1,6 +1,23 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.2.0 (unreleased)
+
+### Added
+
+- Pydantic response models in `models/` (base, docs, pages, tables, rows, formulas, permissions, folders)
+- Unit tests for all 12 tool modules (permissions, publishing, folders, analytics, automations, formulas, controls, tables)
+- Unit tests for Pydantic models
+- `response_format` parameter (json/markdown) on `coda_list_docs` and `coda_list_rows`
+- CHARACTER_LIMIT (25000) truncation on all responses
+- `isError: true` flag in all error responses
+- `openWorldHint: True` annotation on all 53 tools
+- `_format_list_as_markdown` helper for readable list output
+
+### Changed
+
+- Test count: 87 → 155
+
+## 0.1.0
 
 Initial release.
 
