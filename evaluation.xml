@@ -1,0 +1,61 @@
+<evaluation>
+  <qa_pair id="1">
+    <question>What tool should I use to convert a Coda URL from my browser into API IDs?</question>
+    <expected_answer>Use coda_resolve_browser_link with the URL. It returns the doc, page, table, or row IDs.</expected_answer>
+    <expected_tool>coda_resolve_browser_link</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="2">
+    <question>I want to find all rows in a table where the Status column is "Active".</question>
+    <expected_answer>Use coda_list_rows with the query parameter set to 'Status:"Active"'.</expected_answer>
+    <expected_tool>coda_list_rows</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="3">
+    <question>How do I update multiple rows at once in a Coda table?</question>
+    <expected_answer>Use coda_insert_rows with key_columns for upsert. Specify the columns that uniquely identify each row in key_columns, and matching rows will be updated instead of inserted.</expected_answer>
+    <expected_tool>coda_insert_rows</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="4">
+    <question>I got a 429 error. What should I do?</question>
+    <expected_answer>Wait the number of seconds indicated in the retry_after field of the error response, then retry. Use coda_rate_limit_budget to check remaining capacity before batch operations. Coda allows 100 reads/6s and 10 writes/6s.</expected_answer>
+    <expected_tool>coda_rate_limit_budget</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="5">
+    <question>How do I check if a write operation completed successfully?</question>
+    <expected_answer>Use coda_get_mutation_status with the requestId returned by the write operation. Poll every 2 seconds until the completed field is true (max 30 seconds).</expected_answer>
+    <expected_tool>coda_get_mutation_status</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="6">
+    <question>I need to see the column schema of a table before inserting rows.</question>
+    <expected_answer>Use coda_list_columns to get the column names, IDs, and types. Alternatively, read the coda://docs/{docId}/schema resource for ambient schema context.</expected_answer>
+    <expected_tool>coda_list_columns</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="7">
+    <question>How do I delete a doc safely?</question>
+    <expected_answer>First verify the doc with coda_get_doc to confirm it is the correct doc. Then call coda_delete_doc with the doc_id. This is irreversible.</expected_answer>
+    <expected_tool>coda_delete_doc</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="8">
+    <question>I want to grant read access to a user on a specific doc.</question>
+    <expected_answer>Use coda_add_permission with access="readonly" and principal_email set to the user's email address.</expected_answer>
+    <expected_tool>coda_add_permission</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="9">
+    <question>How do I get the current value of a slider control on a Coda page?</question>
+    <expected_answer>Use coda_get_control with the doc_id and the control name or ID. It returns the control's current value.</expected_answer>
+    <expected_tool>coda_get_control</expected_tool>
+  </qa_pair>
+
+  <qa_pair id="10">
+    <question>I want to export a page's content as markdown.</question>
+    <expected_answer>Use coda_export_page with the doc_id and page_id, setting output_format to "markdown". This triggers an async export and returns the content.</expected_answer>
+    <expected_tool>coda_export_page</expected_tool>
+  </qa_pair>
+</evaluation>

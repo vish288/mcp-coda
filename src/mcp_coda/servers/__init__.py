@@ -37,8 +37,8 @@ mcp = FastMCP(
 
 
 def _register_tools() -> None:
-    """Import tool modules so their @mcp.tool decorators execute."""
-    _tool_modules = [
+    """Import tool and resource modules so decorators execute."""
+    _modules = [
         ".account",
         ".docs",
         ".pages",
@@ -51,8 +51,9 @@ def _register_tools() -> None:
         ".publishing",
         ".folders",
         ".analytics",
+        ".resources",
     ]
-    for module in _tool_modules:
+    for module in _modules:
         importlib.import_module(module, __package__)
 
 
