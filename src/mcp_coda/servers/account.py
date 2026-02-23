@@ -80,3 +80,26 @@ async def coda_get_mutation_status(
         return _ok(data)
     except Exception as e:
         return _err(e)
+
+
+@mcp.tool(
+    tags={"coda", "account", "read"},
+    annotations={
+        "openWorldHint": True,
+        "readOnlyHint": True,
+        "idempotentHint": True,
+    },
+)
+async def coda_rate_limit_budget(ctx: Context) -> str:
+    """Check the current rate limit budget for reads and writes.
+
+    Returns how many read and write API calls remain in the current sliding
+    window (6 seconds). Coda allows 100 reads/6s and 10 writes/6s. Use this
+    before batch operations to avoid hitting 429 errors. The budget is tracked
+    locally — it resets if the server restarts.
+    """
+    try:
+        budget = _get_client(ctx).budget.remaining()
+        return _ok(budget)
+    except Exception as e:
+        return _err(e)

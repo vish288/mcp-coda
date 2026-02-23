@@ -1,6 +1,21 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.3.0 (unreleased)
+
+### Added
+
+- MCP Resources: `coda://docs` (static) and `coda://docs/{doc_id}/schema` (template)
+- Rate limit budget tracker (`RateLimitBudget`) — sliding window counter for reads/writes
+- `coda_rate_limit_budget` tool — check remaining API call budget before batch operations
+- Evaluation XML with 10 QA pairs for tool selection validation
+- Tests for resources and rate limit budget (165 total tests)
+
+### Changed
+
+- Tool count: 53 → 54 (added `coda_rate_limit_budget`)
+- Client now tracks request budget per sliding window (100 reads/6s, 10 writes/6s)
+
+## 0.2.0
 
 ### Added
 

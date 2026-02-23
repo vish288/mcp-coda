@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import httpx
@@ -15,6 +16,53 @@ from .exceptions import (
     CodaRateLimitError,
 )
 
+# Coda rate limit buckets (requests per window)
+RATE_LIMITS = {
+    "read": {"limit": 100, "window": 6},
+    "write": {"limit": 10, "window": 6},
+}
+
+WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+class RateLimitBudget:
+    """Tracks rate limit budget usage with sliding window counters."""
+
+    def __init__(self) -> None:
+        self._read_calls: list[float] = []
+        self._write_calls: list[float] = []
+
+    def record(self, method: str) -> None:
+        """Record a request."""
+        now = time.monotonic()
+        if method.upper() in WRITE_METHODS:
+            self._write_calls.append(now)
+        else:
+            self._read_calls.append(now)
+
+    def _prune(self, calls: list[float], window: int) -> list[float]:
+        cutoff = time.monotonic() - window
+        return [t for t in calls if t > cutoff]
+
+    def remaining(self) -> dict[str, dict[str, int]]:
+        """Return remaining budget for each bucket."""
+        self._read_calls = self._prune(self._read_calls, RATE_LIMITS["read"]["window"])
+        self._write_calls = self._prune(self._write_calls, RATE_LIMITS["write"]["window"])
+        return {
+            "read": {
+                "remaining": max(0, RATE_LIMITS["read"]["limit"] - len(self._read_calls)),
+                "limit": RATE_LIMITS["read"]["limit"],
+                "window_seconds": RATE_LIMITS["read"]["window"],
+                "used": len(self._read_calls),
+            },
+            "write": {
+                "remaining": max(0, RATE_LIMITS["write"]["limit"] - len(self._write_calls)),
+                "limit": RATE_LIMITS["write"]["limit"],
+                "window_seconds": RATE_LIMITS["write"]["window"],
+                "used": len(self._write_calls),
+            },
+        }
+
 
 class CodaClient:
     """Async HTTP client for the Coda v1 API."""
@@ -22,6 +70,7 @@ class CodaClient:
     def __init__(self, config: CodaConfig | None = None) -> None:
         self.config = config or CodaConfig.from_env()
         self.config.validate()
+        self.budget = RateLimitBudget()
         self._client = httpx.AsyncClient(
             base_url=self.config.base_url,
             headers={
@@ -57,6 +106,7 @@ class CodaClient:
             kwargs["json"] = json_data
 
         resp = await self._client.request(method, path, **kwargs)
+        self.budget.record(method)
 
         # Rate limit
         if resp.status_code == 429:
