@@ -1,0 +1,142 @@
+"""Tests for permission tools."""
+
+from __future__ import annotations
+
+import json
+from unittest.mock import AsyncMock, MagicMock
+
+from mcp_coda.config import CodaConfig
+from mcp_coda.servers.permissions import (
+    coda_add_permission,
+    coda_delete_permission,
+    coda_get_acl_settings,
+    coda_get_sharing_metadata,
+    coda_list_permissions,
+    coda_search_principals,
+)
+
+
+def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
+    ctx = MagicMock()
+    ctx.request_context.lifespan_context = {
+        "config": CodaConfig(token="tok", read_only=read_only),
+        "client": client_mock,
+    }
+    return ctx
+
+
+class TestGetSharingMetadata:
+    async def test_success(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"canShare": True, "canShareWithOrg": False})
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_get_sharing_metadata(ctx, doc_id="d1"))
+        assert result["canShare"] is True
+
+
+class TestListPermissions:
+    async def test_success(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(
+            return_value={
+                "items": [{"id": "p1", "access": "write"}],
+                "nextPageToken": "cur2",
+            }
+        )
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_permissions(ctx, doc_id="d1"))
+        assert result["total_count"] == 1
+        assert result["has_more"] is True
+
+    async def test_no_more_pages(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_permissions(ctx, doc_id="d1"))
+        assert result["has_more"] is False
+
+
+class TestAddPermission:
+    async def test_success_with_email(self) -> None:
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "p2", "access": "write"})
+        ctx = _make_ctx(client)
+        result = json.loads(
+            await coda_add_permission(
+                ctx, doc_id="d1", access="write", principal_email="user@example.com"
+            )
+        )
+        assert result["access"] == "write"
+        body = client.post.call_args[1]["json_data"]
+        assert body["principal"]["email"] == "user@example.com"
+        assert body["principal"]["type"] == "email"
+
+    async def test_success_with_domain(self) -> None:
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "p3"})
+        ctx = _make_ctx(client)
+        await coda_add_permission(
+            ctx, doc_id="d1", access="readonly", principal_domain="example.com"
+        )
+        body = client.post.call_args[1]["json_data"]
+        assert body["principal"]["domain"] == "example.com"
+        assert body["principal"]["type"] == "domain"
+
+    async def test_suppress_notification(self) -> None:
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "p4"})
+        ctx = _make_ctx(client)
+        await coda_add_permission(
+            ctx,
+            doc_id="d1",
+            access="write",
+            principal_email="user@example.com",
+            suppress_notification=True,
+        )
+        body = client.post.call_args[1]["json_data"]
+        assert body["suppressNotification"] is True
+
+    async def test_read_only_blocked(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client, read_only=True)
+        result = json.loads(await coda_add_permission(ctx, doc_id="d1", access="write"))
+        assert result["isError"] is True
+        assert "CODA_READ_ONLY" in result["error"]
+
+
+class TestDeletePermission:
+    async def test_success(self) -> None:
+        client = AsyncMock()
+        client.delete = AsyncMock(return_value=None)
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
+        assert result["status"] == "deleted"
+        assert result["permission_id"] == "p1"
+
+    async def test_read_only_blocked(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client, read_only=True)
+        result = json.loads(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
+        assert result["isError"] is True
+
+
+class TestSearchPrincipals:
+    async def test_success(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(
+            return_value={"items": [{"type": "email", "email": "user@example.com"}]}
+        )
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_search_principals(ctx, doc_id="d1", query="user"))
+        assert result["items"][0]["email"] == "user@example.com"
+
+
+class TestGetAclSettings:
+    async def test_success(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(
+            return_value={"allowEditorsToChangePermissions": True, "allowCopying": False}
+        )
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_get_acl_settings(ctx, doc_id="d1"))
+        assert result["allowEditorsToChangePermissions"] is True
