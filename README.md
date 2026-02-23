@@ -1,6 +1,14 @@
 # mcp-coda
 
-MCP server for the [Coda API](https://coda.io/developers/apis/v1) — docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+[![PyPI version](https://img.shields.io/pypi/v/mcp-coda)](https://pypi.org/project/mcp-coda/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/mcp-coda)](https://pypi.org/project/mcp-coda/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-coda)](https://pypi.org/project/mcp-coda/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml/badge.svg)](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml)
+
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **55 tools** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+
+Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
 ## Features
 

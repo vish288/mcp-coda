@@ -1,33 +1,18 @@
 name: Tests
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: uv sync --python ${{ matrix.python-version }}
-
-      - name: Run tests
-        run: uv run pytest tests/ -v --cov=mcp_coda --cov-report=xml
-
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --all-extras
+      - run: uv run pytest --cov --cov-report=xml
       - name: Upload coverage
         if: matrix.python-version == '3.13'
         uses: codecov/codecov-action@v4
