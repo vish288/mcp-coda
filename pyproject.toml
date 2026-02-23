@@ -42,6 +42,7 @@ mcp-coda = "mcp_coda:main"
 Homepage = "https://github.com/vish288/mcp-coda"
 Repository = "https://github.com/vish288/mcp-coda"
 Issues = "https://github.com/vish288/mcp-coda/issues"
+Changelog = "https://github.com/vish288/mcp-coda/releases"
 
 [build-system]
 requires = ["hatchling"]
