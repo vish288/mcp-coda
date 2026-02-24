@@ -1,16 +1,17 @@
 # mcp-coda — Agent Context
 
-## What This Is
-
 MCP server for the Coda v1 API. 54 tools covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 ## Architecture
 
-- **Framework**: FastMCP >= 2.13.0
-- **HTTP client**: httpx AsyncClient
-- **Auth**: Bearer token via `CODA_API_TOKEN` env var
-- **Build**: hatchling with `src/` layout
-- **Structure**: Modular tool files in `src/mcp_coda/servers/` (one per domain)
+- **Entry point**: `src/mcp_coda/__init__.py` — click CLI, loads env, runs FastMCP server
+- **Client**: `src/mcp_coda/client.py` — async httpx client with all Coda API methods
+- **Tools**: `src/mcp_coda/servers/` — modular tool files (one per domain: docs, pages, tables, rows, etc.)
+- **Helpers**: `src/mcp_coda/servers/_helpers.py` — shared `_get_client`, `_ok`, `_err`, `_check_write`
+- **Resources**: `src/mcp_coda/servers/resources.py` — MCP resources (doc listing, schema introspection)
+- **Config**: `src/mcp_coda/config.py` — `CodaConfig` dataclass from env vars
+- **Exceptions**: `src/mcp_coda/exceptions.py` — `CodaApiError`, `CodaNotFoundError`, etc.
+- **Tests**: `tests/unit/` — 260+ tool-level unit tests
 
 ### RBAC Model
 
@@ -100,3 +101,35 @@ uv run ruff format --check src/ tests/     # format check
 | `CODA_BASE_URL` | No | API base URL (default: `https://coda.io/apis/v1`) |
 | `CODA_TIMEOUT` | No | HTTP timeout in seconds (default: 30) |
 | `CODA_SSL_VERIFY` | No | Verify SSL certificates (default: true) |
+
+## Release Workflow
+
+Releases are handled via GitHub Actions — never bump versions manually.
+
+### How to release
+
+```bash
+# From the repo directory:
+gh workflow run release.yml -f bump=minor      # 0.3.0 → 0.4.0
+gh workflow run release.yml -f bump=patch      # 0.4.0 → 0.4.1
+gh workflow run release.yml -f bump=major      # 0.4.0 → 1.0.0
+
+# Dry run (preview changelog, no push):
+gh workflow run release.yml -f bump=minor -f dry_run=true
+```
+
+### What happens
+
+1. `release.yml` (workflow_dispatch) — bumps `pyproject.toml` version, regenerates `uv.lock`, generates CHANGELOG.md, creates release commit + tag via GitHub API
+2. `publish.yml` (triggered by `v*` tag push) — builds wheel, publishes to PyPI, creates GitHub Release with auto-generated notes
+
+### Rules
+- Never edit `pyproject.toml` version directly — the workflow owns it
+- Never create tags manually — the workflow creates them
+- Commit messages must follow conventional commits (`feat:`, `fix:`, `docs:`, etc.) for changelog generation
+- The release commit is authored by `github-actions[bot]` with message `chore(release): X.Y.Z`
+
+## Known Limitations / Future Work
+
+- `models/` package is empty. Define Pydantic response models if response trimming is needed.
+- Errors are returned as successful tool results with `{"error": ...}` (soft-error pattern). Callers must inspect JSON content.
