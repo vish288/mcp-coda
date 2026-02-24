@@ -1,7 +1,5 @@
 """Folder tools — list, get, create, update, delete folders."""
 
-from __future__ import annotations
-
 from typing import Annotated, Any
 
 from fastmcp import Context
@@ -127,7 +125,7 @@ async def coda_delete_folder(
         Field(description="The folder ID to delete"),
     ],
 ) -> str:
-    """Delete a folder from the Coda workspace.
+    """Delete a folder from the Coda workspace. Returns confirmation with folder_id.
 
     Permanently removes the folder. Docs inside the folder may be moved to
     the root level or deleted depending on Coda's behavior. Verify the folder

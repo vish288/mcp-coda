@@ -1,7 +1,5 @@
 """Formula tools — list and get formula values."""
 
-from __future__ import annotations
-
 from typing import Annotated, Any
 
 from fastmcp import Context

@@ -6,12 +6,25 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
+from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.tables import (
-    coda_get_column,
-    coda_get_table,
-    coda_list_columns,
-    coda_list_tables,
+    coda_get_column as _coda_get_column,
 )
+from mcp_coda.servers.tables import (
+    coda_get_table as _coda_get_table,
+)
+from mcp_coda.servers.tables import (
+    coda_list_columns as _coda_list_columns,
+)
+from mcp_coda.servers.tables import (
+    coda_list_tables as _coda_list_tables,
+)
+
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_column = getattr(_coda_get_column, "fn", _coda_get_column)
+coda_get_table = getattr(_coda_get_table, "fn", _coda_get_table)
+coda_list_columns = getattr(_coda_list_columns, "fn", _coda_list_columns)
+coda_list_tables = getattr(_coda_list_tables, "fn", _coda_list_tables)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
@@ -46,6 +59,21 @@ class TestListTables:
         params = client.get.call_args[1]["params"]
         assert params["tableTypes"] == "view"
 
+    async def test_with_cursor(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        await coda_list_tables(ctx, doc_id="d1", cursor="xyz")
+        params = client.get.call_args[1]["params"]
+        assert params["pageToken"] == "xyz"
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_tables(ctx, doc_id="bad"))
+        assert result["isError"] is True
+
 
 class TestGetTable:
     async def test_success(self) -> None:
@@ -55,6 +83,13 @@ class TestGetTable:
         result = json.loads(await coda_get_table(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["name"] == "Tasks"
         assert result["rowCount"] == 42
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_get_table(ctx, doc_id="d1", table_id_or_name="bad"))
+        assert result["isError"] is True
 
 
 class TestListColumns:
@@ -74,6 +109,13 @@ class TestListColumns:
         params = client.get.call_args[1]["params"]
         assert params["pageToken"] == "abc"
 
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad"))
+        assert result["isError"] is True
+
 
 class TestGetColumn:
     async def test_success(self) -> None:
@@ -84,3 +126,12 @@ class TestGetColumn:
             await coda_get_column(ctx, doc_id="d1", table_id_or_name="t1", column_id_or_name="c1")
         )
         assert result["type"] == "select"
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no col"))
+        ctx = _make_ctx(client)
+        result = json.loads(
+            await coda_get_column(ctx, doc_id="d1", table_id_or_name="t1", column_id_or_name="bad")
+        )
+        assert result["isError"] is True

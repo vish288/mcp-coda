@@ -1,7 +1,5 @@
 """Publishing tools — publish, unpublish docs, list categories."""
 
-from __future__ import annotations
-
 from typing import Annotated, Any
 
 from fastmcp import Context
@@ -89,7 +87,7 @@ async def coda_unpublish_doc(
         Field(description="The doc ID to unpublish"),
     ],
 ) -> str:
-    """Unpublish a Coda doc, removing public access.
+    """Unpublish a Coda doc, removing public access. Returns confirmation with doc_id.
 
     Reverts a previously published doc to private. The public URL will stop
     working. This is reversible — you can publish again with coda_publish_doc.
