@@ -71,7 +71,13 @@ uv pip install mcp-coda
 
 ### Token
 
-`CODA_API_TOKEN` is a Coda API token generated at [coda.io/account#apiSettings](https://coda.io/account#apiSettings). Tokens grant access to all docs accessible by the token owner. There are no scope restrictions — access is controlled at the doc level via Coda's sharing settings.
+The server checks these environment variables in order — first match wins:
+
+1. `CODA_API_TOKEN`
+2. `CODA_TOKEN`
+3. `CODA_PAT`
+
+Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#apiSettings). Tokens grant access to all docs accessible by the token owner. There are no scope restrictions — access is controlled at the doc level via Coda's sharing settings.
 
 ## Compatibility
 
