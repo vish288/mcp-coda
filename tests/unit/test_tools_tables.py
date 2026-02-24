@@ -9,16 +9,22 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.tables import (
     coda_get_column as _coda_get_column,
+)
+from mcp_coda.servers.tables import (
     coda_get_table as _coda_get_table,
+)
+from mcp_coda.servers.tables import (
     coda_list_columns as _coda_list_columns,
+)
+from mcp_coda.servers.tables import (
     coda_list_tables as _coda_list_tables,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_get_column = _coda_get_column.fn
-coda_get_table = _coda_get_table.fn
-coda_list_columns = _coda_list_columns.fn
-coda_list_tables = _coda_list_tables.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_column = getattr(_coda_get_column, "fn", _coda_get_column)
+coda_get_table = getattr(_coda_get_table, "fn", _coda_get_table)
+coda_list_columns = getattr(_coda_list_columns, "fn", _coda_list_columns)
+coda_list_tables = getattr(_coda_list_tables, "fn", _coda_list_tables)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
@@ -107,9 +113,7 @@ class TestListColumns:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad")
-        )
+        result = json.loads(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad"))
         assert result["isError"] is True
 
 

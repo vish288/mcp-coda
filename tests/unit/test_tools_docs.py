@@ -9,18 +9,26 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError, CodaNotFoundError
 from mcp_coda.servers.docs import (
     coda_create_doc as _coda_create_doc,
+)
+from mcp_coda.servers.docs import (
     coda_delete_doc as _coda_delete_doc,
+)
+from mcp_coda.servers.docs import (
     coda_get_doc as _coda_get_doc,
+)
+from mcp_coda.servers.docs import (
     coda_list_docs as _coda_list_docs,
+)
+from mcp_coda.servers.docs import (
     coda_update_doc as _coda_update_doc,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_create_doc = _coda_create_doc.fn
-coda_delete_doc = _coda_delete_doc.fn
-coda_get_doc = _coda_get_doc.fn
-coda_list_docs = _coda_list_docs.fn
-coda_update_doc = _coda_update_doc.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_create_doc = getattr(_coda_create_doc, "fn", _coda_create_doc)
+coda_delete_doc = getattr(_coda_delete_doc, "fn", _coda_delete_doc)
+coda_get_doc = getattr(_coda_get_doc, "fn", _coda_get_doc)
+coda_list_docs = getattr(_coda_list_docs, "fn", _coda_list_docs)
+coda_update_doc = getattr(_coda_update_doc, "fn", _coda_update_doc)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

@@ -1,6 +1,5 @@
 """Page tools — list, get, create, update, delete, content, export pages."""
 
-
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context

@@ -1,6 +1,5 @@
 """Control tools — list and get control values."""
 
-
 from typing import Annotated, Any
 
 from fastmcp import Context

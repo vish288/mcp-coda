@@ -1,6 +1,5 @@
 """Formula tools — list and get formula values."""
 
-
 from typing import Annotated, Any
 
 from fastmcp import Context

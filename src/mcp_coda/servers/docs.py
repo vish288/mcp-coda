@@ -1,6 +1,5 @@
 """Doc tools — list, get, create, update, delete docs."""
 
-
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context

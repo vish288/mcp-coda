@@ -9,24 +9,38 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.pages import (
     coda_create_page as _coda_create_page,
+)
+from mcp_coda.servers.pages import (
     coda_delete_page as _coda_delete_page,
+)
+from mcp_coda.servers.pages import (
     coda_delete_page_content as _coda_delete_page_content,
+)
+from mcp_coda.servers.pages import (
     coda_export_page as _coda_export_page,
+)
+from mcp_coda.servers.pages import (
     coda_get_page as _coda_get_page,
+)
+from mcp_coda.servers.pages import (
     coda_get_page_content as _coda_get_page_content,
+)
+from mcp_coda.servers.pages import (
     coda_list_pages as _coda_list_pages,
+)
+from mcp_coda.servers.pages import (
     coda_update_page as _coda_update_page,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_create_page = _coda_create_page.fn
-coda_delete_page = _coda_delete_page.fn
-coda_delete_page_content = _coda_delete_page_content.fn
-coda_export_page = _coda_export_page.fn
-coda_get_page = _coda_get_page.fn
-coda_get_page_content = _coda_get_page_content.fn
-coda_list_pages = _coda_list_pages.fn
-coda_update_page = _coda_update_page.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_create_page = getattr(_coda_create_page, "fn", _coda_create_page)
+coda_delete_page = getattr(_coda_delete_page, "fn", _coda_delete_page)
+coda_delete_page_content = getattr(_coda_delete_page_content, "fn", _coda_delete_page_content)
+coda_export_page = getattr(_coda_export_page, "fn", _coda_export_page)
+coda_get_page = getattr(_coda_get_page, "fn", _coda_get_page)
+coda_get_page_content = getattr(_coda_get_page_content, "fn", _coda_get_page_content)
+coda_list_pages = getattr(_coda_list_pages, "fn", _coda_list_pages)
+coda_update_page = getattr(_coda_update_page, "fn", _coda_update_page)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
@@ -164,9 +178,7 @@ class TestUpdatePage:
         client = AsyncMock()
         client.put = AsyncMock(return_value={"id": "p1"})
         ctx = _make_ctx(client)
-        await coda_update_page(
-            ctx, doc_id="d1", page_id_or_name="p1", subtitle="New subtitle"
-        )
+        await coda_update_page(ctx, doc_id="d1", page_id_or_name="p1", subtitle="New subtitle")
         body = client.put.call_args[1]["json_data"]
         assert body["subtitle"] == "New subtitle"
 
@@ -204,9 +216,7 @@ class TestGetPageContent:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_get_page_content(ctx, doc_id="d1", page_id_or_name="bad")
-        )
+        result = json.loads(await coda_get_page_content(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -237,26 +247,20 @@ class TestDeletePageContent:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1")
-        )
+        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["status"] == "content_deleted"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
-            await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1")
-        )
+        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["isError"] is True
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1")
-        )
+        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["isError"] is True
 
 
@@ -265,9 +269,7 @@ class TestExportPage:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "exp1", "status": "complete"})
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_export_page(ctx, doc_id="d1", page_id_or_name="p1")
-        )
+        result = json.loads(await coda_export_page(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["status"] == "complete"
         body = client.post.call_args[1]["json_data"]
         assert body["outputFormat"] == "markdown"
@@ -276,9 +278,7 @@ class TestExportPage:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "exp2"})
         ctx = _make_ctx(client)
-        await coda_export_page(
-            ctx, doc_id="d1", page_id_or_name="p1", output_format="html"
-        )
+        await coda_export_page(ctx, doc_id="d1", page_id_or_name="p1", output_format="html")
         body = client.post.call_args[1]["json_data"]
         assert body["outputFormat"] == "html"
 
@@ -286,7 +286,5 @@ class TestExportPage:
         client = AsyncMock()
         client.post = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad")
-        )
+        result = json.loads(await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True

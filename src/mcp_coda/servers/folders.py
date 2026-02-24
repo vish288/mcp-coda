@@ -1,6 +1,5 @@
 """Folder tools — list, get, create, update, delete folders."""
 
-
 from typing import Annotated, Any
 
 from fastmcp import Context

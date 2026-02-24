@@ -9,22 +9,34 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.rows import (
     coda_delete_row as _coda_delete_row,
+)
+from mcp_coda.servers.rows import (
     coda_delete_rows as _coda_delete_rows,
+)
+from mcp_coda.servers.rows import (
     coda_get_row as _coda_get_row,
+)
+from mcp_coda.servers.rows import (
     coda_insert_rows as _coda_insert_rows,
+)
+from mcp_coda.servers.rows import (
     coda_list_rows as _coda_list_rows,
+)
+from mcp_coda.servers.rows import (
     coda_push_button as _coda_push_button,
+)
+from mcp_coda.servers.rows import (
     coda_update_row as _coda_update_row,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_delete_row = _coda_delete_row.fn
-coda_delete_rows = _coda_delete_rows.fn
-coda_get_row = _coda_get_row.fn
-coda_insert_rows = _coda_insert_rows.fn
-coda_list_rows = _coda_list_rows.fn
-coda_push_button = _coda_push_button.fn
-coda_update_row = _coda_update_row.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_delete_row = getattr(_coda_delete_row, "fn", _coda_delete_row)
+coda_delete_rows = getattr(_coda_delete_rows, "fn", _coda_delete_rows)
+coda_get_row = getattr(_coda_get_row, "fn", _coda_get_row)
+coda_insert_rows = getattr(_coda_insert_rows, "fn", _coda_insert_rows)
+coda_list_rows = getattr(_coda_list_rows, "fn", _coda_list_rows)
+coda_push_button = getattr(_coda_push_button, "fn", _coda_push_button)
+coda_update_row = getattr(_coda_update_row, "fn", _coda_update_row)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
@@ -84,9 +96,7 @@ class TestListRows:
 
     async def test_pagination_has_more(self) -> None:
         client = AsyncMock()
-        client.get = AsyncMock(
-            return_value={"items": [{"id": "r1"}], "nextPageToken": "next1"}
-        )
+        client.get = AsyncMock(return_value={"items": [{"id": "r1"}], "nextPageToken": "next1"})
         ctx = _make_ctx(client)
         result = json.loads(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["has_more"] is True
@@ -266,9 +276,7 @@ class TestDeleteRows:
         client.delete = AsyncMock(return_value={"requestId": "req-5"})
         ctx = _make_ctx(client)
         result = json.loads(
-            await coda_delete_rows(
-                ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1", "r2"]
-            )
+            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1", "r2"])
         )
         assert result["requestId"] == "req-5"
 
@@ -277,9 +285,7 @@ class TestDeleteRows:
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
         result = json.loads(
-            await coda_delete_rows(
-                ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"]
-            )
+            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["status"] == "deleted"
         assert result["row_count"] == 1
@@ -288,9 +294,7 @@ class TestDeleteRows:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = json.loads(
-            await coda_delete_rows(
-                ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"]
-            )
+            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["isError"] is True
 
@@ -299,9 +303,7 @@ class TestDeleteRows:
         client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = json.loads(
-            await coda_delete_rows(
-                ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"]
-            )
+            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["isError"] is True
 

@@ -1,6 +1,5 @@
 """Table and column tools — list/get tables and columns."""
 
-
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context

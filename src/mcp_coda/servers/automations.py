@@ -1,6 +1,5 @@
 """Automation tools — trigger automations."""
 
-
 from typing import Annotated, Any
 
 from fastmcp import Context

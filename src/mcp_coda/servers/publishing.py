@@ -1,6 +1,5 @@
 """Publishing tools — publish, unpublish docs, list categories."""
 
-
 from typing import Annotated, Any
 
 from fastmcp import Context

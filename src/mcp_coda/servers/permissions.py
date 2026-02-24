@@ -1,6 +1,5 @@
 """Permission tools — sharing metadata, ACL, principals."""
 
-
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context

@@ -9,22 +9,40 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.analytics import (
     coda_get_analytics_updated as _coda_get_analytics_updated,
+)
+from mcp_coda.servers.analytics import (
     coda_get_doc_analytics_summary as _coda_get_doc_analytics_summary,
+)
+from mcp_coda.servers.analytics import (
     coda_get_pack_analytics_summary as _coda_get_pack_analytics_summary,
+)
+from mcp_coda.servers.analytics import (
     coda_list_doc_analytics as _coda_list_doc_analytics,
+)
+from mcp_coda.servers.analytics import (
     coda_list_pack_analytics as _coda_list_pack_analytics,
+)
+from mcp_coda.servers.analytics import (
     coda_list_pack_formula_analytics as _coda_list_pack_formula_analytics,
+)
+from mcp_coda.servers.analytics import (
     coda_list_page_analytics as _coda_list_page_analytics,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_get_analytics_updated = _coda_get_analytics_updated.fn
-coda_get_doc_analytics_summary = _coda_get_doc_analytics_summary.fn
-coda_get_pack_analytics_summary = _coda_get_pack_analytics_summary.fn
-coda_list_doc_analytics = _coda_list_doc_analytics.fn
-coda_list_pack_analytics = _coda_list_pack_analytics.fn
-coda_list_pack_formula_analytics = _coda_list_pack_formula_analytics.fn
-coda_list_page_analytics = _coda_list_page_analytics.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_analytics_updated = getattr(_coda_get_analytics_updated, "fn", _coda_get_analytics_updated)
+coda_get_doc_analytics_summary = getattr(
+    _coda_get_doc_analytics_summary, "fn", _coda_get_doc_analytics_summary
+)
+coda_get_pack_analytics_summary = getattr(
+    _coda_get_pack_analytics_summary, "fn", _coda_get_pack_analytics_summary
+)
+coda_list_doc_analytics = getattr(_coda_list_doc_analytics, "fn", _coda_list_doc_analytics)
+coda_list_pack_analytics = getattr(_coda_list_pack_analytics, "fn", _coda_list_pack_analytics)
+coda_list_pack_formula_analytics = getattr(
+    _coda_list_pack_formula_analytics, "fn", _coda_list_pack_formula_analytics
+)
+coda_list_page_analytics = getattr(_coda_list_page_analytics, "fn", _coda_list_page_analytics)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:

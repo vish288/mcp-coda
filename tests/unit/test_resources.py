@@ -8,22 +8,29 @@ from unittest.mock import AsyncMock, MagicMock
 from mcp_coda.config import CodaConfig
 from mcp_coda.servers.resources import (
     doc_schema_resource as _doc_schema_resource,
+)
+from mcp_coda.servers.resources import (
     docs_resource as _docs_resource,
 )
 
-# FunctionResource.fn is the without_injected_parameters wrapper (strips ctx).
-# The original function is in the wrapper's closure[0].
-# For resources with only ctx (docs_resource), closure[0] is the raw function.
-# For resources with extra params (doc_schema_resource), closure[0] is a
-# ValidateCallWrapper.__call__ bound method — dig through to the real function.
-docs_resource = _docs_resource.fn.__closure__[0].cell_contents
 
-_ds_closure = _doc_schema_resource.fn.__closure__[0].cell_contents
-if hasattr(_ds_closure, "__self__"):
-    # ValidateCallWrapper → .function → closure[0] → raw function
-    doc_schema_resource = _ds_closure.__self__.function.__closure__[0].cell_contents
-else:
-    doc_schema_resource = _ds_closure
+def _unwrap_resource(obj):
+    """Extract raw async function from a FunctionResource or plain function.
+
+    FunctionResource.fn is the without_injected_parameters wrapper (strips ctx).
+    The original function is in the wrapper's closure. For resources with extra
+    params, the closure contains a ValidateCallWrapper that needs further unwrap.
+    """
+    if not hasattr(obj, "fn"):
+        return obj
+    closure_fn = obj.fn.__closure__[0].cell_contents
+    if hasattr(closure_fn, "__self__"):
+        return closure_fn.__self__.function.__closure__[0].cell_contents
+    return closure_fn
+
+
+docs_resource = _unwrap_resource(_docs_resource)
+doc_schema_resource = _unwrap_resource(_doc_schema_resource)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:

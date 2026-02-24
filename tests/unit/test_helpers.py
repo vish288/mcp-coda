@@ -157,9 +157,7 @@ class TestFormatListAsMarkdown:
 
     def test_has_more_with_cursor(self) -> None:
         items = [{"id": "d1", "name": "Doc"}]
-        result = _format_list_as_markdown(
-            items, has_more=True, next_cursor="abc", total_count=1
-        )
+        result = _format_list_as_markdown(items, has_more=True, next_cursor="abc", total_count=1)
         assert "more available" in result
         assert "abc" in result
 
@@ -174,17 +172,13 @@ class TestFormatListAsMarkdown:
         assert "user@test.com" in result
 
     def test_item_with_browser_link(self) -> None:
-        items = [
-            {"id": "d1", "name": "My Doc", "browserLink": "https://coda.io/d/d1"}
-        ]
+        items = [{"id": "d1", "name": "My Doc", "browserLink": "https://coda.io/d/d1"}]
         result = _format_list_as_markdown(items, total_count=1)
         assert "https://coda.io/d/d1" in result
 
     def test_custom_keys(self) -> None:
         items = [{"docId": "d1", "title": "Doc Title"}]
-        result = _format_list_as_markdown(
-            items, total_count=1, name_key="title", id_key="docId"
-        )
+        result = _format_list_as_markdown(items, total_count=1, name_key="title", id_key="docId")
         assert "**Doc Title** (`d1`)" in result
 
     def test_missing_keys_use_defaults(self) -> None:

@@ -9,16 +9,22 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError, CodaAuthError
 from mcp_coda.servers.account import (
     coda_get_mutation_status as _coda_get_mutation_status,
+)
+from mcp_coda.servers.account import (
     coda_rate_limit_budget as _coda_rate_limit_budget,
+)
+from mcp_coda.servers.account import (
     coda_resolve_browser_link as _coda_resolve_browser_link,
+)
+from mcp_coda.servers.account import (
     coda_whoami as _coda_whoami,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_get_mutation_status = _coda_get_mutation_status.fn
-coda_rate_limit_budget = _coda_rate_limit_budget.fn
-coda_resolve_browser_link = _coda_resolve_browser_link.fn
-coda_whoami = _coda_whoami.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_mutation_status = getattr(_coda_get_mutation_status, "fn", _coda_get_mutation_status)
+coda_rate_limit_budget = getattr(_coda_rate_limit_budget, "fn", _coda_rate_limit_budget)
+coda_resolve_browser_link = getattr(_coda_resolve_browser_link, "fn", _coda_resolve_browser_link)
+coda_whoami = getattr(_coda_whoami, "fn", _coda_whoami)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:

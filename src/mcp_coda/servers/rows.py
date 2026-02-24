@@ -1,6 +1,5 @@
 """Row tools — list, get, insert, update, delete rows, push button."""
 
-
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context

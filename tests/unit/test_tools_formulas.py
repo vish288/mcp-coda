@@ -9,12 +9,14 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.formulas import (
     coda_get_formula as _coda_get_formula,
+)
+from mcp_coda.servers.formulas import (
     coda_list_formulas as _coda_list_formulas,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_get_formula = _coda_get_formula.fn
-coda_list_formulas = _coda_list_formulas.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_formula = getattr(_coda_get_formula, "fn", _coda_get_formula)
+coda_list_formulas = getattr(_coda_list_formulas, "fn", _coda_list_formulas)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
@@ -74,7 +76,5 @@ class TestGetFormula:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no formula"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_get_formula(ctx, doc_id="d1", formula_id_or_name="bad")
-        )
+        result = json.loads(await coda_get_formula(ctx, doc_id="d1", formula_id_or_name="bad"))
         assert result["isError"] is True

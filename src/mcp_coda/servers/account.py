@@ -1,6 +1,5 @@
 """Account tools — whoami, resolve browser link, mutation status."""
 
-
 from typing import Annotated
 
 from fastmcp import Context

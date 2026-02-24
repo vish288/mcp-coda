@@ -9,14 +9,18 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.publishing import (
     coda_list_categories as _coda_list_categories,
+)
+from mcp_coda.servers.publishing import (
     coda_publish_doc as _coda_publish_doc,
+)
+from mcp_coda.servers.publishing import (
     coda_unpublish_doc as _coda_unpublish_doc,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_list_categories = _coda_list_categories.fn
-coda_publish_doc = _coda_publish_doc.fn
-coda_unpublish_doc = _coda_unpublish_doc.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_list_categories = getattr(_coda_list_categories, "fn", _coda_list_categories)
+coda_publish_doc = getattr(_coda_publish_doc, "fn", _coda_publish_doc)
+coda_unpublish_doc = getattr(_coda_unpublish_doc, "fn", _coda_unpublish_doc)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

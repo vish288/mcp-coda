@@ -9,20 +9,30 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.permissions import (
     coda_add_permission as _coda_add_permission,
+)
+from mcp_coda.servers.permissions import (
     coda_delete_permission as _coda_delete_permission,
+)
+from mcp_coda.servers.permissions import (
     coda_get_acl_settings as _coda_get_acl_settings,
+)
+from mcp_coda.servers.permissions import (
     coda_get_sharing_metadata as _coda_get_sharing_metadata,
+)
+from mcp_coda.servers.permissions import (
     coda_list_permissions as _coda_list_permissions,
+)
+from mcp_coda.servers.permissions import (
     coda_search_principals as _coda_search_principals,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_add_permission = _coda_add_permission.fn
-coda_delete_permission = _coda_delete_permission.fn
-coda_get_acl_settings = _coda_get_acl_settings.fn
-coda_get_sharing_metadata = _coda_get_sharing_metadata.fn
-coda_list_permissions = _coda_list_permissions.fn
-coda_search_principals = _coda_search_principals.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_add_permission = getattr(_coda_add_permission, "fn", _coda_add_permission)
+coda_delete_permission = getattr(_coda_delete_permission, "fn", _coda_delete_permission)
+coda_get_acl_settings = getattr(_coda_get_acl_settings, "fn", _coda_get_acl_settings)
+coda_get_sharing_metadata = getattr(_coda_get_sharing_metadata, "fn", _coda_get_sharing_metadata)
+coda_list_permissions = getattr(_coda_list_permissions, "fn", _coda_list_permissions)
+coda_search_principals = getattr(_coda_search_principals, "fn", _coda_search_principals)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

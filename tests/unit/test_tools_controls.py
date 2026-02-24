@@ -9,12 +9,14 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.controls import (
     coda_get_control as _coda_get_control,
+)
+from mcp_coda.servers.controls import (
     coda_list_controls as _coda_list_controls,
 )
 
-# Unwrap FunctionTool objects to get the raw async functions
-coda_get_control = _coda_get_control.fn
-coda_list_controls = _coda_list_controls.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_get_control = getattr(_coda_get_control, "fn", _coda_get_control)
+coda_list_controls = getattr(_coda_list_controls, "fn", _coda_list_controls)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
@@ -79,7 +81,5 @@ class TestGetControl:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no control"))
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_get_control(ctx, doc_id="d1", control_id_or_name="bad")
-        )
+        result = json.loads(await coda_get_control(ctx, doc_id="d1", control_id_or_name="bad"))
         assert result["isError"] is True

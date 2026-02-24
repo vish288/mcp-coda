@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 from mcp_coda.config import CodaConfig
 from mcp_coda.servers.automations import coda_trigger_automation as _coda_trigger_automation
 
-# Unwrap FunctionTool to get the raw async function
-coda_trigger_automation = _coda_trigger_automation.fn
+# Unwrap FunctionTool → raw function (getattr handles plain functions too)
+coda_trigger_automation = getattr(_coda_trigger_automation, "fn", _coda_trigger_automation)
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
