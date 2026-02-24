@@ -6,7 +6,31 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
-from mcp_coda.servers.resources import doc_schema_resource, docs_resource
+from mcp_coda.servers.resources import (
+    doc_schema_resource as _doc_schema_resource,
+)
+from mcp_coda.servers.resources import (
+    docs_resource as _docs_resource,
+)
+
+
+def _unwrap_resource(obj):
+    """Extract raw async function from a FunctionResource or plain function.
+
+    FunctionResource.fn is the without_injected_parameters wrapper (strips ctx).
+    The original function is in the wrapper's closure. For resources with extra
+    params, the closure contains a ValidateCallWrapper that needs further unwrap.
+    """
+    if not hasattr(obj, "fn"):
+        return obj
+    closure_fn = obj.fn.__closure__[0].cell_contents
+    if hasattr(closure_fn, "__self__"):
+        return closure_fn.__self__.function.__closure__[0].cell_contents
+    return closure_fn
+
+
+docs_resource = _unwrap_resource(_docs_resource)
+doc_schema_resource = _unwrap_resource(_doc_schema_resource)
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
@@ -51,8 +75,6 @@ class TestDocsResource:
 class TestDocSchemaResource:
     async def test_returns_schema(self) -> None:
         client = AsyncMock()
-        # First call: list tables
-        # Second call: list columns for table t1
         client.get = AsyncMock(
             side_effect=[
                 {"items": [{"id": "t1", "name": "Tasks", "tableType": "table", "rowCount": 10}]},

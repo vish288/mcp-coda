@@ -1,7 +1,5 @@
 """Analytics tools — doc, page, pack analytics and last-updated info."""
 
-from __future__ import annotations
-
 from typing import Annotated, Any
 
 from fastmcp import Context

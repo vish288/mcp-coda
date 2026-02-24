@@ -1,7 +1,5 @@
 """Automation tools — trigger automations."""
 
-from __future__ import annotations
-
 from typing import Annotated, Any
 
 from fastmcp import Context
