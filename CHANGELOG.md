@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.3] - 2026-02-24
+
+### Features
+- feat: support CODA_TOKEN and CODA_PAT env var aliases (#8) (8a70d1b)
+
+### Documentation
+- docs: sync README structure across MCP repos (#9) (8299d6b)
+
+
 ## [0.4.2] - 2026-02-24
 
 
