@@ -1,4 +1,4 @@
-Design a Coda table schema based on this description: {description}
+Design a Coda table schema based on this description: $description
 
 ## Steps
 

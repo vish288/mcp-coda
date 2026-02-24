@@ -7,25 +7,18 @@ from typing import Any
 from fastmcp import Context
 
 from . import mcp
-from ._helpers import _get_client
+from ._helpers import _get_client, _load_file
 
 # ════════════════════════════════════════════════════════════════════
 # Static resource loader
 # ════════════════════════════════════════════════════════════════════
 
-_RESOURCES_DIR = Path(__file__).resolve().parent.parent / "resources"
+_RESOURCES_DIR = str(Path(__file__).resolve().parent.parent / "resources")
 
 
 def _load(filename: str) -> str:
     """Load a resource markdown file from the resources directory."""
-    if "/" in filename or "\\" in filename or ".." in filename:
-        msg = f"Invalid resource filename: {filename}"
-        raise ValueError(msg)
-    path = _RESOURCES_DIR / filename
-    if not path.resolve().is_relative_to(_RESOURCES_DIR.resolve()):
-        msg = f"Invalid resource filename: {filename}"
-        raise ValueError(msg)
-    return path.read_text(encoding="utf-8")
+    return _load_file(_RESOURCES_DIR, filename)
 
 
 # ════════════════════════════════════════════════════════════════════

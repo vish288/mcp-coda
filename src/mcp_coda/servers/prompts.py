@@ -3,31 +3,35 @@
 from __future__ import annotations
 
 from pathlib import Path
+from string import Template
 from typing import Literal
 
 from fastmcp.prompts.prompt import Message
 
 from . import mcp
+from ._helpers import _load_file
 
-_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "resources" / "prompts"
+_PROMPTS_DIR = str(Path(__file__).resolve().parent.parent / "resources" / "prompts")
 
 
 def _load_prompt(filename: str) -> str:
     """Load a prompt markdown file from the prompts directory."""
-    if "/" in filename or "\\" in filename or ".." in filename:
-        msg = f"Invalid prompt filename: {filename}"
-        raise ValueError(msg)
-    path = _PROMPTS_DIR / filename
-    if not path.resolve().is_relative_to(_PROMPTS_DIR.resolve()):
-        msg = f"Invalid prompt filename: {filename}"
-        raise ValueError(msg)
-    return path.read_text(encoding="utf-8")
+    return _load_file(_PROMPTS_DIR, filename)
+
+
+def _render(filename: str, **kwargs: str) -> str:
+    """Load a prompt template and substitute variables safely.
+
+    Uses string.Template ($var) instead of str.format({var}) to avoid
+    KeyError when parameter values contain curly braces.
+    """
+    return Template(_load_prompt(filename)).safe_substitute(kwargs)
 
 
 @mcp.prompt(tags={"coda", "docs"})
 def analyze_doc_structure(doc_id: str) -> list[Message]:
     """Analyze a Coda doc's page hierarchy, tables, and organization."""
-    text = _load_prompt("analyze-doc-structure.md").format(doc_id=doc_id)
+    text = _render("analyze-doc-structure.md", doc_id=doc_id)
     return [
         Message(role="user", content=text),
         Message(
@@ -43,7 +47,7 @@ def analyze_doc_structure(doc_id: str) -> list[Message]:
 @mcp.prompt(tags={"coda", "tables"})
 def design_table_schema(description: str) -> list[Message]:
     """Design a Coda table schema from a natural language description."""
-    text = _load_prompt("design-table-schema.md").format(description=description)
+    text = _render("design-table-schema.md", description=description)
     return [
         Message(role="user", content=text),
         Message(
@@ -62,7 +66,7 @@ def migrate_spreadsheet(
     source_format: Literal["csv", "excel", "sheets"] = "csv",
 ) -> list[Message]:
     """Guide for migrating spreadsheet data into Coda tables."""
-    text = _load_prompt("migrate-spreadsheet.md").format(doc_id=doc_id, source_format=source_format)
+    text = _render("migrate-spreadsheet.md", doc_id=doc_id, source_format=source_format)
     return [
         Message(role="user", content=text),
         Message(
@@ -81,7 +85,7 @@ def setup_automation(
     trigger_type: Literal["webhook", "button", "time"] = "webhook",
 ) -> list[Message]:
     """Set up an automation with proper payload design and error handling."""
-    text = _load_prompt("setup-automation.md").format(doc_id=doc_id, trigger_type=trigger_type)
+    text = _render("setup-automation.md", doc_id=doc_id, trigger_type=trigger_type)
     return [
         Message(role="user", content=text),
         Message(
@@ -97,7 +101,7 @@ def setup_automation(
 @mcp.prompt(tags={"coda", "permissions"})
 def audit_permissions(doc_id: str) -> list[Message]:
     """Audit sharing and permissions on a Coda doc."""
-    text = _load_prompt("audit-permissions.md").format(doc_id=doc_id)
+    text = _render("audit-permissions.md", doc_id=doc_id)
     return [
         Message(role="user", content=text),
         Message(

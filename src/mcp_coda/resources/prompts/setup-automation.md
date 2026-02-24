@@ -1,20 +1,20 @@
-Set up a {trigger_type}-triggered automation in Coda doc `{doc_id}`.
+Set up a $trigger_type-triggered automation in Coda doc `$doc_id`.
 
 ## Steps
 
 ### 1. Understand the trigger type
 
-**Webhook** (`{trigger_type}` = webhook):
+**Webhook** (`$trigger_type` = webhook):
 - List existing webhooks or create a new one in the doc
 - Design the payload schema with `eventType`, `requestId`, and `timestamp` fields
 - Plan idempotency: create a "Processed Events" table to track handled `requestId` values
 
-**Button** (`{trigger_type}` = button):
+**Button** (`$trigger_type` = button):
 - Identify the target table and the action the button should perform
 - Design the button formula (row modification, notification, Pack call)
 - Choose placement: row-level button column or page-level button
 
-**Time-based** (`{trigger_type}` = time):
+**Time-based** (`$trigger_type` = time):
 - Note: time-based automations can only be configured in the Coda UI, not via API
 - Define the schedule (hourly, daily, weekly) and the action to execute
 - Document the automation rule for manual setup
