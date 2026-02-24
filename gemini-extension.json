@@ -1,0 +1,19 @@
+{
+  "name": "mcp-coda",
+  "version": "0.4.2",
+  "description": "MCP server for Coda API — docs, pages, tables, rows, formulas, permissions, and more",
+  "mcpServers": {
+    "mcp-coda": {
+      "command": "uvx",
+      "args": ["mcp-coda"]
+    }
+  },
+  "settings": [
+    {
+      "name": "CODA_API_TOKEN",
+      "description": "Coda API token",
+      "required": true,
+      "sensitive": true
+    }
+  ]
+}
