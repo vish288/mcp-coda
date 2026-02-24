@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,6 +21,7 @@ from mcp_coda.servers._helpers import (
     _format_list_as_markdown,
     _get_client,
     _get_config,
+    _load_file,
     _ok,
     _ok_markdown,
     _truncate,
@@ -185,3 +187,39 @@ class TestFormatListAsMarkdown:
         items = [{"other": "field"}]
         result = _format_list_as_markdown(items, total_count=1)
         assert "**Untitled**" in result
+
+
+class TestLoadFile:
+    """Tests for the shared _load_file helper."""
+
+    def setup_method(self) -> None:
+        # Clear cache between tests to avoid cross-test pollution
+        _load_file.cache_clear()
+
+    def test_loads_existing_file(self, tmp_path: Path) -> None:
+        (tmp_path / "test.md").write_text("hello world", encoding="utf-8")
+        result = _load_file(str(tmp_path), "test.md")
+        assert result == "hello world"
+
+    def test_caches_result(self, tmp_path: Path) -> None:
+        (tmp_path / "cached.md").write_text("original", encoding="utf-8")
+        result1 = _load_file(str(tmp_path), "cached.md")
+        (tmp_path / "cached.md").write_text("modified", encoding="utf-8")
+        result2 = _load_file(str(tmp_path), "cached.md")
+        assert result1 == result2 == "original"
+
+    def test_rejects_slash(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="Invalid filename"):
+            _load_file(str(tmp_path), "../etc/passwd")
+
+    def test_rejects_backslash(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="Invalid filename"):
+            _load_file(str(tmp_path), "..\\etc\\passwd")
+
+    def test_rejects_dotdot(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="Invalid filename"):
+            _load_file(str(tmp_path), "..")
+
+    def test_missing_file_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError):
+            _load_file(str(tmp_path), "nonexistent.md")

@@ -1,8 +1,8 @@
-Migrate {source_format} data into Coda doc `{doc_id}`.
+Migrate $source_format data into Coda doc `$doc_id`.
 
 ## Steps
 
-1. **Analyze source format** — understand the {source_format} structure:
+1. **Analyze source format** — understand the $source_format structure:
    - For CSV: identify headers, delimiter, encoding, row count
    - For Excel: identify sheets, named ranges, formulas
    - For Google Sheets: identify tabs, shared formulas, linked data
@@ -14,7 +14,7 @@ Migrate {source_format} data into Coda doc `{doc_id}`.
    - Known value sets → `select` or `multiSelect`
    - Email addresses → `person` (if Coda users) or `text`
    - URLs → `hyperlink`
-3. **Check target tables** — use `coda_list_tables` on doc "{doc_id}" to see existing tables:
+3. **Check target tables** — use `coda_list_tables` on doc "$doc_id" to see existing tables:
    - If a matching table exists, verify column compatibility
    - If no table exists, create one with `coda_create_table` or suggest manual creation
 4. **Prepare data** — format rows for `coda_upsert_rows`:

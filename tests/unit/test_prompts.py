@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from mcp_coda.servers.prompts import (
@@ -27,7 +29,6 @@ def _text(message) -> str:
     c = message.content
     if isinstance(c, str):
         return c
-    # TextContent or similar — has a .text attribute
     return c.text
 
 
@@ -45,11 +46,11 @@ class TestLoadPrompt:
         assert len(content) > 50
 
     def test_rejects_path_traversal(self) -> None:
-        with pytest.raises(ValueError, match="Invalid prompt filename"):
+        with pytest.raises(ValueError, match="Invalid filename"):
             _load_prompt("../../pyproject.toml")
 
     def test_rejects_backslash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid prompt filename"):
+        with pytest.raises(ValueError, match="Invalid filename"):
             _load_prompt("..\\..\\pyproject.toml")
 
     def test_missing_file_raises(self) -> None:
@@ -59,7 +60,7 @@ class TestLoadPrompt:
 
 class TestPromptsDir:
     def test_prompts_dir_exists(self) -> None:
-        assert _PROMPTS_DIR.is_dir()
+        assert Path(_PROMPTS_DIR).is_dir()
 
     def test_all_prompt_files_exist(self) -> None:
         expected = [
@@ -70,7 +71,7 @@ class TestPromptsDir:
             "audit-permissions.md",
         ]
         for filename in expected:
-            assert (_PROMPTS_DIR / filename).is_file(), f"Missing: {filename}"
+            assert (Path(_PROMPTS_DIR) / filename).is_file(), f"Missing: {filename}"
 
 
 class TestAnalyzeDocStructure:
@@ -84,6 +85,11 @@ class TestAnalyzeDocStructure:
         messages = analyze_doc_structure_fn(doc_id="myDoc42")
         assert "myDoc42" in _text(messages[0])
 
+    def test_curly_braces_in_doc_id(self) -> None:
+        """Verify string.Template handles curly braces without raising."""
+        messages = analyze_doc_structure_fn(doc_id="{bad_key}")
+        assert "{bad_key}" in _text(messages[0])
+
 
 class TestDesignTableSchema:
     def test_returns_messages(self) -> None:
@@ -95,6 +101,11 @@ class TestDesignTableSchema:
     def test_interpolates_description(self) -> None:
         messages = design_table_schema_fn(description="inventory management system")
         assert "inventory management system" in _text(messages[0])
+
+    def test_curly_braces_in_description(self) -> None:
+        """Verify string.Template handles curly braces without raising."""
+        messages = design_table_schema_fn(description="use {cells: [{column}]}")
+        assert "{cells: [{column}]}" in _text(messages[0])
 
 
 class TestMigrateSpreadsheet:

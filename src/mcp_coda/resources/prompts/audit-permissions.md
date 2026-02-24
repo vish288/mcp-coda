@@ -1,8 +1,8 @@
-Audit sharing and permissions for Coda doc `{doc_id}`.
+Audit sharing and permissions for Coda doc `$doc_id`.
 
 ## Steps
 
-1. **List current permissions** — use `coda_list_permissions` with doc_id="{doc_id}". For each ACL entry, note:
+1. **List current permissions** — use `coda_list_permissions` with doc_id="$doc_id". For each ACL entry, note:
    - Principal type (email, domain, anyone)
    - Access level (readonly, comment, write)
    - Whether it was inherited or directly assigned

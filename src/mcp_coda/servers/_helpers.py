@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import functools
 import json
+from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
@@ -14,6 +16,23 @@ from ..exceptions import CodaApiError, CodaRateLimitError, CodaWriteDisabledErro
 # Maximum response size in characters. Responses exceeding this are truncated
 # to prevent context window blowout in LLM consumers.
 CHARACTER_LIMIT = 25000
+
+
+@functools.cache
+def _load_file(base_dir: str, filename: str) -> str:
+    """Load a file from the given directory with path traversal protection.
+
+    Results are cached — static files do not change at runtime.
+    """
+    if "/" in filename or "\\" in filename or ".." in filename:
+        msg = f"Invalid filename: {filename}"
+        raise ValueError(msg)
+    base = Path(base_dir)
+    path = base / filename
+    if not path.resolve().is_relative_to(base.resolve()):
+        msg = f"Invalid filename: {filename}"
+        raise ValueError(msg)
+    return path.read_text(encoding="utf-8")
 
 
 def _get_client(ctx: Context) -> CodaClient:

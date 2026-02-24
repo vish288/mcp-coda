@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -134,15 +135,15 @@ class TestLoadHelper:
         assert len(content) > 100
 
     def test_rejects_path_traversal_slash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid resource filename"):
+        with pytest.raises(ValueError, match="Invalid filename"):
             _load("../pyproject.toml")
 
     def test_rejects_path_traversal_backslash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid resource filename"):
+        with pytest.raises(ValueError, match="Invalid filename"):
             _load("..\\pyproject.toml")
 
     def test_rejects_dotdot(self) -> None:
-        with pytest.raises(ValueError, match="Invalid resource filename"):
+        with pytest.raises(ValueError, match="Invalid filename"):
             _load("..")
 
     def test_missing_file_raises(self) -> None:
@@ -152,7 +153,7 @@ class TestLoadHelper:
 
 class TestResourcesDir:
     def test_resources_dir_exists(self) -> None:
-        assert _RESOURCES_DIR.is_dir()
+        assert Path(_RESOURCES_DIR).is_dir()
 
     def test_all_resource_files_exist(self) -> None:
         expected = [
@@ -168,7 +169,7 @@ class TestResourcesDir:
             "folder-organization.md",
         ]
         for filename in expected:
-            assert (_RESOURCES_DIR / filename).is_file(), f"Missing: {filename}"
+            assert (Path(_RESOURCES_DIR) / filename).is_file(), f"Missing: {filename}"
 
 
 _STATIC_RESOURCES = [
