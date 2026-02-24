@@ -5,7 +5,23 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from mcp_coda.config import CodaConfig
+from mcp_coda.servers.resources import (
+    _RESOURCES_DIR,
+    _load,
+    coda_api_patterns_rules,
+    coda_automations_rules,
+    coda_doc_structure_rules,
+    coda_permissions_rules,
+    coda_table_design_rules,
+    folder_organization_guide,
+    formula_controls_guide,
+    page_content_guide,
+    publishing_analytics_guide,
+    row_operations_guide,
+)
 from mcp_coda.servers.resources import (
     doc_schema_resource as _doc_schema_resource,
 )
@@ -104,3 +120,81 @@ class TestDocSchemaResource:
         ctx = _make_ctx(client)
         result = json.loads(await doc_schema_resource("bad_id", ctx))
         assert "error" in result
+
+
+# ════════════════════════════════════════════════════════════════════
+# Static resources
+# ════════════════════════════════════════════════════════════════════
+
+
+class TestLoadHelper:
+    def test_loads_existing_file(self) -> None:
+        content = _load("coda-api-patterns.md")
+        assert "Rate Limits" in content
+        assert len(content) > 100
+
+    def test_rejects_path_traversal_slash(self) -> None:
+        with pytest.raises(ValueError, match="Invalid resource filename"):
+            _load("../pyproject.toml")
+
+    def test_rejects_path_traversal_backslash(self) -> None:
+        with pytest.raises(ValueError, match="Invalid resource filename"):
+            _load("..\\pyproject.toml")
+
+    def test_rejects_dotdot(self) -> None:
+        with pytest.raises(ValueError, match="Invalid resource filename"):
+            _load("..")
+
+    def test_missing_file_raises(self) -> None:
+        with pytest.raises(FileNotFoundError):
+            _load("nonexistent.md")
+
+
+class TestResourcesDir:
+    def test_resources_dir_exists(self) -> None:
+        assert _RESOURCES_DIR.is_dir()
+
+    def test_all_resource_files_exist(self) -> None:
+        expected = [
+            "coda-doc-structure.md",
+            "coda-table-design.md",
+            "coda-permissions.md",
+            "coda-automations.md",
+            "coda-api-patterns.md",
+            "row-operations.md",
+            "page-content.md",
+            "formula-controls.md",
+            "publishing-analytics.md",
+            "folder-organization.md",
+        ]
+        for filename in expected:
+            assert (_RESOURCES_DIR / filename).is_file(), f"Missing: {filename}"
+
+
+_STATIC_RESOURCES = [
+    ("coda_doc_structure_rules", coda_doc_structure_rules, "Doc Structure"),
+    ("coda_table_design_rules", coda_table_design_rules, "Table Design"),
+    ("coda_permissions_rules", coda_permissions_rules, "Permission Model"),
+    ("coda_automations_rules", coda_automations_rules, "Automation Patterns"),
+    ("coda_api_patterns_rules", coda_api_patterns_rules, "API Best Practices"),
+    ("row_operations_guide", row_operations_guide, "Row Operations"),
+    ("page_content_guide", page_content_guide, "Page Content"),
+    ("formula_controls_guide", formula_controls_guide, "Formulas"),
+    ("publishing_analytics_guide", publishing_analytics_guide, "Publishing"),
+    ("folder_organization_guide", folder_organization_guide, "Folder Organization"),
+]
+
+
+class TestStaticResources:
+    @pytest.mark.parametrize(
+        "name,func,keyword",
+        _STATIC_RESOURCES,
+        ids=[r[0] for r in _STATIC_RESOURCES],
+    )
+    def test_returns_markdown_with_expected_content(
+        self, name: str, func: object, keyword: str
+    ) -> None:
+        result = func()
+        assert isinstance(result, str)
+        assert len(result) > 200
+        assert keyword in result

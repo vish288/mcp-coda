@@ -1,6 +1,6 @@
 # mcp-coda — Agent Context
 
-MCP server for the Coda v1 API. 54 tools covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+MCP server for the Coda v1 API. 54 tools, 12 resources (2 data + 5 rules + 5 guides), and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 ## Architecture
 
@@ -8,7 +8,9 @@ MCP server for the Coda v1 API. 54 tools covering docs, pages, tables, rows, for
 - **Client**: `src/mcp_coda/client.py` — async httpx client with all Coda API methods
 - **Tools**: `src/mcp_coda/servers/` — modular tool files (one per domain: docs, pages, tables, rows, etc.)
 - **Helpers**: `src/mcp_coda/servers/_helpers.py` — shared `_get_client`, `_ok`, `_err`, `_check_write`
-- **Resources**: `src/mcp_coda/servers/resources.py` — MCP resources (doc listing, schema introspection)
+- **Resources**: `src/mcp_coda/servers/resources.py` — MCP resources (static knowledge + live data)
+- **Prompts**: `src/mcp_coda/servers/prompts.py` — MCP prompts (reusable task templates)
+- **Resource files**: `src/mcp_coda/resources/` — static markdown files for rules and guides
 - **Config**: `src/mcp_coda/config.py` — `CodaConfig` dataclass from env vars
 - **Exceptions**: `src/mcp_coda/exceptions.py` — `CodaApiError`, `CodaNotFoundError`, etc.
 - **Tests**: `tests/unit/` — 260+ tool-level unit tests

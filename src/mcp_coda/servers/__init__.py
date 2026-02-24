@@ -52,6 +52,7 @@ def _register_tools() -> None:
         ".folders",
         ".analytics",
         ".resources",
+        ".prompts",
     ]
     for module in _modules:
         importlib.import_module(module, __package__)

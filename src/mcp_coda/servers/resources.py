@@ -1,12 +1,188 @@
-"""MCP Resources — expose doc list and table schemas as ambient context."""
+"""MCP Resources — static knowledge resources and live data resources."""
 
 import json
+from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
 
 from . import mcp
 from ._helpers import _get_client
+
+# ════════════════════════════════════════════════════════════════════
+# Static resource loader
+# ════════════════════════════════════════════════════════════════════
+
+_RESOURCES_DIR = Path(__file__).resolve().parent.parent / "resources"
+
+
+def _load(filename: str) -> str:
+    """Load a resource markdown file from the resources directory."""
+    if "/" in filename or "\\" in filename or ".." in filename:
+        msg = f"Invalid resource filename: {filename}"
+        raise ValueError(msg)
+    path = _RESOURCES_DIR / filename
+    if not path.resolve().is_relative_to(_RESOURCES_DIR.resolve()):
+        msg = f"Invalid resource filename: {filename}"
+        raise ValueError(msg)
+    return path.read_text(encoding="utf-8")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Rules
+# ════════════════════════════════════════════════════════════════════
+
+
+@mcp.resource(
+    "resource://rules/coda-doc-structure",
+    name="Coda Doc Structure",
+    description=(
+        "Doc → Pages → Subpages hierarchy, page types, naming, "
+        "organization, when to split docs vs folders"
+    ),
+    mime_type="text/markdown",
+    tags={"rule", "coda", "docs"},
+)
+def coda_doc_structure_rules() -> str:
+    """Doc hierarchy, page types, and organization patterns."""
+    return _load("coda-doc-structure.md")
+
+
+@mcp.resource(
+    "resource://rules/coda-table-design",
+    name="Coda Table Design",
+    description=(
+        "Column types, lookup/relation patterns, display columns, "
+        "calculated columns, row limits, table vs view, schema naming"
+    ),
+    mime_type="text/markdown",
+    tags={"rule", "coda", "tables"},
+)
+def coda_table_design_rules() -> str:
+    """Table schema design patterns and column type reference."""
+    return _load("coda-table-design.md")
+
+
+@mcp.resource(
+    "resource://rules/coda-permissions",
+    name="Coda Permission Model",
+    description=(
+        "Doc-level vs page-level locking, sharing hierarchy, "
+        "ACL settings, domain sharing, principal types"
+    ),
+    mime_type="text/markdown",
+    tags={"rule", "coda", "permissions"},
+)
+def coda_permissions_rules() -> str:
+    """Permission model, sharing hierarchy, and ACL patterns."""
+    return _load("coda-permissions.md")
+
+
+@mcp.resource(
+    "resource://rules/coda-automations",
+    name="Coda Automation Patterns",
+    description=(
+        "Rule types, webhook triggers, button triggers, rate limits, payload design, idempotency"
+    ),
+    mime_type="text/markdown",
+    tags={"rule", "coda", "automations"},
+)
+def coda_automations_rules() -> str:
+    """Automation patterns for webhooks, buttons, and scheduled rules."""
+    return _load("coda-automations.md")
+
+
+@mcp.resource(
+    "resource://rules/coda-api-patterns",
+    name="Coda API Best Practices",
+    description=(
+        "Rate limits (100 read/6s, 10 write/6s), pagination, "
+        "async mutations, error handling, retry strategy"
+    ),
+    mime_type="text/markdown",
+    tags={"rule", "coda", "api"},
+)
+def coda_api_patterns_rules() -> str:
+    """API rate limits, pagination, async mutations, and retry patterns."""
+    return _load("coda-api-patterns.md")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Guides
+# ════════════════════════════════════════════════════════════════════
+
+
+@mcp.resource(
+    "resource://guides/row-operations",
+    name="Row Operations Guide",
+    description=(
+        "Insert vs upsert, bulk ops (500 limit), key columns, "
+        "cell value formats, button pushing, delete strategies"
+    ),
+    mime_type="text/markdown",
+    tags={"guide", "coda", "rows"},
+)
+def row_operations_guide() -> str:
+    """Row insert, upsert, update, delete, and bulk operation patterns."""
+    return _load("row-operations.md")
+
+
+@mcp.resource(
+    "resource://guides/page-content",
+    name="Page Content Guide",
+    description=(
+        "HTML vs markdown, content format selection, "
+        "insert modes (replace/append), export workflows"
+    ),
+    mime_type="text/markdown",
+    tags={"guide", "coda", "pages"},
+)
+def page_content_guide() -> str:
+    """Page content reading, writing, formats, and export workflows."""
+    return _load("page-content.md")
+
+
+@mcp.resource(
+    "resource://guides/formula-controls",
+    name="Formulas & Controls Guide",
+    description=("Named formulas, formula evaluation, control types, reading control values"),
+    mime_type="text/markdown",
+    tags={"guide", "coda", "formulas"},
+)
+def formula_controls_guide() -> str:
+    """Named formula and control reading patterns."""
+    return _load("formula-controls.md")
+
+
+@mcp.resource(
+    "resource://guides/publishing-analytics",
+    name="Publishing & Analytics Guide",
+    description=(
+        "Publishing categories, gallery settings, doc/page/pack analytics, date filtering"
+    ),
+    mime_type="text/markdown",
+    tags={"guide", "coda", "analytics"},
+)
+def publishing_analytics_guide() -> str:
+    """Doc publishing and analytics query patterns."""
+    return _load("publishing-analytics.md")
+
+
+@mcp.resource(
+    "resource://guides/folder-organization",
+    name="Folder Organization Guide",
+    description=("Folder CRUD, doc-folder relationships, folder hierarchy, bulk organization"),
+    mime_type="text/markdown",
+    tags={"guide", "coda", "folders"},
+)
+def folder_organization_guide() -> str:
+    """Folder structure, doc organization, and bulk move patterns."""
+    return _load("folder-organization.md")
+
+
+# ════════════════════════════════════════════════════════════════════
+# Data resources (live API)
+# ════════════════════════════════════════════════════════════════════
 
 
 @mcp.resource(
