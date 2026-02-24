@@ -16,3 +16,7 @@ coverage.xml
 .coverage
 *.so
 .DS_Store
+CLAUDE.md
+.claude/
+.cursor/
+.cursorrules
