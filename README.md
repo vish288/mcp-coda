@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml/badge.svg)](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml)
 
-**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **54 tools** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **54 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
 Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
@@ -208,14 +208,48 @@ uv pip install mcp-coda
 
 </details>
 
-## Resources (2)
+## Resources (12)
 
 The server exposes [MCP resources](https://modelcontextprotocol.io/docs/concepts/resources) that provide ambient context without consuming tool calls.
+
+### Data Resources (live API)
 
 | URI | Name | Description |
 |-----|------|-------------|
 | `coda://docs` | Coda Docs | List of docs accessible to the current API token |
 | `coda://docs/{doc_id}/schema` | Coda Doc Schema | Table and column definitions for a doc |
+
+### Rules (static knowledge)
+
+| URI | Name | Description |
+|-----|------|-------------|
+| `resource://rules/coda-doc-structure` | Coda Doc Structure | Doc/page hierarchy, page types, naming, when to split docs vs folders |
+| `resource://rules/coda-table-design` | Coda Table Design | Column types, relations, display columns, row limits, table vs view |
+| `resource://rules/coda-permissions` | Coda Permission Model | Doc-level vs page-level locking, ACL, domain sharing, principal types |
+| `resource://rules/coda-automations` | Coda Automation Patterns | Webhooks, button triggers, rate limits, payload design, idempotency |
+| `resource://rules/coda-api-patterns` | Coda API Best Practices | Rate limits, pagination, async mutations, error handling, retry |
+
+### Guides (how-to)
+
+| URI | Name | Description |
+|-----|------|-------------|
+| `resource://guides/row-operations` | Row Operations Guide | Insert vs upsert, bulk ops, key columns, cell formats, delete strategies |
+| `resource://guides/page-content` | Page Content Guide | HTML vs markdown, insert modes, export workflows |
+| `resource://guides/formula-controls` | Formulas & Controls Guide | Named formulas, control types, reading values |
+| `resource://guides/publishing-analytics` | Publishing & Analytics Guide | Publishing categories, gallery settings, analytics date filtering |
+| `resource://guides/folder-organization` | Folder Organization Guide | Folder CRUD, doc-folder relationships, hierarchy, bulk organization |
+
+## Prompts (5)
+
+The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/prompts) — reusable task templates that clients can invoke.
+
+| Prompt | Parameters | Description |
+|--------|-----------|-------------|
+| `analyze_doc_structure` | `doc_id` | Analyze a doc's page hierarchy, table layout, and organization |
+| `design_table_schema` | `description` | Design a table schema from a natural language description |
+| `migrate_spreadsheet` | `doc_id`, `source_format` | Guide for migrating CSV/Excel/Sheets data into Coda |
+| `setup_automation` | `doc_id`, `trigger_type` | Set up a webhook/button/time automation with error handling |
+| `audit_permissions` | `doc_id` | Audit sharing and permissions, suggest tightening |
 
 ## Usage Examples
 
