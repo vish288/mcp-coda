@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0] - 2026-02-24
+
+### Features
+- Merge pull request #4 from vish288/feat/static-resources-and-prompts (9088eb2)
+- feat: add 10 static knowledge resources and 5 MCP prompts (63a1379)
+- feat: unified install gateway, annotation fix, test suite (#1) (b736eee)
+
+### Bug Fixes
+- fix: validate token is ASCII before passing to httpx (#6) (23f5b62)
+- fix: disable FastMCP startup banner (#5) (92c988e)
+- fix: DRY _load_file helper, string.Template for prompts, caching (629347e)
+
+### Documentation
+- docs: add release workflow and architecture details to AGENTS.md (#2) (03f04ab)
+
+### Other
+
+
 ## 0.3.0 (unreleased)
 
 ### Added
