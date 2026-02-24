@@ -69,7 +69,7 @@ uv pip install mcp-coda
 | `CODA_TIMEOUT` | No | `30` | Request timeout in seconds |
 | `CODA_SSL_VERIFY` | No | `true` | Set to `false` to skip SSL verification |
 
-### Token
+### Supported Token Types
 
 The server checks these environment variables in order — first match wins:
 
@@ -326,6 +326,17 @@ Coda enforces per-token rate limits (varies by plan). When rate-limited, tools r
 ### Async Mutations
 
 Write operations (insert, update, delete rows) are processed asynchronously. Tools return a `requestId` that can be checked with `coda_get_mutation_status` to confirm completion.
+
+### Required Permissions
+
+| Operation | Minimum Coda Doc Role |
+|-----------|----------------------|
+| List docs, read pages, tables, rows, formulas, controls | Viewer |
+| Read permissions, analytics | Viewer (doc owner for analytics) |
+| Create/update pages, insert/update/delete rows | Editor |
+| Create/delete docs, manage folders | Editor (or doc owner) |
+| Add/remove permissions, publish/unpublish | Doc Owner |
+| Trigger automations | Editor |
 
 ### Access Control
 
