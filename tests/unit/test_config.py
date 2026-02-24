@@ -61,6 +61,29 @@ class TestCodaConfig:
             config = CodaConfig.from_env()
         assert config.timeout == 60
 
+    def test_from_env_with_coda_token(self) -> None:
+        env = {"CODA_TOKEN": "tok-alias"}
+        with patch.dict(os.environ, env, clear=False):
+            config = CodaConfig.from_env()
+        assert config.token == "tok-alias"
+
+    def test_from_env_with_coda_pat(self) -> None:
+        env = {"CODA_PAT": "tok-pat"}
+        with patch.dict(os.environ, env, clear=False):
+            config = CodaConfig.from_env()
+        assert config.token == "tok-pat"
+
+    def test_token_priority(self) -> None:
+        """CODA_API_TOKEN takes precedence over aliases."""
+        env = {
+            "CODA_API_TOKEN": "winner",
+            "CODA_TOKEN": "loser1",
+            "CODA_PAT": "loser2",
+        }
+        with patch.dict(os.environ, env, clear=False):
+            config = CodaConfig.from_env()
+        assert config.token == "winner"
+
     def test_is_configured_with_token(self) -> None:
         assert CodaConfig(token="abc").is_configured is True
 
