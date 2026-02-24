@@ -6,14 +6,21 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
-from mcp_coda.exceptions import CodaNotFoundError
+from mcp_coda.exceptions import CodaApiError, CodaNotFoundError
 from mcp_coda.servers.docs import (
-    coda_create_doc,
-    coda_delete_doc,
-    coda_get_doc,
-    coda_list_docs,
-    coda_update_doc,
+    coda_create_doc as _coda_create_doc,
+    coda_delete_doc as _coda_delete_doc,
+    coda_get_doc as _coda_get_doc,
+    coda_list_docs as _coda_list_docs,
+    coda_update_doc as _coda_update_doc,
 )
+
+# Unwrap FunctionTool objects to get the raw async functions
+coda_create_doc = _coda_create_doc.fn
+coda_delete_doc = _coda_delete_doc.fn
+coda_get_doc = _coda_get_doc.fn
+coda_list_docs = _coda_list_docs.fn
+coda_update_doc = _coda_update_doc.fn
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
@@ -56,6 +63,50 @@ class TestListDocs:
         call_params = client.get.call_args[1]["params"]
         assert call_params["query"] == "sprint"
 
+    async def test_with_is_owner_filter(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        await coda_list_docs(ctx, is_owner=True)
+        call_params = client.get.call_args[1]["params"]
+        assert call_params["isOwner"] is True
+
+    async def test_with_folder_id_filter(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        await coda_list_docs(ctx, folder_id="fl1")
+        call_params = client.get.call_args[1]["params"]
+        assert call_params["folderId"] == "fl1"
+
+    async def test_with_cursor(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        await coda_list_docs(ctx, cursor="abc")
+        call_params = client.get.call_args[1]["params"]
+        assert call_params["pageToken"] == "abc"
+
+    async def test_markdown_format(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(
+            return_value={
+                "items": [{"id": "d1", "name": "My Doc"}],
+                "nextPageToken": None,
+            }
+        )
+        ctx = _make_ctx(client)
+        result = await coda_list_docs(ctx, response_format="markdown")
+        assert "**My Doc**" in result
+        assert "1 items returned" in result
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_docs(ctx))
+        assert result["isError"] is True
+
 
 class TestGetDoc:
     async def test_success(self) -> None:
@@ -90,6 +141,14 @@ class TestCreateDoc:
         body = client.post.call_args[1]["json_data"]
         assert body["folderId"] == "f1"
 
+    async def test_with_source_doc(self) -> None:
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "d3"})
+        ctx = _make_ctx(client)
+        await coda_create_doc(ctx, title="Copy", source_doc="d1")
+        body = client.post.call_args[1]["json_data"]
+        assert body["sourceDoc"] == "d1"
+
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
@@ -104,6 +163,28 @@ class TestUpdateDoc:
         ctx = _make_ctx(client)
         result = json.loads(await coda_update_doc(ctx, doc_id="d1", title="Renamed"))
         assert result["name"] == "Renamed"
+
+    async def test_with_icon(self) -> None:
+        client = AsyncMock()
+        client.patch = AsyncMock(return_value={"id": "d1"})
+        ctx = _make_ctx(client)
+        await coda_update_doc(ctx, doc_id="d1", icon_name="rocket")
+        body = client.patch.call_args[1]["json_data"]
+        assert body["icon"]["name"] == "rocket"
+        assert body["icon"]["type"] == "name"
+
+    async def test_read_only_blocked(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client, read_only=True)
+        result = json.loads(await coda_update_doc(ctx, doc_id="d1", title="Blocked"))
+        assert result["isError"] is True
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_update_doc(ctx, doc_id="bad", title="X"))
+        assert result["isError"] is True
 
 
 class TestDeleteDoc:

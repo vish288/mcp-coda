@@ -1,6 +1,5 @@
 """Control tools — list and get control values."""
 
-from __future__ import annotations
 
 from typing import Annotated, Any
 

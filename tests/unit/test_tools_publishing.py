@@ -7,10 +7,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
 from mcp_coda.servers.publishing import (
-    coda_list_categories,
-    coda_publish_doc,
-    coda_unpublish_doc,
+    coda_list_categories as _coda_list_categories,
+    coda_publish_doc as _coda_publish_doc,
+    coda_unpublish_doc as _coda_unpublish_doc,
 )
+
+# Unwrap FunctionTool objects to get the raw async functions
+coda_list_categories = _coda_list_categories.fn
+coda_publish_doc = _coda_publish_doc.fn
+coda_unpublish_doc = _coda_unpublish_doc.fn
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

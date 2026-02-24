@@ -17,6 +17,9 @@ from mcp_coda.servers._helpers import (
     CHARACTER_LIMIT,
     _check_write,
     _err,
+    _format_list_as_markdown,
+    _get_client,
+    _get_config,
     _ok,
     _ok_markdown,
     _truncate,
@@ -43,8 +46,8 @@ class TestOk:
         assert json.loads(result) == [1, 2, 3]
 
     def test_handles_unicode(self) -> None:
-        result = _ok({"name": "café"})
-        assert "café" in result
+        result = _ok({"name": "cafe"})
+        assert "cafe" in result
 
     def test_indented(self) -> None:
         result = _ok({"a": 1})
@@ -120,3 +123,71 @@ class TestCheckWrite:
         ctx = _make_ctx(read_only=True)
         with pytest.raises(CodaWriteDisabledError):
             _check_write(ctx)
+
+
+class TestGetClient:
+    def test_returns_client_from_context(self) -> None:
+        ctx = _make_ctx()
+        client = _get_client(ctx)
+        assert client is ctx.request_context.lifespan_context["client"]
+
+
+class TestGetConfig:
+    def test_returns_config_from_context(self) -> None:
+        ctx = _make_ctx()
+        config = _get_config(ctx)
+        assert config is ctx.request_context.lifespan_context["config"]
+
+
+class TestFormatListAsMarkdown:
+    def test_basic_items(self) -> None:
+        items = [
+            {"id": "d1", "name": "Doc One"},
+            {"id": "d2", "name": "Doc Two"},
+        ]
+        result = _format_list_as_markdown(items, total_count=2)
+        assert "**Doc One** (`d1`)" in result
+        assert "**Doc Two** (`d2`)" in result
+        assert "2 items returned" in result
+
+    def test_empty_list(self) -> None:
+        result = _format_list_as_markdown([], total_count=0)
+        assert "*No results found.*" in result
+        assert "0 items returned" in result
+
+    def test_has_more_with_cursor(self) -> None:
+        items = [{"id": "d1", "name": "Doc"}]
+        result = _format_list_as_markdown(
+            items, has_more=True, next_cursor="abc", total_count=1
+        )
+        assert "more available" in result
+        assert "abc" in result
+
+    def test_item_with_type(self) -> None:
+        items = [{"id": "d1", "name": "My Doc", "type": "doc"}]
+        result = _format_list_as_markdown(items, total_count=1)
+        assert "doc" in result
+
+    def test_item_with_owner(self) -> None:
+        items = [{"id": "d1", "name": "My Doc", "owner": "user@test.com"}]
+        result = _format_list_as_markdown(items, total_count=1)
+        assert "user@test.com" in result
+
+    def test_item_with_browser_link(self) -> None:
+        items = [
+            {"id": "d1", "name": "My Doc", "browserLink": "https://coda.io/d/d1"}
+        ]
+        result = _format_list_as_markdown(items, total_count=1)
+        assert "https://coda.io/d/d1" in result
+
+    def test_custom_keys(self) -> None:
+        items = [{"docId": "d1", "title": "Doc Title"}]
+        result = _format_list_as_markdown(
+            items, total_count=1, name_key="title", id_key="docId"
+        )
+        assert "**Doc Title** (`d1`)" in result
+
+    def test_missing_keys_use_defaults(self) -> None:
+        items = [{"other": "field"}]
+        result = _format_list_as_markdown(items, total_count=1)
+        assert "**Untitled**" in result

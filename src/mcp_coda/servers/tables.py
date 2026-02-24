@@ -1,6 +1,5 @@
 """Table and column tools — list/get tables and columns."""
 
-from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 

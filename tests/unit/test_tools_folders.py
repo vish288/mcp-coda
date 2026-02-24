@@ -7,12 +7,19 @@ from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
 from mcp_coda.servers.folders import (
-    coda_create_folder,
-    coda_delete_folder,
-    coda_get_folder,
-    coda_list_folders,
-    coda_update_folder,
+    coda_create_folder as _coda_create_folder,
+    coda_delete_folder as _coda_delete_folder,
+    coda_get_folder as _coda_get_folder,
+    coda_list_folders as _coda_list_folders,
+    coda_update_folder as _coda_update_folder,
 )
+
+# Unwrap FunctionTool objects to get the raw async functions
+coda_create_folder = _coda_create_folder.fn
+coda_delete_folder = _coda_delete_folder.fn
+coda_get_folder = _coda_get_folder.fn
+coda_list_folders = _coda_list_folders.fn
+coda_update_folder = _coda_update_folder.fn
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

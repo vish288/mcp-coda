@@ -7,13 +7,21 @@ from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
 from mcp_coda.servers.permissions import (
-    coda_add_permission,
-    coda_delete_permission,
-    coda_get_acl_settings,
-    coda_get_sharing_metadata,
-    coda_list_permissions,
-    coda_search_principals,
+    coda_add_permission as _coda_add_permission,
+    coda_delete_permission as _coda_delete_permission,
+    coda_get_acl_settings as _coda_get_acl_settings,
+    coda_get_sharing_metadata as _coda_get_sharing_metadata,
+    coda_list_permissions as _coda_list_permissions,
+    coda_search_principals as _coda_search_principals,
 )
+
+# Unwrap FunctionTool objects to get the raw async functions
+coda_add_permission = _coda_add_permission.fn
+coda_delete_permission = _coda_delete_permission.fn
+coda_get_acl_settings = _coda_get_acl_settings.fn
+coda_get_sharing_metadata = _coda_get_sharing_metadata.fn
+coda_list_permissions = _coda_list_permissions.fn
+coda_search_principals = _coda_search_principals.fn
 
 
 def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:

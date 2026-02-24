@@ -1,6 +1,5 @@
 """Folder tools — list, get, create, update, delete folders."""
 
-from __future__ import annotations
 
 from typing import Annotated, Any
 

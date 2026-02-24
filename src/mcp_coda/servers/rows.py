@@ -1,6 +1,5 @@
 """Row tools — list, get, insert, update, delete rows, push button."""
 
-from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
