@@ -2,7 +2,7 @@
 
 ## What This Is
 
-MCP server for the Coda v1 API. 55 tools covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+MCP server for the Coda v1 API. 54 tools covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 ## Architecture
 
@@ -74,7 +74,7 @@ uv run ruff check src/ tests/              # lint
 uv run ruff format --check src/ tests/     # format check
 ```
 
-## Tool Inventory (55 tools)
+## Tool Inventory (54 tools)
 
 | Module | Tools | Type |
 |--------|-------|------|
