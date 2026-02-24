@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.4] - 2026-02-24
+
+### Features
+- feat: add Gemini CLI extension manifest and context (#10) (005e1f4)
+
+
 ## [0.4.3] - 2026-02-24
 
 ### Features
