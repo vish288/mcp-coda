@@ -42,3 +42,12 @@ class CodaConfig:
         if not self.token:
             msg = "CODA_API_TOKEN environment variable is required"
             raise ValueError(msg)
+        try:
+            self.token.encode("ascii")
+        except UnicodeEncodeError:
+            msg = (
+                "CODA_API_TOKEN contains non-ASCII characters. "
+                "The token may have been incorrectly decoded (e.g. base64). "
+                "Coda API tokens are plain ASCII strings."
+            )
+            raise ValueError(msg) from None

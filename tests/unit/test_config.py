@@ -73,3 +73,10 @@ class TestCodaConfig:
     def test_validate_missing_token(self) -> None:
         with pytest.raises(ValueError, match="CODA_API_TOKEN"):
             CodaConfig().validate()
+
+    def test_validate_non_ascii_token(self) -> None:
+        with pytest.raises(ValueError, match="non-ASCII"):
+            CodaConfig(token="tok\ufffd").validate()
+
+    def test_validate_ascii_token_ok(self) -> None:
+        CodaConfig(token="abc-123-def").validate()  # should not raise
