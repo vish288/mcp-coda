@@ -1,6 +1,5 @@
 """MCP Resources — expose doc list and table schemas as ambient context."""
 
-from __future__ import annotations
 
 import json
 from typing import Any

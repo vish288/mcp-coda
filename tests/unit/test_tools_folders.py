@@ -6,6 +6,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
+from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.folders import (
     coda_create_folder as _coda_create_folder,
     coda_delete_folder as _coda_delete_folder,
@@ -40,6 +41,13 @@ class TestListFolders:
         assert result["total_count"] == 1
         assert result["items"][0]["name"] == "Projects"
 
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_folders(ctx))
+        assert result["isError"] is True
+
 
 class TestGetFolder:
     async def test_success(self) -> None:
@@ -48,6 +56,13 @@ class TestGetFolder:
         ctx = _make_ctx(client)
         result = json.loads(await coda_get_folder(ctx, folder_id="fl1"))
         assert result["name"] == "Projects"
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_get_folder(ctx, folder_id="bad"))
+        assert result["isError"] is True
 
 
 class TestCreateFolder:
@@ -80,6 +95,13 @@ class TestUpdateFolder:
         ctx = _make_ctx(client)
         result = json.loads(await coda_update_folder(ctx, folder_id="fl1", name="Renamed"))
         assert result["name"] == "Renamed"
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_update_folder(ctx, folder_id="bad", name="X"))
+        assert result["isError"] is True
 
 
 class TestDeleteFolder:

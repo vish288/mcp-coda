@@ -46,8 +46,8 @@ class TestOk:
         assert json.loads(result) == [1, 2, 3]
 
     def test_handles_unicode(self) -> None:
-        result = _ok({"name": "cafe"})
-        assert "cafe" in result
+        result = _ok({"name": "caf\u00e9"})
+        assert "caf\u00e9" in result
 
     def test_indented(self) -> None:
         result = _ok({"a": 1})

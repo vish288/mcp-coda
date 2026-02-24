@@ -3,61 +3,27 @@
 from __future__ import annotations
 
 import json
-import sys
-from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock
 
 from mcp_coda.config import CodaConfig
+from mcp_coda.servers.resources import (
+    doc_schema_resource as _doc_schema_resource,
+    docs_resource as _docs_resource,
+)
 
+# FunctionResource.fn is the without_injected_parameters wrapper (strips ctx).
+# The original function is in the wrapper's closure[0].
+# For resources with only ctx (docs_resource), closure[0] is the raw function.
+# For resources with extra params (doc_schema_resource), closure[0] is a
+# ValidateCallWrapper.__call__ bound method — dig through to the real function.
+docs_resource = _docs_resource.fn.__closure__[0].cell_contents
 
-def _get_raw_resource_fn(name: str):
-    """Import the resource module and extract the raw async function before decoration.
-
-    The @mcp.resource decorator wraps functions in FunctionResource, which then
-    wraps them with without_injected_parameters (stripping ctx). To test the actual
-    logic, we need the original unwrapped function that accepts (ctx) or (doc_id, ctx).
-    """
-    import importlib
-
-    # Temporarily remove the module from cache to re-import fresh
-    mod_name = "mcp_coda.servers.resources"
-    saved = sys.modules.pop(mod_name, None)
-
-    # Create a mock mcp module that captures the decorated function without wrapping
-    captured = {}
-
-    class MockMCP:
-        def resource(self, *args, **kwargs):
-            def decorator(fn):
-                captured[fn.__name__] = fn
-                return fn
-            return decorator
-
-    # Temporarily replace the mcp instance in the servers package
-    import mcp_coda.servers as servers_pkg
-    original_mcp = servers_pkg.mcp
-
-    servers_pkg.mcp = MockMCP()
-    try:
-        # Force re-import with our mock
-        if mod_name in sys.modules:
-            del sys.modules[mod_name]
-        mod = importlib.import_module(mod_name)
-    finally:
-        # Restore original mcp
-        servers_pkg.mcp = original_mcp
-        # Restore original module in cache
-        if saved is not None:
-            sys.modules[mod_name] = saved
-        elif mod_name in sys.modules:
-            del sys.modules[mod_name]
-
-    return captured[name]
-
-
-# Get raw undecorated functions for testing
-docs_resource = _get_raw_resource_fn("docs_resource")
-doc_schema_resource = _get_raw_resource_fn("doc_schema_resource")
+_ds_closure = _doc_schema_resource.fn.__closure__[0].cell_contents
+if hasattr(_ds_closure, "__self__"):
+    # ValidateCallWrapper → .function → closure[0] → raw function
+    doc_schema_resource = _ds_closure.__self__.function.__closure__[0].cell_contents
+else:
+    doc_schema_resource = _ds_closure
 
 
 def _make_ctx(client_mock: AsyncMock) -> MagicMock:
