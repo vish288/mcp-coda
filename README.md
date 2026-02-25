@@ -12,11 +12,11 @@ Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.pyt
 
 ## 1-Click Installation
 
-[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://vish288.github.io/mcp-install.html?server=mcp-coda&install=cursor)
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://vish288.github.io/mcp-install?server=mcp-coda&install=cursor)
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install.html?server=mcp-coda&install=vscode) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install.html?server=mcp-coda&install=vscode-insiders)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode-insiders)
 
-> **Tip:** For other AI assistants (Claude Code, Windsurf, IntelliJ), visit the **[Coda MCP Installation Gateway](https://vish288.github.io/mcp-install.html?server=mcp-coda)**.
+> **Tip:** For other AI assistants (Claude Code, Windsurf, IntelliJ), visit the **[Coda MCP Installation Gateway](https://vish288.github.io/mcp-install?server=mcp-coda)**.
 
 <details>
 <summary><b>Manual Setup Guides (Click to expand)</b></summary>
