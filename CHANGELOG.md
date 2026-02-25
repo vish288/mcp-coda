@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.6] - 2026-02-25
+
+### Bug Fixes
+- fix: update installation gateway URLs to SPA route (#15) (cfda2a2)
+
+
 ## [0.4.5] - 2026-02-25
 
 ### Chores
