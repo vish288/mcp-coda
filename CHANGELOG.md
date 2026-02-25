@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.5] - 2026-02-25
+
+### Chores
+- chore(ci): bump astral-sh/setup-uv from 5 to 7 (#13) (c1faa3d)
+- chore(ci): bump codecov/codecov-action from 4 to 5 (#14) (8bd3726)
+- chore(ci): bump actions/checkout from 4 to 6 (#12) (779d1fe)
+- chore: add Dependabot for Python deps and GitHub Actions (#11) (55328a2)
+
+
 ## [0.4.4] - 2026-02-24
 
 ### Features
