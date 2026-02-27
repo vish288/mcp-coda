@@ -816,7 +816,7 @@ wheels = [
 
 [[package]]
 name = "mcp-coda"
-version = "0.4.10"
+version = "0.4.11"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
