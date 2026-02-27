@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vish288/mcp-coda",
+  "description": "MCP server for Coda.io \u2014 docs, pages, tables, rows, formulas, and automations.",
+  "repository": {
+    "url": "https://github.com/vish288/mcp-coda",
+    "source": "github"
+  },
+  "version": "0.4.6",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "mcp-coda",
+      "version": "0.4.6",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "CODA_API_TOKEN",
+          "description": "Coda API token (also accepts CODA_TOKEN or CODA_PAT)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "CODA_READ_ONLY",
+          "description": "Restrict to read-only operations (true/false)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

@@ -5,6 +5,9 @@
 [![Python](https://img.shields.io/pypi/pyversions/mcp-coda)](https://pypi.org/project/mcp-coda/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml/badge.svg)](https://github.com/vish288/mcp-coda/actions/workflows/tests.yml)
+[![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/servers/io.github.vish288/mcp-coda)
+
+<!-- mcp-name: io.github.vish288/mcp-coda -->
 
 **mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **54 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
