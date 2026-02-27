@@ -24,7 +24,9 @@ from mcp_coda.servers._helpers import (
     _load_file,
     _ok,
     _ok_markdown,
+    _parse_coda_doc_url,
     _truncate,
+    _validate_id,
 )
 
 
@@ -223,3 +225,51 @@ class TestLoadFile:
     def test_missing_file_raises(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):
             _load_file(str(tmp_path), "nonexistent.md")
+
+
+class TestValidateId:
+    """Tests for the _validate_id helper."""
+
+    def test_accepts_alphanumeric(self) -> None:
+        _validate_id("abc123", "doc_id")  # should not raise
+
+    def test_accepts_hyphens_underscores(self) -> None:
+        _validate_id("my-doc_v2", "doc_id")  # should not raise
+
+    def test_rejects_empty(self) -> None:
+        with pytest.raises(ValueError, match="Invalid doc_id"):
+            _validate_id("", "doc_id")
+
+    def test_rejects_slash(self) -> None:
+        with pytest.raises(ValueError, match="Invalid doc_id"):
+            _validate_id("../etc/passwd", "doc_id")
+
+    def test_rejects_spaces(self) -> None:
+        with pytest.raises(ValueError, match="Invalid doc_id"):
+            _validate_id("has space", "doc_id")
+
+    def test_rejects_special_chars(self) -> None:
+        with pytest.raises(ValueError, match="Invalid doc_id"):
+            _validate_id("id;DROP TABLE", "doc_id")
+
+
+class TestParseCodaDocUrl:
+    """Tests for _parse_coda_doc_url."""
+
+    def test_extracts_doc_id_from_url(self) -> None:
+        url = "https://coda.io/d/My-Doc-Title_dABCdef123"
+        assert _parse_coda_doc_url(url) == "ABCdef123"
+
+    def test_plain_id_passthrough(self) -> None:
+        assert _parse_coda_doc_url("ABCdef123") == "ABCdef123"
+
+    def test_url_with_page_suffix(self) -> None:
+        url = "https://coda.io/d/MyDoc_dABC123/PageName_sXYZ"
+        assert _parse_coda_doc_url(url) == "ABC123"
+
+    def test_non_coda_url_passthrough(self) -> None:
+        url = "https://example.com/some/path"
+        assert _parse_coda_doc_url(url) == url
+
+    def test_empty_string_passthrough(self) -> None:
+        assert _parse_coda_doc_url("") == ""
