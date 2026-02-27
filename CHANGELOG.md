@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.9] - 2026-02-27
+
+### Chores
+- chore: improve SEO and discoverability (#19) (9f23471)
+
+
 ## [0.4.8] - 2026-02-27
 
 ### Bug Fixes
