@@ -1,34 +1,28 @@
 # mcp-coda
 
-> MCP server for the Coda API -- 54 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+> MCP server for the Coda API — 54 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
-mcp-coda is a Model Context Protocol (MCP) server that wraps the Coda REST API v1. It provides 54 tools for CRUD operations across all Coda resource types, 12 resources for ambient context (both live API data and static knowledge), and 5 prompt templates for common workflows. Built with FastMCP, httpx, and Pydantic. Requires Python >= 3.10.
+MCP server that wraps the Coda REST API v1. Provides CRUD operations across all Coda resource types, ambient context via static knowledge and live API data, and prompt templates for common workflows. Built with FastMCP, httpx, and Pydantic.
 
-- Install: `uvx mcp-coda`
-- Package: `pip install mcp-coda` or `uv pip install mcp-coda`
-- Registry name: `io.github.vish288/mcp-coda`
-- License: MIT
-- Transport: stdio (default), SSE, or streamable-http
-
-## Configuration
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `CODA_API_TOKEN` | Yes | Coda API token (also accepts `CODA_TOKEN` or `CODA_PAT`) |
-| `CODA_READ_ONLY` | No | Set to `true` to disable write operations |
-| `CODA_BASE_URL` | No | API base URL (default: `https://coda.io/apis/v1`) |
-| `CODA_TIMEOUT` | No | Request timeout in seconds (default: 30) |
-| `CODA_SSL_VERIFY` | No | Set to `false` to skip SSL verification |
+- **Install**: `uvx mcp-coda`
+- **Version**: 0.4.9
+- **Python**: >=3.10
+- **License**: MIT
+- **Transport**: stdio (default), SSE, streamable-http
+- **Registry**: `io.github.vish288/mcp-coda`
+- **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
+- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_SSL_VERIFY` (SSL verification)
 
 ## Documentation
 
-- [README](https://github.com/vish288/mcp-coda#readme): Full documentation with setup guides, tool reference, usage examples, and security considerations
-- [PyPI](https://pypi.org/project/mcp-coda/): Package page with version history
-- [GitHub](https://github.com/vish288/mcp-coda): Source code, issues, and contributions
+- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 54 tools, 12 resources, 5 prompts
+- [PyPI](https://pypi.org/project/mcp-coda/): install via `pip install mcp-coda` or `uvx mcp-coda`
+- [GitHub](https://github.com/vish288/mcp-coda): source code, issue tracker, development setup
+- [MCP Registry](https://registry.modelcontextprotocol.io): discover and install MCP servers
 
 ## Optional
 
-- [Changelog](https://github.com/vish288/mcp-coda/releases): Release notes and version history
-- [MCP Registry](https://registry.modelcontextprotocol.io): MCP server registry listing
-- [Coda API Reference](https://coda.io/developers/apis/v1): Upstream Coda REST API documentation
-- [MCP Specification](https://modelcontextprotocol.io): Model Context Protocol specification
+- [Changelog](https://github.com/vish288/mcp-coda/releases): per-version release notes with breaking changes
+- [MCP Specification](https://modelcontextprotocol.io/docs): protocol spec for tools, resources, and prompts
+- [FastMCP](https://github.com/jlowin/fastmcp): Python framework this server is built on
+- [Coda API Reference](https://coda.io/developers/apis/v1): upstream REST API that this server wraps
