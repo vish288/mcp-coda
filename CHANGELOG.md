@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.12] - 2026-02-27
+
+### Bug Fixes
+- fix: align API payloads with Coda v1 OpenAPI spec (#21) (2803790)
+
+
 ## [0.4.11] - 2026-02-27
 
 ### Bug Fixes
