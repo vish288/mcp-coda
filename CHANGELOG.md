@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.7] - 2026-02-27
+
+### Features
+- feat: add MCP Registry auto-publish on release (b8cd637)
+
+
 ## [0.4.6] - 2026-02-25
 
 ### Bug Fixes
