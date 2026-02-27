@@ -178,8 +178,7 @@ class TestUpdateDoc:
         ctx = _make_ctx(client)
         await coda_update_doc(ctx, doc_id="d1", icon_name="rocket")
         body = client.patch.call_args[1]["json_data"]
-        assert body["icon"]["name"] == "rocket"
-        assert body["icon"]["type"] == "name"
+        assert body["iconName"] == "rocket"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()

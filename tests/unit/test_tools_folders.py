@@ -78,21 +78,24 @@ class TestCreateFolder:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "fl2", "name": "New Folder"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_create_folder(ctx, name="New Folder"))
+        result = json.loads(await coda_create_folder(ctx, name="New Folder", workspace_id="ws1"))
         assert result["id"] == "fl2"
+        body = client.post.call_args[1]["json_data"]
+        assert body["workspaceId"] == "ws1"
 
-    async def test_with_parent(self) -> None:
+    async def test_with_description(self) -> None:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "fl3"})
         ctx = _make_ctx(client)
-        await coda_create_folder(ctx, name="Sub", parent_folder_id="fl1")
+        await coda_create_folder(ctx, name="Sub", workspace_id="ws1", description="A folder")
         body = client.post.call_args[1]["json_data"]
-        assert body["parentFolderId"] == "fl1"
+        assert body["description"] == "A folder"
+        assert body["workspaceId"] == "ws1"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_create_folder(ctx, name="Blocked"))
+        result = json.loads(await coda_create_folder(ctx, name="Blocked", workspace_id="ws1"))
         assert result["isError"] is True
 
 

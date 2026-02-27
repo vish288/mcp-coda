@@ -61,22 +61,26 @@ async def coda_create_folder(
         str,
         Field(description="Name for the new folder"),
     ],
-    parent_folder_id: Annotated[
+    workspace_id: Annotated[
+        str,
+        Field(description="Workspace ID where the folder will be created"),
+    ],
+    description: Annotated[
         str | None,
-        Field(description="Parent folder ID (omit for root level)"),
+        Field(description="Description for the folder"),
     ] = None,
 ) -> str:
-    """Create a new folder in the Coda workspace.
+    """Create a new folder in a Coda workspace.
 
-    Creates a folder at the root level or nested under a parent folder. Returns
-    the new folder's ID and metadata. Use the folder ID when creating docs with
-    coda_create_doc to organize them.
+    Creates a folder in the specified workspace. Returns the new folder's ID and
+    metadata. Use the folder ID when creating docs with coda_create_doc to
+    organize them.
     """
     try:
         _check_write(ctx)
-        body: dict[str, Any] = {"name": name}
-        if parent_folder_id is not None:
-            body["parentFolderId"] = parent_folder_id
+        body: dict[str, Any] = {"name": name, "workspaceId": workspace_id}
+        if description is not None:
+            body["description"] = description
         data = await _get_client(ctx).post("/folders", json_data=body)
         return _ok(data)
     except Exception as e:
