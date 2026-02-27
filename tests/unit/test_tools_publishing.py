@@ -69,10 +69,10 @@ class TestPublishDoc:
         client = AsyncMock()
         client.put = AsyncMock(return_value={})
         ctx = _make_ctx(client)
-        await coda_publish_doc(ctx, doc_id="d1", slug="my-doc", category_ids=["cat1", "cat2"])
+        await coda_publish_doc(ctx, doc_id="d1", slug="my-doc", category_names=["cat1", "cat2"])
         body = client.put.call_args[1]["json_data"]
         assert body["slug"] == "my-doc"
-        assert body["categoryIds"] == ["cat1", "cat2"]
+        assert body["categoryNames"] == ["cat1", "cat2"]
 
     async def test_with_mode(self) -> None:
         client = AsyncMock()

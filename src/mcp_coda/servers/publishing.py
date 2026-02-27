@@ -42,9 +42,9 @@ async def coda_publish_doc(
         str | None,
         Field(description="URL slug for the published doc"),
     ] = None,
-    category_ids: Annotated[
+    category_names: Annotated[
         list[str] | None,
-        Field(description="Category IDs for the published doc (from coda_list_categories)"),
+        Field(description="Category names for the published doc (from coda_list_categories)"),
     ] = None,
     discoverable: Annotated[
         bool,
@@ -66,8 +66,8 @@ async def coda_publish_doc(
         body: dict[str, Any] = {"discoverable": discoverable}
         if slug is not None:
             body["slug"] = slug
-        if category_ids is not None:
-            body["categoryIds"] = category_ids
+        if category_names is not None:
+            body["categoryNames"] = category_names
         if mode is not None:
             body["mode"] = mode
         data = await _get_client(ctx).put(f"/docs/{doc_id}/publish", json_data=body)

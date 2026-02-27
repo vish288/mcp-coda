@@ -113,8 +113,9 @@ class TestCreatePage:
             ctx, doc_id="d1", name="Page", content="# Hello", content_format="markdown"
         )
         body = client.post.call_args[1]["json_data"]
-        assert body["pageContent"]["content"] == "# Hello"
-        assert body["pageContent"]["contentFormat"] == "markdown"
+        assert body["pageContent"]["type"] == "canvas"
+        assert body["pageContent"]["canvasContent"]["content"] == "# Hello"
+        assert body["pageContent"]["canvasContent"]["format"] == "markdown"
 
     async def test_with_parent_and_subtitle(self) -> None:
         client = AsyncMock()
@@ -137,7 +138,7 @@ class TestCreatePage:
         ctx = _make_ctx(client)
         await coda_create_page(ctx, doc_id="d1", name="Page", content="<p>Hi</p>")
         body = client.post.call_args[1]["json_data"]
-        assert body["pageContent"]["contentFormat"] == "html"
+        assert body["pageContent"]["canvasContent"]["format"] == "html"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
@@ -161,6 +162,8 @@ class TestUpdatePage:
         )
         body = client.put.call_args[1]["json_data"]
         assert body["contentUpdate"]["insertionMode"] == "replace"
+        assert body["contentUpdate"]["canvasContent"]["format"] == "markdown"
+        assert body["contentUpdate"]["canvasContent"]["content"] == "Updated text"
 
     async def test_name_only_update(self) -> None:
         client = AsyncMock()
