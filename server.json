@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vish288/mcp-coda",
-  "description": "MCP server for Coda.io \u2014 docs, pages, tables, rows, formulas, and automations.",
+  "description": "MCP server for Coda API — 54 tools, 12 resources, 5 prompts. Docs, pages, tables, rows, formulas, permissions, automation, analytics.",
   "repository": {
     "url": "https://github.com/vish288/mcp-coda",
     "source": "github"
   },
-  "version": "0.4.6",
+  "version": "0.4.8",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "mcp-coda",
-      "version": "0.4.6",
+      "version": "0.4.8",
       "transport": {
         "type": "stdio"
       },

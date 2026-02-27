@@ -9,6 +9,8 @@
 
 <!-- mcp-name: io.github.vish288/mcp-coda -->
 
+**Install:** `uvx mcp-coda` | [PyPI](https://pypi.org/project/mcp-coda/) | [MCP Registry](https://registry.modelcontextprotocol.io/servers/io.github.vish288/mcp-coda) | [Changelog](https://github.com/vish288/mcp-coda/releases)
+
 **mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **54 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
 Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
@@ -19,7 +21,7 @@ Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.pyt
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode-insiders)
 
-> **Tip:** For other AI assistants (Claude Code, Windsurf, IntelliJ), visit the **[Coda MCP Installation Gateway](https://vish288.github.io/mcp-install?server=mcp-coda)**.
+> **Tip:** For other AI assistants (Claude Code, Windsurf, IntelliJ, Gemini CLI), visit the **[Coda MCP Installation Gateway](https://vish288.github.io/mcp-install?server=mcp-coda)**.
 
 <details>
 <summary><b>Manual Setup Guides (Click to expand)</b></summary>
@@ -52,6 +54,12 @@ claude mcp add coda -- uvx mcp-coda
     }
   }
 }
+```
+
+### Gemini CLI
+
+```bash
+gemini mcp add -e CODA_API_TOKEN=your-token-here coda uvx mcp-coda
 ```
 
 ### pip / uv
@@ -364,6 +372,11 @@ uvx mcp-coda --coda-token your-token --read-only
 ```
 
 The server loads `.env` files from the working directory automatically via `python-dotenv`.
+
+## Related MCP Servers
+
+- [mcp-gitlab](https://github.com/vish288/mcp-gitlab) — GitLab integration (76 tools, 6 resources, 5 prompts)
+- [mcp-atlassian-extended](https://github.com/vish288/mcp-atlassian-extended) — Jira + Confluence integration (23 tools, 15 resources, 5 prompts)
 
 ## Development
 
