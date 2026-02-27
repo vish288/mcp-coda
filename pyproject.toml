@@ -12,12 +12,24 @@ keywords = [
     "model-context-protocol",
     "coda",
     "coda-api",
+    "coda-io",
     "ai",
     "llm",
     "automation",
+    "claude",
+    "cursor",
+    "vscode",
+    "windsurf",
+    "tables",
+    "rows",
+    "formulas",
+    "permissions",
+    "document-automation",
+    "ai-integration",
+    "fastmcp",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -25,6 +37,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Framework :: Pydantic :: 2",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -43,6 +56,7 @@ Homepage = "https://github.com/vish288/mcp-coda"
 Repository = "https://github.com/vish288/mcp-coda"
 Issues = "https://github.com/vish288/mcp-coda/issues"
 Changelog = "https://github.com/vish288/mcp-coda/releases"
+Documentation = "https://github.com/vish288/mcp-coda#readme"
 
 [build-system]
 requires = ["hatchling"]
