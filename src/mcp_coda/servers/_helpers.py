@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,32 @@ from ..exceptions import CodaApiError, CodaRateLimitError, CodaWriteDisabledErro
 # Maximum response size in characters. Responses exceeding this are truncated
 # to prevent context window blowout in LLM consumers.
 CHARACTER_LIMIT = 25000
+
+# Matches: https://coda.io/d/<Slug>_d<DocId>  (browser URL format)
+_CODA_DOC_URL_RE = re.compile(r"https?://[^/]+/d/[^/]+_d([a-zA-Z0-9_-]+)")
+
+_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def _validate_id(value: str, name: str) -> None:
+    """Validate that *value* looks like a safe Coda object identifier."""
+    if not value or not _ID_RE.match(value):
+        msg = f"Invalid {name}: {value!r}"
+        raise ValueError(msg)
+
+
+def _parse_coda_doc_url(value: str) -> str:
+    """Extract doc_id from a Coda browser URL.
+
+    If *value* is not a URL, returns it unchanged (assumes it's already a doc ID).
+    Handles: https://coda.io/d/DocTitle_dABCdef123
+    """
+    if not value.startswith(("http://", "https://")):
+        return value
+    m = _CODA_DOC_URL_RE.match(value)
+    if m:
+        return m.group(1)
+    return value
 
 
 @functools.cache

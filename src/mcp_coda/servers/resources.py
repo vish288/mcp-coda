@@ -1,13 +1,16 @@
 """MCP Resources — static knowledge resources and live data resources."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
 
 from . import mcp
-from ._helpers import _get_client, _load_file
+from ._helpers import _get_client, _load_file, _validate_id
+
+_log = logging.getLogger(__name__)
 
 # ════════════════════════════════════════════════════════════════════
 # Static resource loader
@@ -202,7 +205,8 @@ async def docs_resource(ctx: Context) -> str:
         ]
         return json.dumps(docs, indent=2, ensure_ascii=False)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        _log.exception("docs_resource failed")
+        return json.dumps({"isError": True, "error": str(e)}, ensure_ascii=False)
 
 
 @mcp.resource(
@@ -218,6 +222,7 @@ async def docs_resource(ctx: Context) -> str:
 async def doc_schema_resource(doc_id: str, ctx: Context) -> str:
     """Return table + column schema for a doc as JSON."""
     try:
+        _validate_id(doc_id, "doc_id")
         client = _get_client(ctx)
         tables_data = await client.get(f"/docs/{doc_id}/tables", params={"limit": 200})
         tables = tables_data.get("items", [])
@@ -249,4 +254,35 @@ async def doc_schema_resource(doc_id: str, ctx: Context) -> str:
             )
         return json.dumps(schema, indent=2, ensure_ascii=False)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        _log.exception("doc_schema_resource failed")
+        return json.dumps({"isError": True, "error": str(e)}, ensure_ascii=False)
+
+
+# ════════════════════════════════════════════════════════════════════
+# Startup validation
+# ════════════════════════════════════════════════════════════════════
+
+_RESOURCE_FILES = [
+    "coda-doc-structure.md",
+    "coda-table-design.md",
+    "coda-permissions.md",
+    "coda-automations.md",
+    "coda-api-patterns.md",
+    "row-operations.md",
+    "page-content.md",
+    "formula-controls.md",
+    "publishing-analytics.md",
+    "folder-organization.md",
+]
+
+
+def _validate_resources() -> None:
+    """Verify all expected resource files exist at import time."""
+    _dir = Path(_RESOURCES_DIR)
+    missing = [f for f in _RESOURCE_FILES if not (_dir / f).is_file()]
+    if missing:
+        msg = f"Missing resource files (packaging error): {missing}"
+        raise RuntimeError(msg)
+
+
+_validate_resources()
