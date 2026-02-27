@@ -35,7 +35,7 @@ class TestTriggerAutomation:
         ctx = _make_ctx(client)
         await coda_trigger_automation(ctx, doc_id="d1", rule_id="r1", payload={"key": "value"})
         body = client.post.call_args[1]["json_data"]
-        assert body["message"] == {"key": "value"}
+        assert body == {"key": "value"}
 
     async def test_without_payload(self) -> None:
         client = AsyncMock()
@@ -43,7 +43,7 @@ class TestTriggerAutomation:
         ctx = _make_ctx(client)
         await coda_trigger_automation(ctx, doc_id="d1", rule_id="r1")
         body = client.post.call_args[1]["json_data"]
-        assert "message" not in body
+        assert body == {}
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()

@@ -135,7 +135,7 @@ class TestAddPermission:
             suppress_notification=True,
         )
         body = client.post.call_args[1]["json_data"]
-        assert body["suppressNotification"] is True
+        assert body["suppressEmail"] is True
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()

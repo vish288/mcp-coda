@@ -185,7 +185,7 @@ async def coda_update_doc(
         if title is not None:
             body["title"] = title
         if icon_name is not None:
-            body["icon"] = {"name": icon_name, "type": "name"}
+            body["iconName"] = icon_name
         data = await _get_client(ctx).patch(f"/docs/{doc_id}", json_data=body)
         return _ok(data)
     except Exception as e:

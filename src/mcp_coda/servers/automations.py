@@ -37,9 +37,7 @@ async def coda_trigger_automation(
     """
     try:
         _check_write(ctx)
-        body: dict[str, Any] = {}
-        if payload is not None:
-            body["message"] = payload
+        body: dict[str, Any] = payload if payload is not None else {}
         data = await _get_client(ctx).post(
             f"/docs/{doc_id}/hooks/automation/{rule_id}",
             json_data=body,

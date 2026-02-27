@@ -123,7 +123,7 @@ async def coda_add_permission(
             principal["domain"] = principal_domain
         body["principal"] = principal
         if suppress_notification:
-            body["suppressNotification"] = True
+            body["suppressEmail"] = True
         data = await _get_client(ctx).post(f"/docs/{doc_id}/acl/permissions", json_data=body)
         return _ok(data)
     except Exception as e:

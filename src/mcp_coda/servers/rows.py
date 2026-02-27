@@ -314,7 +314,7 @@ async def coda_delete_rows(
         body: dict[str, Any] = {"rowIds": row_ids}
         data = await _get_client(ctx).delete(
             f"/docs/{doc_id}/tables/{table_id_or_name}/rows",
-            params=body,
+            json_data=body,
         )
         return _ok(data or {"status": "deleted", "row_count": len(row_ids)})
     except Exception as e:

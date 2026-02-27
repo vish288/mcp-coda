@@ -129,8 +129,11 @@ async def coda_create_page(
             body["subtitle"] = subtitle
         if content is not None:
             body["pageContent"] = {
-                "content": content,
-                "contentFormat": content_format or "html",
+                "type": "canvas",
+                "canvasContent": {
+                    "format": content_format or "html",
+                    "content": content,
+                },
             }
         data = await _get_client(ctx).post(f"/docs/{doc_id}/pages", json_data=body)
         return _ok(data)
@@ -188,13 +191,14 @@ async def coda_update_page(
         if subtitle is not None:
             body["subtitle"] = subtitle
         if content is not None:
-            page_content: dict[str, str] = {
-                "content": content,
-                "contentFormat": content_format or "html",
+            content_update: dict[str, Any] = {
+                "insertionMode": insert_mode or "replace",
+                "canvasContent": {
+                    "format": content_format or "html",
+                    "content": content,
+                },
             }
-            if insert_mode is not None:
-                page_content["insertionMode"] = insert_mode
-            body["contentUpdate"] = page_content
+            body["contentUpdate"] = content_update
         data = await _get_client(ctx).put(f"/docs/{doc_id}/pages/{page_id_or_name}", json_data=body)
         return _ok(data)
     except Exception as e:
