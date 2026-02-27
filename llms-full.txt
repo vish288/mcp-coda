@@ -1,0 +1,401 @@
+# mcp-coda
+
+> MCP server for the Coda API — 54 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+
+MCP server that wraps the Coda REST API v1. Provides CRUD operations across all Coda resource types, ambient context via static knowledge and live API data, and prompt templates for common workflows. Built with FastMCP, httpx, and Pydantic.
+
+- **Install**: `uvx mcp-coda`
+- **Version**: 0.4.10
+- **Python**: >=3.10
+- **License**: MIT
+- **Transport**: stdio (default), SSE, streamable-http
+- **Registry**: `io.github.vish288/mcp-coda`
+- **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
+- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_SSL_VERIFY` (SSL verification)
+
+## Documentation
+
+- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 54 tools, 12 resources, 5 prompts
+- [PyPI](https://pypi.org/project/mcp-coda/): install via `pip install mcp-coda` or `uvx mcp-coda`
+- [GitHub](https://github.com/vish288/mcp-coda): source code, issue tracker, development setup
+- [MCP Registry](https://registry.modelcontextprotocol.io): discover and install MCP servers
+
+## Optional
+
+- [Changelog](https://github.com/vish288/mcp-coda/releases): per-version release notes with breaking changes
+- [MCP Specification](https://modelcontextprotocol.io/docs): protocol spec for tools, resources, and prompts
+- [FastMCP](https://github.com/jlowin/fastmcp): Python framework this server is built on
+- [Coda API Reference](https://coda.io/developers/apis/v1): upstream REST API that this server wraps
+
+## Setup Examples
+
+### stdio (default, for MCP clients)
+
+```json
+{
+  "mcpServers": {
+    "coda": {
+      "command": "uvx",
+      "args": ["mcp-coda"],
+      "env": {
+        "CODA_API_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+### HTTP transport
+
+```bash
+uvx mcp-coda --transport sse --host 127.0.0.1 --port 8000
+uvx mcp-coda --transport streamable-http --port 9000
+```
+
+### CLI overrides
+
+```bash
+uvx mcp-coda --coda-token your-token --read-only
+```
+
+The server loads `.env` files from the working directory automatically via python-dotenv.
+
+## Tools (54)
+
+### Account (4)
+
+| Tool | Description |
+|------|-------------|
+| `coda_whoami` | Get information about the current API token owner. Returns the user's name, email, and token scopes. Use this to verify that the API token is valid and has the expected permissions. |
+| `coda_resolve_browser_link` | Resolve a Coda browser URL to API resource IDs. Converts a browser URL into API-compatible IDs for the doc, page, table, row, or column it points to. Use this as the first step when a user provides a Coda URL instead of IDs. |
+| `coda_get_mutation_status` | Check the status of an asynchronous mutation (write operation). Coda write operations return 202 with a requestId. Use this to poll whether the mutation has completed, is still processing, or failed. Poll every 2 seconds, up to 30 seconds maximum. |
+| `coda_rate_limit_budget` | Check the current rate limit budget for reads and writes. Returns how many read and write API calls remain in the current sliding window (6 seconds). Coda allows 100 reads/6s and 10 writes/6s. |
+
+### Docs (5)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_docs` | List Coda docs accessible to the current API token. Returns doc metadata including name, owner, folder, and timestamps. Supports query, is_owner, folder_id filters, pagination via cursor, and json/markdown response formats. |
+| `coda_get_doc` | Get metadata for a single Coda doc by ID. Returns name, owner email, folder, created/updated timestamps, and doc size. |
+| `coda_create_doc` | Create a new Coda doc. Creates a blank doc or a copy of an existing doc via source_doc. Returns the new doc's ID, name, and browser URL. |
+| `coda_update_doc` | Update metadata for an existing Coda doc. Updates the doc's title and/or icon. Idempotent. |
+| `coda_delete_doc` | Permanently delete a Coda doc. Irreversible -- the doc and all its pages, tables, and data will be removed. |
+
+### Pages (8)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_pages` | List all pages in a Coda doc. Returns page metadata including name, ID, parent page, and icon in tree order. |
+| `coda_get_page` | Get metadata for a single page by ID. Returns name, ID, parent, subtitle, icon, and image. Does not return content. |
+| `coda_create_page` | Create a new page in a Coda doc with optional initial content (HTML or markdown). Supports nesting via parent_page_id. |
+| `coda_update_page` | Update a page's name, subtitle, or content. Supports replace and append insert modes. |
+| `coda_delete_page` | Permanently delete a page from a Coda doc. Irreversible. Child pages are reparented. |
+| `coda_get_page_content` | Get the text content of a page in HTML or markdown format. |
+| `coda_delete_page_content` | Delete all content from a page, leaving it blank. The page itself remains. Irreversible. |
+| `coda_export_page` | Export a page's content, initiating an async export. Returns export status or content directly for small pages. |
+
+### Tables (4)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_tables` | List all tables and views in a doc. Returns name, ID, type (table or view), row count, and parent page. Supports filtering by table type. |
+| `coda_get_table` | Get metadata for a single table or view. Returns name, ID, type, row count, parent page, sort/filter info. |
+| `coda_list_columns` | List all columns in a table. Returns column name, ID, type, and configuration. Call this before inserting rows. |
+| `coda_get_column` | Get metadata for a single column. Returns name, ID, type, format, and configuration details. |
+
+### Rows (7)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_rows` | List rows in a table with optional filtering (query), sorting (sort_by), and pagination. Supports json/markdown response formats. Max 500 rows per call. |
+| `coda_get_row` | Get a single row by ID or display column value. Returns all column values. |
+| `coda_insert_rows` | Insert or upsert up to 500 rows per call. With key_columns, matching rows are updated (upsert). Returns a requestId for async tracking. |
+| `coda_update_row` | Update specific column values for a single row. Only specified columns change. Returns requestId. |
+| `coda_delete_row` | Permanently delete a single row. Irreversible. |
+| `coda_delete_rows` | Bulk delete multiple rows by ID in a single call. Returns requestId. |
+| `coda_push_button` | Push a button in a table row, triggering its configured action. Returns requestId. |
+
+### Formulas (2)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_formulas` | List all named formulas in a doc. Returns formula name, ID, and current value. |
+| `coda_get_formula` | Get the current value of a named formula. Returns name, ID, type, value, and error status. |
+
+### Controls (2)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_controls` | List all controls (sliders, select lists, date pickers, etc.) in a doc. Returns name, ID, type, and current value. |
+| `coda_get_control` | Get the current value of a specific control. Returns name, ID, type, and value. |
+
+### Permissions (6)
+
+| Tool | Description |
+|------|-------------|
+| `coda_get_sharing_metadata` | Get sharing metadata for a doc. Returns whether the doc can be shared, copied, or has restrictions. |
+| `coda_list_permissions` | List all ACL entries for a doc. Returns who has access and their access level. |
+| `coda_add_permission` | Grant access to a user (by email) or domain. Supports readonly, write, comment, and none access levels. |
+| `coda_delete_permission` | Revoke a specific permission entry by permission ID. |
+| `coda_search_principals` | Search for users and groups that can be added to a doc's permissions. |
+| `coda_get_acl_settings` | Get doc-level ACL settings (copying, editor permissions, default access mode). |
+
+### Publishing (3)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_categories` | List all available publishing categories for the Coda gallery. |
+| `coda_publish_doc` | Publish a doc with optional gallery listing, URL slug, and mode (view/play). |
+| `coda_unpublish_doc` | Unpublish a doc, removing public access. Reversible. |
+
+### Folders (5)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_folders` | List all folders accessible to the current API token. |
+| `coda_get_folder` | Get metadata for a single folder. Returns name, ID, parent, and child items. |
+| `coda_create_folder` | Create a new folder at root level or nested under a parent. |
+| `coda_update_folder` | Rename a folder. Idempotent. |
+| `coda_delete_folder` | Delete a folder. Folder must be empty (no docs). |
+
+### Automations (1)
+
+| Tool | Description |
+|------|-------------|
+| `coda_trigger_automation` | Trigger an automation rule with an optional JSON payload. Returns requestId. |
+
+### Analytics (7)
+
+| Tool | Description |
+|------|-------------|
+| `coda_list_doc_analytics` | List doc analytics (views, copies, likes, sessions) with date range filtering. |
+| `coda_get_doc_analytics_summary` | Get aggregated analytics summary across all docs. |
+| `coda_list_page_analytics` | List per-page analytics within a doc. |
+| `coda_list_pack_analytics` | List pack usage metrics (installs, doc usage, formula invocations). |
+| `coda_get_pack_analytics_summary` | Get aggregated pack analytics summary. |
+| `coda_list_pack_formula_analytics` | List per-formula analytics within a pack. |
+| `coda_get_analytics_updated` | Get the timestamp of when analytics data was last refreshed. |
+
+## Resources (12)
+
+Resources provide ambient context without consuming tool calls.
+
+### Data Resources (live API)
+
+| URI | Name | Description |
+|-----|------|-------------|
+| `coda://docs` | Coda Docs | List of docs accessible to the current API token (JSON). Returns id, name, owner, browserLink, updatedAt for each doc. |
+| `coda://docs/{doc_id}/schema` | Coda Doc Schema | Table and column definitions for a doc (JSON). Returns table id, name, type, rowCount, and column details (id, name, type, calculated, display) for each table. |
+
+### Rules (static knowledge)
+
+#### Coda Doc Structure (`resource://rules/coda-doc-structure`)
+
+Doc hierarchy, page types, and organization patterns.
+
+- Doc is the top-level container with its own URL, permissions, and version history.
+- Pages are canvases holding rich text, tables, views, controls, buttons, and formulas.
+- Pages nest up to 7 levels deep. Beyond 3 levels, navigation becomes difficult.
+- No separate "folder" object inside a doc -- a page with children but no body acts as a folder.
+- Separate docs when different permissions are needed, content exceeds ~200 tables or ~50 pages, or teams have independent lifecycles.
+- Use subpages when content shares the same audience, cross-referencing is frequent, or a single table schema spans related views.
+- `coda_list_pages` returns flat list with `parent.id` references.
+- Deleting a parent page deletes all children.
+
+#### Coda Table Design (`resource://rules/coda-table-design`)
+
+Column types, relations, display columns, row limits, table vs view.
+
+- Column types: text, number, date, person, lookup, select/multiSelect, checkbox, currency, slider, scale, button, image, hyperlink.
+- Every table has one display column (first by default). It appears in lookup references and relation pills.
+- Relations link rows between tables. Lookups derive values from related tables via relations. Lookups are read-only.
+- Calculated columns (`calculated == true`) are read-only -- never write to them.
+- Row limits: ~10,000 rows per table for interactive use. API returns max 500 rows per request.
+- Table vs view: a table is source-of-truth, a view is a filtered/sorted lens sharing the same data.
+
+#### Coda Permission Model (`resource://rules/coda-permissions`)
+
+Doc-level vs page-level locking, sharing hierarchy, principal types.
+
+- Permissions flow top-down: doc sharing determines access. Page locking only restricts editing, not viewing.
+- Principal types: email (individual user), domain (all users in an email domain), anyone (public link).
+- Access levels: readonly, comment, write, owner (creator).
+- Only doc owners can manage permissions via API.
+- Page locking prevents accidental edits, not a security boundary.
+- Removing the last owner is not allowed.
+
+#### Coda Automation Patterns (`resource://rules/coda-automations`)
+
+Webhooks, buttons, rate limits, payload design, idempotency.
+
+- Webhook and button triggers are API-triggerable. Time-based and row-change are UI-only.
+- Webhook payloads are freeform JSON (max 1 MB). Include eventType, requestId, timestamp.
+- Coda does not deduplicate webhook deliveries. Use requestId for idempotency.
+- Button push returns requestId for async status polling.
+- Rate limits: 10 write requests per 6 seconds (both webhooks and buttons).
+- Webhook trigger returns 202 Accepted without confirming execution.
+
+#### Coda API Best Practices (`resource://rules/coda-api-patterns`)
+
+Rate limits, pagination, async mutations, error handling, retry.
+
+- Rate limits: 100 reads/6s, 10 writes/6s per token. 429 returns Retry-After header.
+- Pagination: default 25 items, max 500 (rows) / 200 (docs, pages, tables). Use pageToken.
+- Write operations return requestId. Poll mutationStatus for completion. Status: queued, processing, completed, failed.
+- Error codes: 400 (bad request), 401 (invalid token), 403 (insufficient perms), 404 (not found), 429 (rate limited), 5xx (retry with backoff).
+- IDs are stable (survive renames/moves). Names are unstable -- always store by ID.
+- Use valueFormat=simpleWithArrays for clean row values. Max 500 rows per upsert.
+
+### Guides (how-to)
+
+#### Row Operations Guide (`resource://guides/row-operations`)
+
+Insert vs upsert, bulk ops, key columns, cell formats, delete strategies.
+
+- Insert: coda_insert_rows without key columns always creates new rows.
+- Upsert: coda_insert_rows with key_columns updates matching rows, inserts non-matching.
+- Max 500 rows per upsert request. Batch larger datasets.
+- Key columns should contain unique, stable values. Multiple key columns create composite keys.
+- Cell value formats: text (string), number (numeric), checkbox (boolean), date (ISO 8601), select (option string), multi-select (comma-separated), person (email), relation (display column value or row ID).
+- Deletions are permanent. No undo. Soft-delete pattern: add "Archived" checkbox column.
+
+#### Page Content Guide (`resource://guides/page-content`)
+
+HTML vs markdown, insert modes, export workflows.
+
+- `coda_get_page_content` with outputFormat html or markdown.
+- HTML preserves tables, images, buttons, embedded views. Markdown loses embedded objects.
+- Writing: content via coda_create_page or coda_update_page with content_format html/markdown.
+- Insert modes: replace (overwrites entire page), append (adds to end). No prepend.
+- Export via coda_export_page: async, returns export ID. Formats: html, markdown. No PDF via API.
+- Max page content size via API: ~256 KB HTML.
+- Pack formulas appear as placeholder text in API responses.
+
+#### Formulas & Controls Guide (`resource://guides/formula-controls`)
+
+Named formulas, control types, reading values.
+
+- Named formulas are doc-level computed values. Read-only via API (no create/update/delete).
+- Formula values computed server-side, update automatically when dependencies change.
+- Controls: text input, select list, slider, date picker, checkbox/toggle, button, scale.
+- Controls are read-only via API. Set by user interaction in the Coda UI.
+- Formula values are eventually consistent -- may return stale data for a few seconds after row changes.
+
+#### Publishing & Analytics Guide (`resource://guides/publishing-analytics`)
+
+Publishing categories, gallery settings, analytics date filtering.
+
+- Publishing modes: view (read-only) and play (interactive).
+- Published docs get a public URL. Publishing does not change doc permissions.
+- Gallery categories: projectManagement, meetingNotes, planning, sales, design, engineering, hr, education, personal, other.
+- Analytics: doc-level (views, copies, likes, sessions), page-level (view counts), pack-level (installs, formula invocations).
+- Date filtering: since_date/until_date (ISO 8601), scale (daily/cumulative).
+- Analytics data updated periodically, not real-time. Check coda_get_analytics_updated for freshness.
+
+#### Folder Organization Guide (`resource://guides/folder-organization`)
+
+Folder CRUD, doc-folder relationships, hierarchy, bulk organization.
+
+- Folders exist at the workspace level (not inside docs). They group docs, not pages.
+- A doc belongs to at most one folder. Moving: coda_update_doc with folder_id.
+- Subfolders supported up to ~5 levels. Keep hierarchy shallow (2-3 levels max).
+- Folder deletion requires empty folder (no docs). Deleting a folder does not delete its docs.
+- No bulk-move API. Each doc move is a separate write operation (10/6s rate limit).
+- Folder IDs are stable strings (e.g., fl-AbCdEf). Names are not unique.
+
+## Prompts (5)
+
+Reusable task templates that MCP clients can invoke.
+
+### analyze_doc_structure
+
+Parameters: `doc_id` (accepts full Coda browser URL)
+
+Analyzes a doc's page hierarchy, table layout, and organization. Steps:
+1. List pages -- map parent-child hierarchy
+2. List tables -- note types, row counts, page locations
+3. Check schema -- review column types, calculated columns, display columns
+4. Evaluate organization -- nesting depth, grouping, orphaned pages
+5. Check for issues -- large tables (>5,000 rows), wide tables (>50 columns), duplicates
+6. Summarize with hierarchy diagram, table inventory, recommendations
+
+### design_table_schema
+
+Parameters: `description` (natural language)
+
+Designs a table schema from a description. Steps:
+1. Identify entities (each becomes a table)
+2. Define columns with types, display column, calculated columns, select options
+3. Define relations and lookup columns
+4. Add computed columns (rollups, date calcs, conditional formatting)
+5. Output schema: table name, display column, row volume, column details, relation diagram
+6. Validate: row limits, column count, relation clarity
+
+### migrate_spreadsheet
+
+Parameters: `doc_id` (accepts URL), `source_format` (csv, excel, sheets)
+
+Guides migration of spreadsheet data into Coda tables. Steps:
+1. Analyze source format (headers, delimiter, encoding, sheets)
+2. Map source columns to Coda column types
+3. Check target doc for existing tables and column compatibility
+4. Prepare data (ISO dates, booleans, select value matching, key columns)
+5. Execute in batches of 500 rows with mutation completion checks
+6. Verify row counts and spot-check data integrity
+
+### setup_automation
+
+Parameters: `doc_id` (accepts URL), `trigger_type` (webhook, button, time)
+
+Sets up an automation with proper payload design and error handling. Steps:
+1. Understand trigger type (webhook: payload with eventType/requestId/timestamp; button: target table and action; time: UI-only config)
+2. Design the action (data read/modify, expected output, chained actions)
+3. Error handling (fallback behavior, retry logic, mutation status polling)
+4. Implement (endpoint URL/payload for webhooks, button column for buttons, UI steps for time)
+5. Test with test data, idempotency check, rate limit verification
+
+### audit_permissions
+
+Parameters: `doc_id` (accepts full Coda browser URL)
+
+Audits sharing and permissions, suggests tightening. Steps:
+1. List all ACL entries -- note principal type, access level, inherited vs direct
+2. Check for public access (anyone) -- flag anyone+write as high-risk
+3. Check domain sharing -- verify domain appropriateness
+4. Review individual access -- identify over-permissioned users, external emails, stale entries
+5. Check page locks -- sensitive pages locked appropriately
+6. Summarize findings with risk assessment (high/medium/low)
+7. Suggest tightening -- convert anyone to domain, downgrade write to readonly, add page locks
+
+## Security
+
+- Token scope: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production.
+- Read-only mode: `CODA_READ_ONLY=true` disables all write operations server-side.
+- MCP tool annotations: each tool declares readOnlyHint, destructiveHint, and idempotentHint.
+- SSL verification: enabled by default. Only disable for development against local proxies.
+- No credential storage: tokens are read from environment variables at startup, never persisted.
+
+## Rate Limits and Permissions
+
+- Read: 100 requests / 6 seconds per token
+- Write: 10 requests / 6 seconds per token
+- 429 response includes Retry-After header
+- Write operations are async (202 with requestId). Poll coda_get_mutation_status.
+- Required doc roles: Viewer (read), Editor (create/update/delete content), Doc Owner (permissions, publish)
+
+## Development
+
+```bash
+git clone https://github.com/vish288/mcp-coda.git
+cd mcp-coda
+uv sync --all-extras
+
+uv run pytest --cov
+uv run ruff check .
+uv run ruff format --check .
+```
+
+## Related Servers
+
+- [mcp-gitlab](https://github.com/vish288/mcp-gitlab): GitLab integration (76 tools, 6 resources, 5 prompts)
+- [mcp-atlassian-extended](https://github.com/vish288/mcp-atlassian-extended): Jira + Confluence integration (23 tools, 15 resources, 5 prompts)
