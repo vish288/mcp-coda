@@ -86,7 +86,8 @@ class TestDocsResource:
         client.get = AsyncMock(side_effect=Exception("connection failed"))
         ctx = _make_ctx(client)
         result = json.loads(await docs_resource(ctx))
-        assert "error" in result
+        assert result["isError"] is True
+        assert "connection failed" in result["error"]
 
 
 class TestDocSchemaResource:
@@ -120,7 +121,16 @@ class TestDocSchemaResource:
         client.get = AsyncMock(side_effect=Exception("not found"))
         ctx = _make_ctx(client)
         result = json.loads(await doc_schema_resource("bad_id", ctx))
-        assert "error" in result
+        assert result["isError"] is True
+        assert "not found" in result["error"]
+
+    async def test_invalid_doc_id_returns_error(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client)
+        result = json.loads(await doc_schema_resource("../etc/passwd", ctx))
+        assert result["isError"] is True
+        assert "Invalid doc_id" in result["error"]
+        client.get.assert_not_called()
 
 
 # ════════════════════════════════════════════════════════════════════

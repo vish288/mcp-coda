@@ -9,7 +9,7 @@ from typing import Literal
 from fastmcp.prompts.prompt import Message
 
 from . import mcp
-from ._helpers import _load_file
+from ._helpers import _load_file, _parse_coda_doc_url
 
 _PROMPTS_DIR = str(Path(__file__).resolve().parent.parent / "resources" / "prompts")
 
@@ -30,7 +30,11 @@ def _render(filename: str, **kwargs: str) -> str:
 
 @mcp.prompt(tags={"coda", "docs"})
 def analyze_doc_structure(doc_id: str) -> list[Message]:
-    """Analyze a Coda doc's page hierarchy, tables, and organization."""
+    """Analyze a Coda doc's page hierarchy, tables, and organization.
+
+    doc_id accepts a full Coda browser URL (e.g. https://coda.io/d/MyDoc_dABCdef123).
+    """
+    doc_id = _parse_coda_doc_url(doc_id)
     text = _render("analyze-doc-structure.md", doc_id=doc_id)
     return [
         Message(role="user", content=text),
@@ -65,7 +69,11 @@ def migrate_spreadsheet(
     doc_id: str,
     source_format: Literal["csv", "excel", "sheets"] = "csv",
 ) -> list[Message]:
-    """Guide for migrating spreadsheet data into Coda tables."""
+    """Guide for migrating spreadsheet data into Coda tables.
+
+    doc_id accepts a full Coda browser URL.
+    """
+    doc_id = _parse_coda_doc_url(doc_id)
     text = _render("migrate-spreadsheet.md", doc_id=doc_id, source_format=source_format)
     return [
         Message(role="user", content=text),
@@ -84,7 +92,11 @@ def setup_automation(
     doc_id: str,
     trigger_type: Literal["webhook", "button", "time"] = "webhook",
 ) -> list[Message]:
-    """Set up an automation with proper payload design and error handling."""
+    """Set up an automation with proper payload design and error handling.
+
+    doc_id accepts a full Coda browser URL.
+    """
+    doc_id = _parse_coda_doc_url(doc_id)
     text = _render("setup-automation.md", doc_id=doc_id, trigger_type=trigger_type)
     return [
         Message(role="user", content=text),
@@ -100,7 +112,11 @@ def setup_automation(
 
 @mcp.prompt(tags={"coda", "permissions"})
 def audit_permissions(doc_id: str) -> list[Message]:
-    """Audit sharing and permissions on a Coda doc."""
+    """Audit sharing and permissions on a Coda doc.
+
+    doc_id accepts a full Coda browser URL.
+    """
+    doc_id = _parse_coda_doc_url(doc_id)
     text = _render("audit-permissions.md", doc_id=doc_id)
     return [
         Message(role="user", content=text),
@@ -112,3 +128,28 @@ def audit_permissions(doc_id: str) -> list[Message]:
             ),
         ),
     ]
+
+
+# ════════════════════════════════════════════════════════════════════
+# Startup validation
+# ════════════════════════════════════════════════════════════════════
+
+_PROMPT_FILES = [
+    "analyze-doc-structure.md",
+    "design-table-schema.md",
+    "migrate-spreadsheet.md",
+    "setup-automation.md",
+    "audit-permissions.md",
+]
+
+
+def _validate_prompts() -> None:
+    """Verify all expected prompt files exist at import time."""
+    _dir = Path(_PROMPTS_DIR)
+    missing = [f for f in _PROMPT_FILES if not (_dir / f).is_file()]
+    if missing:
+        msg = f"Missing prompt files (packaging error): {missing}"
+        raise RuntimeError(msg)
+
+
+_validate_prompts()

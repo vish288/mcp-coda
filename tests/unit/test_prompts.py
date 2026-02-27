@@ -142,3 +142,28 @@ class TestAuditPermissions:
     def test_interpolates_doc_id(self) -> None:
         messages = audit_permissions_fn(doc_id="docXYZ")
         assert "docXYZ" in _text(messages[0])
+
+
+class TestURLParsing:
+    """Verify prompts accept full Coda browser URLs and extract doc IDs."""
+
+    def test_analyze_doc_structure_from_url(self) -> None:
+        messages = analyze_doc_structure_fn(doc_id="https://coda.io/d/My-Doc_dABCdef123")
+        assert "ABCdef123" in _text(messages[0])
+        assert "ABCdef123" in _text(messages[1])
+
+    def test_migrate_spreadsheet_from_url(self) -> None:
+        messages = migrate_spreadsheet_fn(doc_id="https://coda.io/d/Target_dXYZ789")
+        assert "XYZ789" in _text(messages[0])
+
+    def test_setup_automation_from_url(self) -> None:
+        messages = setup_automation_fn(doc_id="https://coda.io/d/Automations_dDOC456")
+        assert "DOC456" in _text(messages[0])
+
+    def test_audit_permissions_from_url(self) -> None:
+        messages = audit_permissions_fn(doc_id="https://coda.io/d/Shared-Doc_dPERM001")
+        assert "PERM001" in _text(messages[0])
+
+    def test_plain_ids_still_work(self) -> None:
+        messages = analyze_doc_structure_fn(doc_id="plainId42")
+        assert "plainId42" in _text(messages[0])
