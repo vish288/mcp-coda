@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 
 import click
@@ -34,6 +35,11 @@ def main(
         os.environ["CODA_API_TOKEN"] = coda_token
     if read_only:
         os.environ["CODA_READ_ONLY"] = "true"
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(name)s | %(message)s",
+    )
 
     from .servers import mcp
 
