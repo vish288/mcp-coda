@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from importlib.metadata import version
 from typing import Any
 
 from fastmcp import FastMCP
@@ -12,12 +14,19 @@ from fastmcp import FastMCP
 from ..client import CodaClient
 from ..config import CodaConfig
 
+_log = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     """Create shared client and config for the server lifetime."""
     config = CodaConfig.from_env()
     config.validate()
+
+    pkg_version = version("mcp-coda")
+    _log.info("mcp-coda %s starting", pkg_version)
+    _log.info("Coda API: %s (read-only: %s)", config.base_url, config.read_only)
+
     client = CodaClient(config)
     try:
         yield {"client": client, "config": config}
