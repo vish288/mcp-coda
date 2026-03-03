@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.13] - 2026-03-03
+
+### Features
+- feat: add startup logging with package version and config summary (#23) (ca382e3)
+
+
 ## [0.4.12] - 2026-02-27
 
 ### Bug Fixes

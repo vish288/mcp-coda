@@ -5,7 +5,7 @@
 MCP server that wraps the Coda REST API v1. Provides CRUD operations across all Coda resource types, ambient context via static knowledge and live API data, and prompt templates for common workflows. Built with FastMCP, httpx, and Pydantic.
 
 - **Install**: `uvx mcp-coda`
-- **Version**: 0.4.12
+- **Version**: 0.4.13
 - **Python**: >=3.10
 - **License**: MIT
 - **Transport**: stdio (default), SSE, streamable-http
