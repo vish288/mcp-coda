@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.14] - 2026-03-05
+
+### Documentation
+- docs: add Documentation Freshness rule to AGENTS.md (#24) (241fd00)
+
+
 ## [0.4.13] - 2026-03-03
 
 ### Features
