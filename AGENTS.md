@@ -131,6 +131,20 @@ gh workflow run release.yml -f bump=minor -f dry_run=true
 - Commit messages must follow conventional commits (`feat:`, `fix:`, `docs:`, etc.) for changelog generation
 - The release commit is authored by `github-actions[bot]` with message `chore(release): X.Y.Z`
 
+## Documentation Freshness (MANDATORY)
+
+When any changeset adds, removes, or modifies tools, resources, or prompts, ALL documentation files MUST be updated in the same commit:
+
+- `README.md` — tool count in heading + intro, tool table, full tool reference, usage examples, permissions table
+- `llms.txt` — tool count in tagline and documentation link
+- `llms-full.txt` — tool count in tagline, documentation link, full tool reference section
+- `CLAUDE.md` — tool count in intro, tool inventory table
+- `AGENTS.md` — tool count in intro, tool inventory table
+- `GEMINI.md` — tool count in intro, tool categories, common workflows
+- `server.json` — description field (<=100 chars)
+
+Checklist: verify tool count matches actual registered tools, verify category list is complete, verify new tools appear in correct sections with parameters and annotations.
+
 ## Known Limitations / Future Work
 
 - `models/` package is empty. Define Pydantic response models if response trimming is needed.
