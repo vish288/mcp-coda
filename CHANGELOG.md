@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.1] - 2026-06-16
+
+### Chores
+- chore: sync server.json and gemini-extension.json with release version (90069b6)
+
+
 ## [0.5.0] - 2026-06-16
 
 ### Chores
