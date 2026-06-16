@@ -77,6 +77,19 @@ jobs:
             [ -f "$f" ] && sed -i 's/^- \*\*Version\*\*: .*/- **Version**: ${{ steps.next.outputs.version }}/' "$f"
           done
 
+      - name: Update server.json and gemini-extension.json version
+        env:
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          if [ -f server.json ]; then
+            jq --arg v "$NEXT_VERSION" '.version = $v | (.packages[]?.version) |= $v' server.json > server.json.tmp
+            mv server.json.tmp server.json
+          fi
+          if [ -f gemini-extension.json ]; then
+            jq --arg v "$NEXT_VERSION" '.version = $v' gemini-extension.json > gemini-extension.json.tmp
+            mv gemini-extension.json.tmp gemini-extension.json
+          fi
+
       - name: Regenerate uv.lock
         run: uv lock
 
@@ -165,6 +178,8 @@ jobs:
           CHANGELOG_BLOB=$(create_blob CHANGELOG.md)
           LLMS_BLOB=$(create_blob llms.txt)
           LLMS_FULL_BLOB=$(create_blob llms-full.txt)
+          SERVER_JSON_BLOB=$(create_blob server.json)
+          GEMINI_EXT_BLOB=$(create_blob gemini-extension.json)
 
           # Create tree with all release files
           NEW_TREE=$(gh api repos/${{ github.repository }}/git/trees \
@@ -202,6 +217,18 @@ jobs:
                 "mode": "100644",
                 "type": "blob",
                 "sha": "$LLMS_FULL_BLOB"
+              },
+              {
+                "path": "server.json",
+                "mode": "100644",
+                "type": "blob",
+                "sha": "$SERVER_JSON_BLOB"
+              },
+              {
+                "path": "gemini-extension.json",
+                "mode": "100644",
+                "type": "blob",
+                "sha": "$GEMINI_EXT_BLOB"
               }
             ]
           }
