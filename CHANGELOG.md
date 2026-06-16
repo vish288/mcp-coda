@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0] - 2026-06-16
+
+### Chores
+- chore(deps): bump starlette from 0.52.1 to 1.3.1 (3a98793)
+- chore(deps): bump python-multipart from 0.0.22 to 0.0.31 (5f5d4e0)
+- chore(deps): bump authlib from 1.6.8 to 1.6.12 (70b8606)
+- chore(deps): bump python-dotenv from 1.2.1 to 1.2.2 (b581657)
+- chore(deps): bump fastmcp from 3.0.2 to 3.2.0 (37dc85c)
+- chore(deps): bump pygments from 2.19.2 to 2.20.0 (27185a8)
+- chore(deps): bump cryptography from 46.0.5 to 48.0.1 (e38a64b)
+- chore(deps): bump pyjwt from 2.12.0 to 2.13.0 (56a8dbb)
+- chore(ci): bump softprops/action-gh-release from 2 to 3 (a8e0e0a)
+- chore(ci): bump codecov/codecov-action from 5 to 7 (b0bb342)
+- chore(deps-dev): bump pytest from 9.0.2 to 9.0.3 (#33) (48e6c79)
+- chore(deps): bump idna from 3.11 to 3.15 (#39) (f4ab522)
+- chore(deps): bump pyjwt from 2.11.0 to 2.12.0 (#25) (b715a29)
+
+
 ## [0.4.14] - 2026-03-05
 
 ### Documentation
