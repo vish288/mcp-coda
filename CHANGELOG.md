@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2] - 2026-07-08
+
+### Chores
+- chore(ci): bump actions/checkout from 6 to 7 (aee921a)
+- chore(deps): bump pydantic-settings in the uv group across 1 directory (fddca17)
+
+
 ## [0.5.1] - 2026-06-16
 
 ### Chores
