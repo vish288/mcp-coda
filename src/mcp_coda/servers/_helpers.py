@@ -88,10 +88,45 @@ def _truncate(text: str) -> str:
     )
 
 
+def _dumps(data: Any) -> str:
+    return json.dumps(data, indent=2, ensure_ascii=False)
+
+
 def _ok(data: Any) -> str:
-    """Serialize a successful response to JSON string, with truncation guard."""
-    result = json.dumps(data, indent=2, ensure_ascii=False)
-    return _truncate(result)
+    """Serialize a successful response to JSON, shrinking it to fit if needed.
+
+    Oversized payloads drop whole items until the serialized form fits, rather
+    than slicing the JSON string. Slicing produced output that was neither valid
+    JSON nor a usable partial -- `json.loads` failed, so the caller lost every
+    item instead of just the overflow -- and because the pagination envelope is
+    serialized after `items`, `next_cursor` was the first thing cut, removing
+    the means of fetching the rest.
+    """
+    result = _dumps(data)
+    if len(result) <= CHARACTER_LIMIT:
+        return result
+
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list) or not items:
+        # Not a list envelope (e.g. a single large doc): fall back to slicing.
+        return _truncate(result)
+
+    kept = list(items)
+    shrunk = {**data, "items": kept}
+    # Drop ~10% at a time so a 5,000-item response costs a handful of dumps
+    # rather than 5,000 of them.
+    while kept and len(_dumps(shrunk)) > CHARACTER_LIMIT:
+        del kept[-max(1, len(kept) // 10) :]
+
+    shrunk["truncated"] = {
+        "returned": len(kept),
+        "dropped": len(items) - len(kept),
+        "reason": f"response exceeded {CHARACTER_LIMIT} characters",
+        "hint": "narrow with filters, a smaller limit, or follow next_cursor",
+    }
+    result = _dumps(shrunk)
+    # Pathological case: the envelope alone blows the limit.
+    return result if len(result) <= CHARACTER_LIMIT else _truncate(result)
 
 
 def _ok_markdown(text: str) -> str:

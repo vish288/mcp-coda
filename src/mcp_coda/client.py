@@ -24,6 +24,25 @@ RATE_LIMITS = {
 
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
+# Segments httpx resolves away when joining onto base_url. An id containing one
+# silently retargets the request at a *different* endpoint: "/docs/../../whoami"
+# leaves /apis/v1 altogether and answers as /apis/whoami, returning plausible
+# data for the wrong resource. IDs reach us from a model, so they are untrusted.
+#
+# Note the narrow rule. Several segments are `*_id_or_name`, and a Coda object
+# name may legitimately contain spaces and punctuation, so validating every
+# segment against an identifier pattern would break lookup by name. Only the dot
+# segments -- the ones that actually change which endpoint is hit -- are rejected.
+_UNSAFE_SEGMENTS = {".", ".."}
+
+
+def _check_path(path: str) -> None:
+    """Reject paths that would resolve outside the configured API root."""
+    for segment in path.split("/"):
+        if segment in _UNSAFE_SEGMENTS:
+            msg = f"Unsafe path segment {segment!r} in {path!r}"
+            raise ValueError(msg)
+
 
 class RateLimitBudget:
     """Tracks rate limit budget usage with sliding window counters."""
@@ -98,6 +117,8 @@ class CodaClient:
         Returns parsed JSON response or None for 204/empty responses.
         Raises typed exceptions for error status codes.
         """
+        _check_path(path)
+
         kwargs: dict[str, Any] = {}
         if params is not None:
             # Filter out None values from params

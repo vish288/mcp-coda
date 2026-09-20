@@ -63,6 +63,30 @@ class TestOk:
         assert len(result) <= CHARACTER_LIMIT + 200  # truncation notice overhead
         assert "truncated" in result
 
+    def test_oversized_list_stays_parseable_and_keeps_cursor(self) -> None:
+        """Truncation must drop items, never slice the JSON string.
+
+        Slicing produced output json.loads could not read, so the caller lost
+        every row rather than the overflow -- and next_cursor, serialized after
+        items, was the first field cut.
+        """
+        data = {
+            "items": [{"id": f"i-{n}", "blob": "x" * 200} for n in range(500)],
+            "has_more": True,
+            "next_cursor": "cursor-abc",
+        }
+        parsed = json.loads(_ok(data))  # would raise before the fix
+
+        assert parsed["next_cursor"] == "cursor-abc"
+        assert 0 < len(parsed["items"]) < 500
+        assert parsed["truncated"]["dropped"] == 500 - len(parsed["items"])
+        assert all(item["id"].startswith("i-") for item in parsed["items"])
+
+    def test_oversized_non_list_still_truncates(self) -> None:
+        result = _ok({"blob": "x" * (CHARACTER_LIMIT + 1000)})
+        assert len(result) <= CHARACTER_LIMIT + 200
+        assert "truncated" in result
+
 
 class TestOkMarkdown:
     def test_returns_text(self) -> None:
