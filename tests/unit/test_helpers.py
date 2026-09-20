@@ -82,6 +82,21 @@ class TestOk:
         assert parsed["truncated"]["dropped"] == 500 - len(parsed["items"])
         assert all(item["id"].startswith("i-") for item in parsed["items"])
 
+    @pytest.mark.parametrize("item_size", range(40, 400, 3))
+    def test_output_is_always_parseable_json(self, item_size: int) -> None:
+        """Sweep item sizes across the shrink boundary.
+
+        The first cut measured the payload before adding the truncation notice,
+        so the notice pushed it back over the limit and it fell through to
+        string slicing. item_size=58 produced 25,100 unparseable characters.
+        """
+        data = {
+            "items": [{"v": "x" * item_size} for _ in range(400)],
+            "next_cursor": "c1",
+        }
+        parsed = json.loads(_ok(data))
+        assert parsed["next_cursor"] == "c1"
+
     def test_oversized_non_list_still_truncates(self) -> None:
         result = _ok({"blob": "x" * (CHARACTER_LIMIT + 1000)})
         assert len(result) <= CHARACTER_LIMIT + 200
