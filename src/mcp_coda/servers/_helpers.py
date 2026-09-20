@@ -113,20 +113,29 @@ def _ok(data: Any) -> str:
 
     kept = list(items)
     shrunk = {**data, "items": kept}
+
+    def _with_notice() -> dict[str, Any]:
+        # The notice is part of what has to fit. Measuring without it and
+        # appending afterwards pushed the payload back over the limit in the
+        # boundary case, which fell through to slicing -- reintroducing exactly
+        # the unparseable output this function exists to prevent.
+        shrunk["truncated"] = {
+            "returned": len(kept),
+            "dropped": len(items) - len(kept),
+            "reason": f"response exceeded {CHARACTER_LIMIT} characters",
+            "hint": "narrow with filters, a smaller limit, or follow next_cursor",
+        }
+        return shrunk
+
     # Drop ~10% at a time so a 5,000-item response costs a handful of dumps
     # rather than 5,000 of them.
-    while kept and len(_dumps(shrunk)) > CHARACTER_LIMIT:
+    while kept and len(_dumps(_with_notice())) > CHARACTER_LIMIT:
         del kept[-max(1, len(kept) // 10) :]
 
-    shrunk["truncated"] = {
-        "returned": len(kept),
-        "dropped": len(items) - len(kept),
-        "reason": f"response exceeded {CHARACTER_LIMIT} characters",
-        "hint": "narrow with filters, a smaller limit, or follow next_cursor",
-    }
-    result = _dumps(shrunk)
-    # Pathological case: the envelope alone blows the limit.
-    return result if len(result) <= CHARACTER_LIMIT else _truncate(result)
+    # Even zero items can overflow if the rest of the envelope is huge. Return a
+    # valid, empty envelope rather than a sliced string: a caller that can parse
+    # the response can still read next_cursor and retry with a narrower query.
+    return _dumps(_with_notice())
 
 
 def _ok_markdown(text: str) -> str:
