@@ -192,6 +192,49 @@ class TestCodaClientRequest:
                 await client.get("/whoami")
 
 
+class TestPathTraversal:
+    """IDs come from a model, and httpx resolves dot segments on join.
+
+    Before the guard, "/docs/../../whoami" silently became /apis/whoami --
+    a different endpoint returning plausible data for the wrong resource.
+    """
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/docs/../../whoami",
+            "/docs/../whoami",
+            "/docs/abc/tables/../../../whoami",
+            "/docs/./abc",
+        ],
+    )
+    async def test_dot_segments_rejected(self, config: CodaConfig, path: str) -> None:
+        client = CodaClient(config)
+        try:
+            with pytest.raises(ValueError, match="Unsafe path segment"):
+                await client.get(path)
+        finally:
+            await client.close()
+
+    async def test_escapes_api_root_without_guard(self, config: CodaConfig) -> None:
+        """Pin the underlying httpx behaviour the guard exists to stop."""
+        raw = httpx.AsyncClient(base_url=TEST_BASE_URL)
+        assert str(raw.build_request("GET", "/docs/../../whoami").url) == (
+            "https://coda.io/apis/whoami"
+        )
+        await raw.aclose()
+
+    async def test_names_with_spaces_still_allowed(self, config: CodaConfig) -> None:
+        """Table/column/row segments accept a *name*; the guard must not block it."""
+        async with respx.mock:
+            respx.get(url__regex=r".*/tables/.*").mock(
+                return_value=httpx.Response(200, json={"id": "grid-1"})
+            )
+            client = CodaClient(config)
+            assert await client.get("/docs/abc/tables/My Table") == {"id": "grid-1"}
+            await client.close()
+
+
 class TestCodaClientClose:
     async def test_close(self, config: CodaConfig) -> None:
         client = CodaClient(config)
