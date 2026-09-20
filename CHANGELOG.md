@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.7] - 2026-09-20
+
+### Bug Fixes
+- fix: count the truncation notice before deciding the payload fits (86d6661)
+- fix: reject dot path segments and truncate list responses by item (06ebe8d)
+
+
 ## [0.5.6] - 2026-09-20
 
 ### Bug Fixes
