@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.8] - 2026-09-21
+
+### Bug Fixes
+- fix(ci): make link checks opt-in and run them weekly (9d584dc)
+
+
 ## [0.5.7] - 2026-09-20
 
 ### Bug Fixes
