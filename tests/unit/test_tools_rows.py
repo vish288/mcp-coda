@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.rows import (
     coda_delete_row as _coda_delete_row,
@@ -28,6 +27,7 @@ from mcp_coda.servers.rows import (
 from mcp_coda.servers.rows import (
     coda_update_row as _coda_update_row,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_delete_row = getattr(_coda_delete_row, "fn", _coda_delete_row)
@@ -37,15 +37,6 @@ coda_insert_rows = getattr(_coda_insert_rows, "fn", _coda_insert_rows)
 coda_list_rows = getattr(_coda_list_rows, "fn", _coda_list_rows)
 coda_push_button = getattr(_coda_push_button, "fn", _coda_push_button)
 coda_update_row = getattr(_coda_update_row, "fn", _coda_update_row)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListRows:

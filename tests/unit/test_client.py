@@ -14,14 +14,7 @@ from mcp_coda.exceptions import (
     CodaNotFoundError,
     CodaRateLimitError,
 )
-
-TEST_BASE_URL = "https://coda.io/apis/v1"
-TEST_TOKEN = "test-token"
-
-
-@pytest.fixture
-def config() -> CodaConfig:
-    return CodaConfig(token=TEST_TOKEN, base_url=TEST_BASE_URL)
+from tests.conftest import TEST_BASE_URL, TEST_TOKEN
 
 
 class TestCodaClientInit:

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.permissions import (
     coda_add_permission as _coda_add_permission,
@@ -25,6 +24,7 @@ from mcp_coda.servers.permissions import (
 from mcp_coda.servers.permissions import (
     coda_search_principals as _coda_search_principals,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_add_permission = getattr(_coda_add_permission, "fn", _coda_add_permission)
@@ -33,15 +33,6 @@ coda_get_acl_settings = getattr(_coda_get_acl_settings, "fn", _coda_get_acl_sett
 coda_get_sharing_metadata = getattr(_coda_get_sharing_metadata, "fn", _coda_get_sharing_metadata)
 coda_list_permissions = getattr(_coda_list_permissions, "fn", _coda_list_permissions)
 coda_search_principals = getattr(_coda_search_principals, "fn", _coda_search_principals)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestGetSharingMetadata:

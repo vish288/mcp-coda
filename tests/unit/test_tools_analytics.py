@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.analytics import (
     coda_get_analytics_updated as _coda_get_analytics_updated,
@@ -28,6 +27,7 @@ from mcp_coda.servers.analytics import (
 from mcp_coda.servers.analytics import (
     coda_list_page_analytics as _coda_list_page_analytics,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_analytics_updated = getattr(_coda_get_analytics_updated, "fn", _coda_get_analytics_updated)
@@ -43,15 +43,6 @@ coda_list_pack_formula_analytics = getattr(
     _coda_list_pack_formula_analytics, "fn", _coda_list_pack_formula_analytics
 )
 coda_list_page_analytics = getattr(_coda_list_page_analytics, "fn", _coda_list_page_analytics)
-
-
-def _make_ctx(client_mock: AsyncMock) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok"),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListDocAnalytics:

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.servers.resources import (
     _RESOURCES_DIR,
     _load,
@@ -29,6 +28,7 @@ from mcp_coda.servers.resources import (
 from mcp_coda.servers.resources import (
     docs_resource as _docs_resource,
 )
+from tests.conftest import _make_ctx
 
 
 def _unwrap_resource(obj):
@@ -48,15 +48,6 @@ def _unwrap_resource(obj):
 
 docs_resource = _unwrap_resource(_docs_resource)
 doc_schema_resource = _unwrap_resource(_doc_schema_resource)
-
-
-def _make_ctx(client_mock: AsyncMock) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok"),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestDocsResource:
