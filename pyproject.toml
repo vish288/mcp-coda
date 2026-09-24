@@ -95,6 +95,10 @@ asyncio_mode = "auto"
 addopts = "-m 'not network'"
 markers = ["network: hits the live internet; excluded from the default run"]
 
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/mcp_coda/__init__.py", "src/mcp_coda/__main__.py"]
+
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
