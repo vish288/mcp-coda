@@ -23,3 +23,6 @@ CLAUDE.md
 
 # 1Password shell-plugin config: local tool state, not project config.
 .op/
+
+# Internal ticket tracker and spec; never committed.
+.internal/
