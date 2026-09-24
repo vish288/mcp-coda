@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.controls import (
     coda_get_control as _coda_get_control,
@@ -13,19 +12,11 @@ from mcp_coda.servers.controls import (
 from mcp_coda.servers.controls import (
     coda_list_controls as _coda_list_controls,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_control = getattr(_coda_get_control, "fn", _coda_get_control)
 coda_list_controls = getattr(_coda_list_controls, "fn", _coda_list_controls)
-
-
-def _make_ctx(client_mock: AsyncMock) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok"),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListControls:

@@ -3,22 +3,13 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.servers.automations import coda_trigger_automation as _coda_trigger_automation
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_trigger_automation = getattr(_coda_trigger_automation, "fn", _coda_trigger_automation)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestTriggerAutomation:

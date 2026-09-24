@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.tables import (
     coda_get_column as _coda_get_column,
@@ -19,21 +18,13 @@ from mcp_coda.servers.tables import (
 from mcp_coda.servers.tables import (
     coda_list_tables as _coda_list_tables,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_column = getattr(_coda_get_column, "fn", _coda_get_column)
 coda_get_table = getattr(_coda_get_table, "fn", _coda_get_table)
 coda_list_columns = getattr(_coda_list_columns, "fn", _coda_list_columns)
 coda_list_tables = getattr(_coda_list_tables, "fn", _coda_list_tables)
-
-
-def _make_ctx(client_mock: AsyncMock) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok"),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListTables:

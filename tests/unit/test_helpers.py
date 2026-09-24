@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import (
     CodaApiError,
     CodaRateLimitError,
@@ -28,16 +26,7 @@ from mcp_coda.servers._helpers import (
     _truncate,
     _validate_id,
 )
-
-
-def _make_ctx(read_only: bool = False) -> MagicMock:
-    """Create a mock Context with lifespan_context."""
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": MagicMock(),
-    }
-    return ctx
+from tests.conftest import _make_ctx
 
 
 class TestOk:

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError, CodaNotFoundError
 from mcp_coda.servers.docs import (
     coda_create_doc as _coda_create_doc,
@@ -22,6 +21,7 @@ from mcp_coda.servers.docs import (
 from mcp_coda.servers.docs import (
     coda_update_doc as _coda_update_doc,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_doc = getattr(_coda_create_doc, "fn", _coda_create_doc)
@@ -29,15 +29,6 @@ coda_delete_doc = getattr(_coda_delete_doc, "fn", _coda_delete_doc)
 coda_get_doc = getattr(_coda_get_doc, "fn", _coda_get_doc)
 coda_list_docs = getattr(_coda_list_docs, "fn", _coda_list_docs)
 coda_update_doc = getattr(_coda_update_doc, "fn", _coda_update_doc)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListDocs:

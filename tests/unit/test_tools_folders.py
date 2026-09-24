@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.folders import (
     coda_create_folder as _coda_create_folder,
@@ -22,6 +21,7 @@ from mcp_coda.servers.folders import (
 from mcp_coda.servers.folders import (
     coda_update_folder as _coda_update_folder,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_folder = getattr(_coda_create_folder, "fn", _coda_create_folder)
@@ -29,15 +29,6 @@ coda_delete_folder = getattr(_coda_delete_folder, "fn", _coda_delete_folder)
 coda_get_folder = getattr(_coda_get_folder, "fn", _coda_get_folder)
 coda_list_folders = getattr(_coda_list_folders, "fn", _coda_list_folders)
 coda_update_folder = getattr(_coda_update_folder, "fn", _coda_update_folder)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListFolders:

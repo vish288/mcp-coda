@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.publishing import (
     coda_list_categories as _coda_list_categories,
@@ -16,20 +15,12 @@ from mcp_coda.servers.publishing import (
 from mcp_coda.servers.publishing import (
     coda_unpublish_doc as _coda_unpublish_doc,
 )
+from tests.conftest import _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_list_categories = getattr(_coda_list_categories, "fn", _coda_list_categories)
 coda_publish_doc = getattr(_coda_publish_doc, "fn", _coda_publish_doc)
 coda_unpublish_doc = getattr(_coda_unpublish_doc, "fn", _coda_unpublish_doc)
-
-
-def _make_ctx(client_mock: AsyncMock, read_only: bool = False) -> MagicMock:
-    ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
-        "config": CodaConfig(token="tok", read_only=read_only),
-        "client": client_mock,
-    }
-    return ctx
 
 
 class TestListCategories:
