@@ -6,12 +6,12 @@
     "url": "https://github.com/vish288/mcp-coda",
     "source": "github"
   },
-  "version": "0.5.8",
+  "version": "0.5.9",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "mcp-coda",
-      "version": "0.5.8",
+      "version": "0.5.9",
       "transport": {
         "type": "stdio"
       },

@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.9] - 2026-09-25
+
+### Tests
+- test: pin every tool's wire request through the real server and gate coverage (e4d84dd)
+- test: define _make_ctx once and drop the fixtures nothing used (bb6f600)
+
+### Chores
+- chore: gitignore the internal ticket tracker (bcaf56e)
+
+
 ## [0.5.8] - 2026-09-21
 
 ### Bug Fixes
