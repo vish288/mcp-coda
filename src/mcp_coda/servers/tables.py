@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _err, _get_client, _ok
+from ._helpers import _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
     tags={"coda", "tables", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_tables(
     ctx: Context,
     doc_id: Annotated[
@@ -38,31 +39,19 @@ async def coda_list_tables(
     and parent page. Does NOT return row data — use coda_list_rows for that.
     Use coda_list_columns to get the column schema of a specific table.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if table_types is not None:
-            params["tableTypes"] = table_types
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/tables", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if table_types is not None:
+        params["tableTypes"] = table_types
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/tables", params=params))
 
 
 @mcp.tool(
     tags={"coda", "tables", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_table(
     ctx: Context,
     doc_id: Annotated[
@@ -80,17 +69,14 @@ async def coda_get_table(
     info. Does NOT return row data or column definitions — use coda_list_rows
     and coda_list_columns for those.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/tables/{table_id_or_name}")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/tables/{table_id_or_name}"))
 
 
 @mcp.tool(
     tags={"coda", "tables", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_columns(
     ctx: Context,
     doc_id: Annotated[
@@ -117,32 +103,22 @@ async def coda_list_columns(
     when working with row data. This is the table schema — call this before
     inserting or updating rows to know the available columns and their types.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(
+    params: dict[str, Any] = {"limit": limit}
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(
+        await _get_client(ctx).get(
             f"/docs/{doc_id}/tables/{table_id_or_name}/columns",
             params=params,
         )
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    )
 
 
 @mcp.tool(
     tags={"coda", "tables", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_column(
     ctx: Context,
     doc_id: Annotated[
@@ -164,10 +140,8 @@ async def coda_get_column(
     Use this to check a specific column's type before writing data to it.
     For the full column schema, use coda_list_columns instead.
     """
-    try:
-        data = await _get_client(ctx).get(
+    return _ok(
+        await _get_client(ctx).get(
             f"/docs/{doc_id}/tables/{table_id_or_name}/columns/{column_id_or_name}"
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )

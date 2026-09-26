@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _err, _get_client, _ok
+from ._helpers import _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
     tags={"coda", "formulas", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_formulas(
     ctx: Context,
     doc_id: Annotated[
@@ -34,29 +35,17 @@ async def coda_list_formulas(
     doc-level computed values (not column formulas). Use coda_get_formula to
     get a specific formula's current value.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/formulas", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/formulas", params=params))
 
 
 @mcp.tool(
     tags={"coda", "formulas", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_formula(
     ctx: Context,
     doc_id: Annotated[
@@ -74,8 +63,4 @@ async def coda_get_formula(
     an error. The value is computed by Coda and reflects the latest state.
     Use coda_list_formulas to discover available formulas in a doc.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/formulas/{formula_id_or_name}")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/formulas/{formula_id_or_name}"))

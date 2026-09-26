@@ -20,6 +20,7 @@ import respx
 from fastmcp import Client
 from httpx import Response
 
+from mcp_coda.client import CodaClient
 from mcp_coda.servers import mcp
 
 ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
@@ -529,3 +530,37 @@ async def test_read_only_blocks_write(
     assert out["isError"] is True
     assert "CODA_READ_ONLY" in out["error"]
     assert not router.calls
+
+
+async def test_expected_failure_is_a_successful_result(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """A 404 is something the caller can act on: JSON with isError inside, MCP-level success."""
+    client, router = tool_client
+    router.get("/docs/d1").mock(return_value=Response(404, text="gone"))
+    result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is False
+    out = json.loads(result.content[0].text)
+    assert out["isError"] is True
+    assert out["status_code"] == 404
+
+
+async def test_unexpected_failure_is_a_tool_error(
+    tool_client: tuple[Client, respx.MockRouter],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A bug in a tool body surfaces as isError=True with the exception named, and is logged."""
+
+    async def boom(self: CodaClient, path: str, params: Any = None) -> Any:
+        msg = "schema changed"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(CodaClient, "get", boom)
+    client, _ = tool_client
+    with caplog.at_level("ERROR", logger="mcp_coda.servers._helpers"):
+        result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is True
+    assert "RuntimeError: schema changed" in result.content[0].text
+    assert "coda_get_doc failed" in caplog.text
+    assert "Traceback" in caplog.text

@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+from fastmcp.exceptions import ToolError
+
 from mcp_coda.exceptions import CodaApiError, CodaAuthError
 from mcp_coda.servers.account import (
     coda_get_mutation_status as _coda_get_mutation_status,
@@ -90,11 +93,11 @@ class TestRateLimitBudget:
         assert result["reads"] == 95
         assert result["writes"] == 8
 
-    async def test_error(self) -> None:
+    async def test_unexpected_error_is_a_tool_error(self) -> None:
         client = AsyncMock()
         budget_mock = MagicMock()
         budget_mock.remaining.side_effect = RuntimeError("budget unavailable")
         client.budget = budget_mock
         ctx = _make_ctx(client)
-        result = json.loads(await coda_rate_limit_budget(ctx))
-        assert result["isError"] is True
+        with pytest.raises(ToolError, match="RuntimeError: budget unavailable"):
+            await coda_rate_limit_budget(ctx)

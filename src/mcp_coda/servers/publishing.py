@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _check_write, _err, _get_client, _ok
+from ._helpers import _get_client, _ok, tool_result
 
 
 @mcp.tool(
     tags={"coda", "publishing", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_categories(ctx: Context) -> str:
     """List all available publishing categories in Coda.
 
@@ -20,18 +21,16 @@ async def coda_list_categories(ctx: Context) -> str:
     gallery. Each category has a name and ID. Use these category IDs with
     coda_publish_doc.
     """
-    try:
-        data = await _get_client(ctx).get("/categories")
-        items = data.get("items", [])
-        return _ok({"items": items, "total_count": len(items)})
-    except Exception as e:
-        return _err(e)
+    data = await _get_client(ctx).get("/categories")
+    items = data.get("items", [])
+    return _ok({"items": items, "total_count": len(items)})
 
 
 @mcp.tool(
     tags={"coda", "publishing", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_publish_doc(
     ctx: Context,
     doc_id: Annotated[
@@ -61,25 +60,21 @@ async def coda_publish_doc(
     becomes accessible via a public URL. Use coda_unpublish_doc to revert.
     Returns the published doc's URL and settings.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {"discoverable": discoverable}
-        if slug is not None:
-            body["slug"] = slug
-        if category_names is not None:
-            body["categoryNames"] = category_names
-        if mode is not None:
-            body["mode"] = mode
-        data = await _get_client(ctx).put(f"/docs/{doc_id}/publish", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {"discoverable": discoverable}
+    if slug is not None:
+        body["slug"] = slug
+    if category_names is not None:
+        body["categoryNames"] = category_names
+    if mode is not None:
+        body["mode"] = mode
+    return _ok(await _get_client(ctx).put(f"/docs/{doc_id}/publish", json_data=body))
 
 
 @mcp.tool(
     tags={"coda", "publishing", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_unpublish_doc(
     ctx: Context,
     doc_id: Annotated[
@@ -92,9 +87,5 @@ async def coda_unpublish_doc(
     Reverts a previously published doc to private. The public URL will stop
     working. This is reversible — you can publish again with coda_publish_doc.
     """
-    try:
-        _check_write(ctx)
-        await _get_client(ctx).delete(f"/docs/{doc_id}/publish")
-        return _ok({"status": "unpublished", "doc_id": doc_id})
-    except Exception as e:
-        return _err(e)
+    await _get_client(ctx).delete(f"/docs/{doc_id}/publish")
+    return _ok({"status": "unpublished", "doc_id": doc_id})

@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _check_write, _err, _get_client, _ok
+from ._helpers import _get_client, _ok, tool_result
 
 
 @mcp.tool(
     tags={"coda", "automations", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_trigger_automation(
     ctx: Context,
     doc_id: Annotated[
@@ -35,13 +36,10 @@ async def coda_trigger_automation(
     depends on the automation's configuration. Returns a requestId for tracking.
     The rule_id can be found in the automation's settings in the Coda UI.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = payload if payload is not None else {}
-        data = await _get_client(ctx).post(
+    body: dict[str, Any] = payload if payload is not None else {}
+    return _ok(
+        await _get_client(ctx).post(
             f"/docs/{doc_id}/hooks/automation/{rule_id}",
             json_data=body,
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )

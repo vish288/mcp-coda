@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _err, _get_client, _ok
+from ._helpers import _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_doc_analytics(
     ctx: Context,
     doc_ids: Annotated[
@@ -47,37 +48,25 @@ async def coda_list_doc_analytics(
     available to doc owners. Use coda_get_doc_analytics_summary for aggregated
     totals instead of per-doc breakdown.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if doc_ids is not None:
-            params["docIds"] = ",".join(doc_ids)
-        if is_published is not None:
-            params["isPublished"] = is_published
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get("/analytics/docs", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if doc_ids is not None:
+        params["docIds"] = ",".join(doc_ids)
+    if is_published is not None:
+        params["isPublished"] = is_published
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get("/analytics/docs", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_doc_analytics_summary(
     ctx: Context,
     is_published: Annotated[
@@ -99,24 +88,21 @@ async def coda_get_doc_analytics_summary(
     across all accessible docs. Use this for a high-level overview — use
     coda_list_doc_analytics for per-doc breakdown.
     """
-    try:
-        params: dict[str, Any] = {}
-        if is_published is not None:
-            params["isPublished"] = is_published
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        data = await _get_client(ctx).get("/analytics/docs/summary", params=params)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {}
+    if is_published is not None:
+        params["isPublished"] = is_published
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    return _ok(await _get_client(ctx).get("/analytics/docs/summary", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_page_analytics(
     ctx: Context,
     doc_id: Annotated[
@@ -146,33 +132,21 @@ async def coda_list_page_analytics(
     Only available to doc owners. Useful for understanding which pages get the
     most traffic.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/analytics/docs/{doc_id}/pages", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/analytics/docs/{doc_id}/pages", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_pack_analytics(
     ctx: Context,
     pack_ids: Annotated[
@@ -205,37 +179,25 @@ async def coda_list_pack_analytics(
     Returns usage metrics for packs including install counts, doc usage, and
     formula invocations. Only available to pack makers for their own packs.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if pack_ids is not None:
-            params["packIds"] = ",".join(str(p) for p in pack_ids)
-        if is_published is not None:
-            params["isPublished"] = is_published
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get("/analytics/packs", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if pack_ids is not None:
+        params["packIds"] = ",".join(str(p) for p in pack_ids)
+    if is_published is not None:
+        params["isPublished"] = is_published
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get("/analytics/packs", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_pack_analytics_summary(
     ctx: Context,
     pack_ids: Annotated[
@@ -260,26 +222,23 @@ async def coda_get_pack_analytics_summary(
     Returns total installs, doc usage, and formula invocations summed across
     packs. Only available to pack makers.
     """
-    try:
-        params: dict[str, Any] = {}
-        if pack_ids is not None:
-            params["packIds"] = ",".join(str(p) for p in pack_ids)
-        if is_published is not None:
-            params["isPublished"] = is_published
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        data = await _get_client(ctx).get("/analytics/packs/summary", params=params)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {}
+    if pack_ids is not None:
+        params["packIds"] = ",".join(str(p) for p in pack_ids)
+    if is_published is not None:
+        params["isPublished"] = is_published
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    return _ok(await _get_client(ctx).get("/analytics/packs/summary", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_pack_formula_analytics(
     ctx: Context,
     pack_id: Annotated[
@@ -308,33 +267,21 @@ async def coda_list_pack_formula_analytics(
     Returns per-formula invocation counts, error rates, and execution times.
     Only available to the pack maker.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if since_date is not None:
-            params["sinceDate"] = since_date
-        if until_date is not None:
-            params["untilDate"] = until_date
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/analytics/packs/{pack_id}/formulas", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if since_date is not None:
+        params["sinceDate"] = since_date
+    if until_date is not None:
+        params["untilDate"] = until_date
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/analytics/packs/{pack_id}/formulas", params=params))
 
 
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_analytics_updated(ctx: Context) -> str:
     """Get the timestamp of when analytics data was last updated.
 
@@ -342,8 +289,4 @@ async def coda_get_analytics_updated(ctx: Context) -> str:
     are not real-time — they are typically updated every few hours. Check this
     before relying on analytics data for time-sensitive decisions.
     """
-    try:
-        data = await _get_client(ctx).get("/analytics/updated")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get("/analytics/updated"))

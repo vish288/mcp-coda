@@ -21,10 +21,10 @@ Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-co
 
 ## Key patterns
 
-- Tools never raise — every tool wraps its body in try/except and returns `_err(e)`
-- Every tool returns `str` (JSON via `_ok`/`_err`, markdown via `_ok_markdown`)
-- Write tools call `_check_write(ctx)` before any mutation
-- List responses include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)
+- Every tool sits under `@tool_result` (from `_helpers.py`), applied beneath `@mcp.tool`. A `CodaError` (401/403/404/429, other API statuses, read-only mode) is returned as the structured `_err(e)` JSON; any other exception is logged with its traceback and re-raised as `ToolError`, so the MCP result carries `isError: true`
+- Every tool returns `str` (JSON via `_ok`/`_page`/`_err`, markdown via `_ok_markdown`)
+- Write tools are declared `@tool_result(write=True)`, which runs `_check_write(ctx)` before the body
+- List responses go through `_page(data)` and include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)
 - Rate-limit errors carry `retry_after` seconds; the server does **not** retry 429s itself
 - Row writes are async server-side: they return a `requestId`, poll it with `coda_get_mutation_status`
 
