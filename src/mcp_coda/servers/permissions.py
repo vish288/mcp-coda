@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _check_write, _err, _get_client, _ok
+from ._helpers import _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
     tags={"coda", "permissions", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_sharing_metadata(
     ctx: Context,
     doc_id: Annotated[
@@ -26,17 +27,14 @@ async def coda_get_sharing_metadata(
     This is metadata about the doc's sharing configuration, not the list of
     who has access — use coda_list_permissions for that.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/acl/metadata")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/acl/metadata"))
 
 
 @mcp.tool(
     tags={"coda", "permissions", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_permissions(
     ctx: Context,
     doc_id: Annotated[
@@ -58,29 +56,17 @@ async def coda_list_permissions(
     Each entry includes the principal (user or group) and their permission type.
     Use coda_add_permission to grant access or coda_delete_permission to revoke.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/acl/permissions", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/acl/permissions", params=params))
 
 
 @mcp.tool(
     tags={"coda", "permissions", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_add_permission(
     ctx: Context,
     doc_id: Annotated[
@@ -111,29 +97,25 @@ async def coda_add_permission(
     what the principal can do: readonly, write, comment, or none (removes
     implicit access). Returns the created permission entry.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {"access": access}
-        principal: dict[str, str] = {}
-        if principal_email is not None:
-            principal["type"] = "email"
-            principal["email"] = principal_email
-        elif principal_domain is not None:
-            principal["type"] = "domain"
-            principal["domain"] = principal_domain
-        body["principal"] = principal
-        if suppress_notification:
-            body["suppressEmail"] = True
-        data = await _get_client(ctx).post(f"/docs/{doc_id}/acl/permissions", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {"access": access}
+    principal: dict[str, str] = {}
+    if principal_email is not None:
+        principal["type"] = "email"
+        principal["email"] = principal_email
+    elif principal_domain is not None:
+        principal["type"] = "domain"
+        principal["domain"] = principal_domain
+    body["principal"] = principal
+    if suppress_notification:
+        body["suppressEmail"] = True
+    return _ok(await _get_client(ctx).post(f"/docs/{doc_id}/acl/permissions", json_data=body))
 
 
 @mcp.tool(
     tags={"coda", "permissions", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_delete_permission(
     ctx: Context,
     doc_id: Annotated[
@@ -151,18 +133,15 @@ async def coda_delete_permission(
     unless they have access through another permission (e.g. domain-level).
     Get the permission_id from coda_list_permissions first.
     """
-    try:
-        _check_write(ctx)
-        await _get_client(ctx).delete(f"/docs/{doc_id}/acl/permissions/{permission_id}")
-        return _ok({"status": "deleted", "doc_id": doc_id, "permission_id": permission_id})
-    except Exception as e:
-        return _err(e)
+    await _get_client(ctx).delete(f"/docs/{doc_id}/acl/permissions/{permission_id}")
+    return _ok({"status": "deleted", "doc_id": doc_id, "permission_id": permission_id})
 
 
 @mcp.tool(
     tags={"coda", "permissions", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_search_principals(
     ctx: Context,
     doc_id: Annotated[
@@ -180,20 +159,19 @@ async def coda_search_principals(
     Use this to look up a user's email or find groups before calling
     coda_add_permission. Results include the principal's type, email, and name.
     """
-    try:
-        data = await _get_client(ctx).get(
+    return _ok(
+        await _get_client(ctx).get(
             f"/docs/{doc_id}/acl/principals/search",
             params={"query": query},
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )
 
 
 @mcp.tool(
     tags={"coda", "permissions", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_acl_settings(
     ctx: Context,
     doc_id: Annotated[
@@ -207,8 +185,4 @@ async def coda_get_acl_settings(
     copying, whether editors can change permissions, and the default access
     mode. These are administrative settings, not individual permission entries.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/acl/settings")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/acl/settings"))

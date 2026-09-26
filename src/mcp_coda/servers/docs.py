@@ -7,12 +7,12 @@ from pydantic import Field
 
 from . import mcp
 from ._helpers import (
-    _check_write,
-    _err,
     _format_list_as_markdown,
     _get_client,
     _ok,
     _ok_markdown,
+    _page,
+    tool_result,
 )
 
 
@@ -20,6 +20,7 @@ from ._helpers import (
     tags={"coda", "docs", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_docs(
     ctx: Context,
     query: Annotated[
@@ -54,46 +55,37 @@ async def coda_list_docs(
     for those. Rate-limited to 4 calls per 6 seconds. Use the query parameter to
     search by doc name. Pass cursor to paginate through results.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if query is not None:
-            params["query"] = query
-        if is_owner is not None:
-            params["isOwner"] = is_owner
-        if folder_id is not None:
-            params["folderId"] = folder_id
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get("/docs", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        has_more = next_cursor is not None
-        total_count = len(items)
-        if response_format == "markdown":
-            return _ok_markdown(
-                _format_list_as_markdown(
-                    items,
-                    has_more=has_more,
-                    next_cursor=next_cursor,
-                    total_count=total_count,
-                )
+    params: dict[str, Any] = {"limit": limit}
+    if query is not None:
+        params["query"] = query
+    if is_owner is not None:
+        params["isOwner"] = is_owner
+    if folder_id is not None:
+        params["folderId"] = folder_id
+    if cursor is not None:
+        params["pageToken"] = cursor
+    data = await _get_client(ctx).get("/docs", params=params)
+    items = data.get("items", [])
+    next_cursor = data.get("nextPageToken")
+    has_more = next_cursor is not None
+    total_count = len(items)
+    if response_format == "markdown":
+        return _ok_markdown(
+            _format_list_as_markdown(
+                items,
+                has_more=has_more,
+                next_cursor=next_cursor,
+                total_count=total_count,
             )
-        return _ok(
-            {
-                "items": items,
-                "has_more": has_more,
-                "next_cursor": next_cursor,
-                "total_count": total_count,
-            }
         )
-    except Exception as e:
-        return _err(e)
+    return _page(data)
 
 
 @mcp.tool(
     tags={"coda", "docs", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_doc(
     ctx: Context,
     doc_id: Annotated[
@@ -108,17 +100,14 @@ async def coda_get_doc(
     coda_list_tables for those. The doc_id can be obtained from coda_list_docs
     or coda_resolve_browser_link.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}"))
 
 
 @mcp.tool(
     tags={"coda", "docs", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_create_doc(
     ctx: Context,
     title: Annotated[
@@ -141,23 +130,19 @@ async def coda_create_doc(
     user's root if no folder is given. Use source_doc to clone an existing doc
     as a template.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {"title": title}
-        if folder_id is not None:
-            body["folderId"] = folder_id
-        if source_doc is not None:
-            body["sourceDoc"] = source_doc
-        data = await _get_client(ctx).post("/docs", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {"title": title}
+    if folder_id is not None:
+        body["folderId"] = folder_id
+    if source_doc is not None:
+        body["sourceDoc"] = source_doc
+    return _ok(await _get_client(ctx).post("/docs", json_data=body))
 
 
 @mcp.tool(
     tags={"coda", "docs", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False, "idempotentHint": True},
 )
+@tool_result(write=True)
 async def coda_update_doc(
     ctx: Context,
     doc_id: Annotated[
@@ -179,23 +164,19 @@ async def coda_update_doc(
     coda_update_page for that. Returns the updated doc metadata. This is an
     idempotent operation — calling with the same values produces the same result.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {}
-        if title is not None:
-            body["title"] = title
-        if icon_name is not None:
-            body["iconName"] = icon_name
-        data = await _get_client(ctx).patch(f"/docs/{doc_id}", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {}
+    if title is not None:
+        body["title"] = title
+    if icon_name is not None:
+        body["iconName"] = icon_name
+    return _ok(await _get_client(ctx).patch(f"/docs/{doc_id}", json_data=body))
 
 
 @mcp.tool(
     tags={"coda", "docs", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_delete_doc(
     ctx: Context,
     doc_id: Annotated[
@@ -209,9 +190,5 @@ async def coda_delete_doc(
     permanently removed. Verify the doc name with coda_get_doc before calling
     this. Returns a confirmation status.
     """
-    try:
-        _check_write(ctx)
-        await _get_client(ctx).delete(f"/docs/{doc_id}")
-        return _ok({"status": "deleted", "doc_id": doc_id})
-    except Exception as e:
-        return _err(e)
+    await _get_client(ctx).delete(f"/docs/{doc_id}")
+    return _ok({"status": "deleted", "doc_id": doc_id})

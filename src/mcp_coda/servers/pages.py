@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _check_write, _err, _get_client, _ok
+from ._helpers import _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
     tags={"coda", "pages", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_list_pages(
     ctx: Context,
     doc_id: Annotated[
@@ -35,29 +36,17 @@ async def coda_list_pages(
     coda_get_page_content for that. Use the returned page IDs (not names) for
     all subsequent page operations.
     """
-    try:
-        params: dict[str, Any] = {"limit": limit}
-        if cursor is not None:
-            params["pageToken"] = cursor
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/pages", params=params)
-        items = data.get("items", [])
-        next_cursor = data.get("nextPageToken")
-        return _ok(
-            {
-                "items": items,
-                "has_more": next_cursor is not None,
-                "next_cursor": next_cursor,
-                "total_count": len(items),
-            }
-        )
-    except Exception as e:
-        return _err(e)
+    params: dict[str, Any] = {"limit": limit}
+    if cursor is not None:
+        params["pageToken"] = cursor
+    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/pages", params=params))
 
 
 @mcp.tool(
     tags={"coda", "pages", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_page(
     ctx: Context,
     doc_id: Annotated[
@@ -75,17 +64,14 @@ async def coda_get_page(
     return the page's text content — use coda_get_page_content for that. Page
     names can change; always use page IDs for reliable access.
     """
-    try:
-        data = await _get_client(ctx).get(f"/docs/{doc_id}/pages/{page_id_or_name}")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/pages/{page_id_or_name}"))
 
 
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_create_page(
     ctx: Context,
     doc_id: Annotated[
@@ -120,31 +106,27 @@ async def coda_create_page(
     specified. Content can be HTML or markdown — specify the format via
     content_format. Pack formulas cannot be inserted via the API.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {"name": name}
-        if parent_page_id is not None:
-            body["parentPageId"] = parent_page_id
-        if subtitle is not None:
-            body["subtitle"] = subtitle
-        if content is not None:
-            body["pageContent"] = {
-                "type": "canvas",
-                "canvasContent": {
-                    "format": content_format or "html",
-                    "content": content,
-                },
-            }
-        data = await _get_client(ctx).post(f"/docs/{doc_id}/pages", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {"name": name}
+    if parent_page_id is not None:
+        body["parentPageId"] = parent_page_id
+    if subtitle is not None:
+        body["subtitle"] = subtitle
+    if content is not None:
+        body["pageContent"] = {
+            "type": "canvas",
+            "canvasContent": {
+                "format": content_format or "html",
+                "content": content,
+            },
+        }
+    return _ok(await _get_client(ctx).post(f"/docs/{doc_id}/pages", json_data=body))
 
 
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "readOnlyHint": False, "idempotentHint": True},
 )
+@tool_result(write=True)
 async def coda_update_page(
     ctx: Context,
     doc_id: Annotated[
@@ -183,32 +165,30 @@ async def coda_update_page(
     partial inline edit — draft full content locally first. Content format must
     match what you send (HTML or markdown). Returns the updated page metadata.
     """
-    try:
-        _check_write(ctx)
-        body: dict[str, Any] = {}
-        if name is not None:
-            body["name"] = name
-        if subtitle is not None:
-            body["subtitle"] = subtitle
-        if content is not None:
-            content_update: dict[str, Any] = {
-                "insertionMode": insert_mode or "replace",
-                "canvasContent": {
-                    "format": content_format or "html",
-                    "content": content,
-                },
-            }
-            body["contentUpdate"] = content_update
-        data = await _get_client(ctx).put(f"/docs/{doc_id}/pages/{page_id_or_name}", json_data=body)
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    body: dict[str, Any] = {}
+    if name is not None:
+        body["name"] = name
+    if subtitle is not None:
+        body["subtitle"] = subtitle
+    if content is not None:
+        content_update: dict[str, Any] = {
+            "insertionMode": insert_mode or "replace",
+            "canvasContent": {
+                "format": content_format or "html",
+                "content": content,
+            },
+        }
+        body["contentUpdate"] = content_update
+    return _ok(
+        await _get_client(ctx).put(f"/docs/{doc_id}/pages/{page_id_or_name}", json_data=body)
+    )
 
 
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_delete_page(
     ctx: Context,
     doc_id: Annotated[
@@ -226,18 +206,15 @@ async def coda_delete_page(
     pages are reparented to the deleted page's parent. Verify the page name with
     coda_get_page before calling this.
     """
-    try:
-        _check_write(ctx)
-        await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}")
-        return _ok({"status": "deleted", "doc_id": doc_id, "page_id": page_id_or_name})
-    except Exception as e:
-        return _err(e)
+    await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}")
+    return _ok({"status": "deleted", "doc_id": doc_id, "page_id": page_id_or_name})
 
 
 @mcp.tool(
     tags={"coda", "pages", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_page_content(
     ctx: Context,
     doc_id: Annotated[
@@ -260,20 +237,19 @@ async def coda_get_page_content(
     pack formulas). Use this for reading page text — use coda_get_page for
     metadata only.
     """
-    try:
-        data = await _get_client(ctx).get(
+    return _ok(
+        await _get_client(ctx).get(
             f"/docs/{doc_id}/pages/{page_id_or_name}/content",
             params={"outputFormat": output_format},
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )
 
 
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
 )
+@tool_result(write=True)
 async def coda_delete_page_content(
     ctx: Context,
     doc_id: Annotated[
@@ -291,18 +267,15 @@ async def coda_delete_page_content(
     page remains in the doc with its name and metadata intact. This is
     irreversible. Use coda_delete_page to remove the page entirely.
     """
-    try:
-        _check_write(ctx)
-        await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}/content")
-        return _ok({"status": "content_deleted", "doc_id": doc_id, "page_id": page_id_or_name})
-    except Exception as e:
-        return _err(e)
+    await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}/content")
+    return _ok({"status": "content_deleted", "doc_id": doc_id, "page_id": page_id_or_name})
 
 
 @mcp.tool(
     tags={"coda", "pages", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True},
 )
+@tool_result
 async def coda_export_page(
     ctx: Context,
     doc_id: Annotated[
@@ -325,11 +298,9 @@ async def coda_export_page(
     export ID until complete. Prefer coda_get_page_content for quick reads —
     use this only when you need a full export with embedded images resolved.
     """
-    try:
-        data = await _get_client(ctx).post(
+    return _ok(
+        await _get_client(ctx).post(
             f"/docs/{doc_id}/pages/{page_id_or_name}/export",
             json_data={"outputFormat": output_format},
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )

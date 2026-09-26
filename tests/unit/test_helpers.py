@@ -22,6 +22,7 @@ from mcp_coda.servers._helpers import (
     _load_file,
     _ok,
     _ok_markdown,
+    _page,
     _parse_coda_doc_url,
     _truncate,
     _validate_id,
@@ -118,6 +119,21 @@ class TestTruncate:
         assert result.startswith("a" * CHARACTER_LIMIT)
         assert "truncated" in result
         assert str(CHARACTER_LIMIT) in result
+
+
+class TestPage:
+    def test_more_pages(self) -> None:
+        out = json.loads(_page({"items": [{"id": "a"}, {"id": "b"}], "nextPageToken": "c2"}))
+        assert out == {
+            "items": [{"id": "a"}, {"id": "b"}],
+            "has_more": True,
+            "next_cursor": "c2",
+            "total_count": 2,
+        }
+
+    def test_last_page(self) -> None:
+        out = json.loads(_page({"items": []}))
+        assert out == {"items": [], "has_more": False, "next_cursor": None, "total_count": 0}
 
 
 class TestErr:

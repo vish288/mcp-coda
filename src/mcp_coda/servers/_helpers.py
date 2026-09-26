@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import functools
 import json
+import logging
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
+from fastmcp.exceptions import ToolError
 
 from ..client import CodaClient
 from ..config import CodaConfig
-from ..exceptions import CodaApiError, CodaRateLimitError, CodaWriteDisabledError
+from ..exceptions import CodaApiError, CodaError, CodaRateLimitError, CodaWriteDisabledError
+
+_log = logging.getLogger(__name__)
 
 # Maximum response size in characters. Responses exceeding this are truncated
 # to prevent context window blowout in LLM consumers.
@@ -138,6 +143,20 @@ def _ok(data: Any) -> str:
     return _dumps(_with_notice())
 
 
+def _page(data: dict[str, Any]) -> str:
+    """Serialize a Coda list response as the standard pagination envelope."""
+    items = data.get("items", [])
+    next_cursor = data.get("nextPageToken")
+    return _ok(
+        {
+            "items": items,
+            "has_more": next_cursor is not None,
+            "next_cursor": next_cursor,
+            "total_count": len(items),
+        }
+    )
+
+
 def _ok_markdown(text: str) -> str:
     """Return a markdown-formatted response, with truncation guard."""
     return _truncate(text)
@@ -184,3 +203,35 @@ def _err(error: Exception) -> str:
         detail["status_code"] = error.status_code
         detail["body"] = error.body
     return json.dumps(detail, indent=2, ensure_ascii=False)
+
+
+def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) -> Any:
+    """Apply under @mcp.tool. Expected failures become JSON; bugs become tool errors.
+
+    A CodaError (HTTP 401/403/404/429, other API statuses, read-only mode) is
+    what the caller can act on, so it comes back as the structured `_err`
+    payload. Anything else is a defect: it is logged with its traceback and
+    re-raised as ToolError so the MCP result carries isError=True instead of
+    a success envelope that merely mentions an error.
+
+    functools.wraps keeps the wrapped signature visible, so FastMCP still
+    injects Context and generates the same schema.
+    """
+
+    def wrap(f: Callable[..., Any]) -> Callable[..., Any]:
+        @functools.wraps(f)
+        async def inner(ctx: Context, *args: Any, **kwargs: Any) -> str:
+            try:
+                if write:
+                    _check_write(ctx)
+                return await f(ctx, *args, **kwargs)
+            except CodaError as e:
+                return _err(e)
+            except Exception as e:
+                _log.exception("%s failed", f.__name__)
+                msg = f"{type(e).__name__}: {e}"
+                raise ToolError(msg) from e
+
+        return inner
+
+    return wrap(fn) if fn is not None else wrap

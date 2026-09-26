@@ -6,13 +6,14 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _err, _get_client, _ok
+from ._helpers import _get_client, _ok, tool_result
 
 
 @mcp.tool(
     tags={"coda", "account", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_whoami(ctx: Context) -> str:
     """Get information about the current API token owner.
 
@@ -20,17 +21,14 @@ async def coda_whoami(ctx: Context) -> str:
     that the API token is valid and has the expected permissions. If this
     returns an error, the token is invalid or expired.
     """
-    try:
-        data = await _get_client(ctx).get("/whoami")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get("/whoami"))
 
 
 @mcp.tool(
     tags={"coda", "account", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_resolve_browser_link(
     ctx: Context,
     url: Annotated[
@@ -45,20 +43,19 @@ async def coda_resolve_browser_link(
     Use this as the first step when a user provides a Coda URL instead of IDs.
     Returns a type field indicating the resource kind and corresponding IDs.
     """
-    try:
-        data = await _get_client(ctx).get(
+    return _ok(
+        await _get_client(ctx).get(
             "/resolveBrowserLink",
             params={"url": url},
         )
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    )
 
 
 @mcp.tool(
     tags={"coda", "account", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
+@tool_result
 async def coda_get_mutation_status(
     ctx: Context,
     request_id: Annotated[
@@ -73,11 +70,7 @@ async def coda_get_mutation_status(
     a completed boolean and any error details. Poll every 2 seconds, up to 30
     seconds maximum.
     """
-    try:
-        data = await _get_client(ctx).get(f"/mutationStatus/{request_id}")
-        return _ok(data)
-    except Exception as e:
-        return _err(e)
+    return _ok(await _get_client(ctx).get(f"/mutationStatus/{request_id}"))
 
 
 @mcp.tool(
@@ -88,6 +81,7 @@ async def coda_get_mutation_status(
         "idempotentHint": True,
     },
 )
+@tool_result
 async def coda_rate_limit_budget(ctx: Context) -> str:
     """Check the current rate limit budget for reads and writes.
 
@@ -96,8 +90,5 @@ async def coda_rate_limit_budget(ctx: Context) -> str:
     before batch operations to avoid hitting 429 errors. The budget is tracked
     locally — it resets if the server restarts.
     """
-    try:
-        budget = _get_client(ctx).budget.remaining()
-        return _ok(budget)
-    except Exception as e:
-        return _err(e)
+    budget = _get_client(ctx).budget.remaining()
+    return _ok(budget)
