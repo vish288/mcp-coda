@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-09-26
+
+### Features
+- feat: report unexpected tool errors as MCP errors, not successful results (6534a25)
+
+
 ## [0.5.9] - 2026-09-25
 
 ### Tests
