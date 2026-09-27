@@ -110,12 +110,9 @@ Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#ap
 | **Pages** | 8 | list, get, create, update, delete, get content, delete content, export |
 | **Tables** | 4 | list tables, get table, list columns, get column |
 | **Rows** | 7 | list, get, insert/upsert, update, delete, bulk delete, push button |
-| **Formulas** | 2 | list, get |
-| **Controls** | 2 | list, get |
 | **Permissions** | 6 | sharing metadata, list, add, delete, search principals, ACL settings |
-| **Publishing** | 3 | list categories, publish, unpublish |
 | **Folders** | 5 | list, get, create, update, delete |
-| **Automations** | 1 | trigger automation |
+| **Misc** | 8 | formulas (list, get), controls (list, get), publishing (list categories, publish, unpublish), trigger automation |
 | **Analytics** | 7 | doc analytics, doc summary, page analytics, pack analytics, pack summary, formula analytics, analytics updated |
 
 <details>
