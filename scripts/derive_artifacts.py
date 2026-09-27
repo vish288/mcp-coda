@@ -21,7 +21,6 @@ diverges from what this produces.
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -33,7 +32,6 @@ LLMS = ROOT / "llms.txt"
 
 # The first llms-full.txt section that llms.txt (the concise index) omits.
 _LLMS_SPLIT = "\n## Setup Examples"
-
 
 
 def derive_gemini() -> str:
