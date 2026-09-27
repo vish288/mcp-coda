@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1] - 2026-09-27
+
+### Refactoring
+- refactor: discover server modules and drop the hand-kept file inventories (47b0e9a)
+
+
 ## [0.6.0] - 2026-09-26
 
 ### Features
