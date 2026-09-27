@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0] - 2026-09-27
+
+### Features
+- feat: remove coda_rate_limit_budget tool and RateLimitBudget tracker (068a669)
+
+### Bug Fixes
+- fix: housekeeping in client, config, and tool helpers (e57bc64)
+
+### Refactoring
+- refactor: shared parameter aliases and four mechanical cuts (e97f703)
+- refactor: merge four single-purpose tool modules into servers/misc.py (972dfa3)
+
+### Documentation
+- docs: record the test-confidence and error-contract spec (f7fc038)
+
+### Tests
+- test: drop the eval pair that expected the removed budget tool (b40b738)
+
+### Other
+
+
 ## [0.6.1] - 2026-09-27
 
 ### Refactoring
