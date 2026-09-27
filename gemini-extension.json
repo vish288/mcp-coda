@@ -1,7 +1,7 @@
 {
   "name": "mcp-coda",
   "version": "0.6.1",
-  "description": "MCP server for Coda API — docs, pages, tables, rows, formulas, permissions, and more",
+  "description": "MCP server for Coda API — docs, pages, tables, rows, formulas, permissions, and automation.",
   "mcpServers": {
     "mcp-coda": {
       "command": "uvx",

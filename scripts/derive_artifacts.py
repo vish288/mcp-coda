@@ -7,8 +7,8 @@ data already in server.json / pyproject.toml / llms-full.txt lets them drift.
 This script is the single source of truth:
 
   * gemini-extension.json <- server.json (name, version, required env vars)
-    plus the package description from pyproject.toml. server.json's own
-    description is the registry blurb and intentionally differs, so it is not
+    including the description: server.json is the single source, the same
+    rule as the sibling servers, so the two manifests cannot drift.
     used here.
   * llms.txt <- the leading prefix of llms-full.txt, up to the first section
     (## Setup Examples) that belongs only to the full document.
@@ -27,7 +27,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER_JSON = ROOT / "server.json"
-PYPROJECT = ROOT / "pyproject.toml"
 LLMS_FULL = ROOT / "llms-full.txt"
 GEMINI = ROOT / "gemini-extension.json"
 LLMS = ROOT / "llms.txt"
@@ -35,13 +34,6 @@ LLMS = ROOT / "llms.txt"
 # The first llms-full.txt section that llms.txt (the concise index) omits.
 _LLMS_SPLIT = "\n## Setup Examples"
 
-
-def _pyproject_description() -> str:
-    match = re.search(r'^description = "(.*)"', PYPROJECT.read_text(encoding="utf-8"), re.MULTILINE)
-    if not match:
-        msg = "pyproject.toml has no description line"
-        raise SystemExit(msg)
-    return match.group(1)
 
 
 def derive_gemini() -> str:
@@ -62,7 +54,7 @@ def derive_gemini() -> str:
     extension = {
         "name": name,
         "version": server["version"],
-        "description": _pyproject_description(),
+        "description": server["description"],
         "mcpServers": {name: {"command": "uvx", "args": [name]}},
         "settings": settings,
     }
