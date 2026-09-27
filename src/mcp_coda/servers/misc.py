@@ -11,7 +11,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, _get_client, _ok, _page, tool_result
 
 # --- Automations ---
 
@@ -70,10 +70,7 @@ async def coda_list_formulas(
         int,
         Field(description="Maximum number of formulas to return (1-200)", ge=1, le=200),
     ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
 ) -> str:
     """List all named formulas in a Coda doc.
 
@@ -81,9 +78,7 @@ async def coda_list_formulas(
     doc-level computed values (not column formulas). Use coda_get_formula to
     get a specific formula's current value.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/docs/{doc_id}/formulas", params=params))
 
 
@@ -130,10 +125,7 @@ async def coda_list_controls(
         int,
         Field(description="Maximum number of controls to return (1-200)", ge=1, le=200),
     ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
 ) -> str:
     """List all controls (sliders, select lists, date pickers, etc.) in a Coda doc.
 
@@ -141,9 +133,7 @@ async def coda_list_controls(
     Controls are interactive UI elements on pages. Use coda_get_control to
     read a specific control's current value.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/docs/{doc_id}/controls", params=params))
 
 

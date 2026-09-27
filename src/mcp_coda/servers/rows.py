@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _list_footer, _ok, _page, _truncate, tool_result
+from ._helpers import Cursor, DocId, _get_client, _list_footer, _ok, _page, _truncate, tool_result
 
 
 @mcp.tool(
@@ -16,10 +16,7 @@ from ._helpers import _get_client, _list_footer, _ok, _page, _truncate, tool_res
 @tool_result
 async def coda_list_rows(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name to list rows from"),
@@ -40,10 +37,7 @@ async def coda_list_rows(
         int,
         Field(description="Maximum number of rows to return (1-500)", ge=1, le=500),
     ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
     response_format: Annotated[
         Literal["json", "markdown"],
         Field(description="'json' for structured data, 'markdown' for readable text"),
@@ -56,16 +50,13 @@ async def coda_list_rows(
     For a specific row by ID, use coda_get_row instead. Results are paginated —
     pass cursor to get the next page.
     """
-    params: dict[str, Any] = {
+    params = {
         "limit": limit,
         "useColumnNames": use_column_names,
+        "query": query,
+        "sortBy": sort_by,
+        "pageToken": cursor,
     }
-    if query is not None:
-        params["query"] = query
-    if sort_by is not None:
-        params["sortBy"] = sort_by
-    if cursor is not None:
-        params["pageToken"] = cursor
     data = await _get_client(ctx).get(
         f"/docs/{doc_id}/tables/{table_id_or_name}/rows",
         params=params,
@@ -95,10 +86,7 @@ async def coda_list_rows(
 @tool_result
 async def coda_get_row(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
@@ -134,10 +122,7 @@ async def coda_get_row(
 @tool_result(write=True)
 async def coda_insert_rows(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name to insert rows into"),
@@ -187,10 +172,7 @@ async def coda_insert_rows(
 @tool_result(write=True)
 async def coda_update_row(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
@@ -232,10 +214,7 @@ async def coda_update_row(
 @tool_result(write=True)
 async def coda_delete_row(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
@@ -269,10 +248,7 @@ async def coda_delete_row(
 @tool_result(write=True)
 async def coda_delete_rows(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
@@ -304,10 +280,7 @@ async def coda_delete_rows(
 @tool_result(write=True)
 async def coda_push_button(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),

@@ -7,6 +7,7 @@ from pydantic import Field
 
 from . import mcp
 from ._helpers import (
+    Cursor,
     _format_list_as_markdown,
     _get_client,
     _ok,
@@ -39,10 +40,7 @@ async def coda_list_docs(
         int,
         Field(description="Maximum number of docs to return (1-200)", ge=1, le=200),
     ] = 25,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
     response_format: Annotated[
         Literal["json", "markdown"],
         Field(description="'json' for structured data, 'markdown' for readable text"),
@@ -55,15 +53,13 @@ async def coda_list_docs(
     for those. Rate-limited to 4 calls per 6 seconds. Use the query parameter to
     search by doc name. Pass cursor to paginate through results.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if query is not None:
-        params["query"] = query
-    if is_owner is not None:
-        params["isOwner"] = is_owner
-    if folder_id is not None:
-        params["folderId"] = folder_id
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {
+        "limit": limit,
+        "query": query,
+        "isOwner": is_owner,
+        "folderId": folder_id,
+        "pageToken": cursor,
+    }
     data = await _get_client(ctx).get("/docs", params=params)
     items = data.get("items", [])
     next_cursor = data.get("nextPageToken")

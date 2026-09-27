@@ -8,14 +8,20 @@ import logging
 import re
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
+from pydantic import Field
 
 from ..client import CodaClient
 from ..config import CodaConfig
 from ..exceptions import CodaApiError, CodaError, CodaRateLimitError, CodaWriteDisabledError
+
+# Shared parameter type aliases
+DocId = Annotated[str, Field(description="The doc ID containing the table")]
+Cursor = Annotated[str | None, Field(description="Pagination cursor from a previous response")]
+Limit = Annotated[int, Field(description="Maximum number of results (1-200)", ge=1, le=200)]
 
 _log = logging.getLogger(__name__)
 
@@ -27,13 +33,6 @@ CHARACTER_LIMIT = 25000
 _CODA_DOC_URL_RE = re.compile(r"https?://[^/]+/d/[^/]+_d([a-zA-Z0-9_-]+)")
 
 _ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
-
-
-def _validate_id(value: str, name: str) -> None:
-    """Validate that *value* looks like a safe Coda object identifier."""
-    if not value or not _ID_RE.match(value):
-        msg = f"Invalid {name}: {value!r}"
-        raise ValueError(msg)
 
 
 def _parse_coda_doc_url(value: str) -> str:

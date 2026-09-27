@@ -1,12 +1,12 @@
 """Table and column tools — list/get tables and columns."""
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, DocId, _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
@@ -28,10 +28,7 @@ async def coda_list_tables(
         int,
         Field(description="Maximum number of tables to return (1-200)", ge=1, le=200),
     ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
 ) -> str:
     """List all tables and views in a Coda doc.
 
@@ -39,11 +36,7 @@ async def coda_list_tables(
     and parent page. Does NOT return row data — use coda_list_rows for that.
     Use coda_list_columns to get the column schema of a specific table.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if table_types is not None:
-        params["tableTypes"] = table_types
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "tableTypes": table_types, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/docs/{doc_id}/tables", params=params))
 
 
@@ -54,10 +47,7 @@ async def coda_list_tables(
 @tool_result
 async def coda_get_table(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
@@ -79,10 +69,7 @@ async def coda_get_table(
 @tool_result
 async def coda_list_columns(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name to list columns from"),
@@ -91,10 +78,7 @@ async def coda_list_columns(
         int,
         Field(description="Maximum number of columns to return (1-200)", ge=1, le=200),
     ] = 100,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
 ) -> str:
     """List all columns in a Coda table.
 
@@ -103,9 +87,7 @@ async def coda_list_columns(
     when working with row data. This is the table schema — call this before
     inserting or updating rows to know the available columns and their types.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "pageToken": cursor}
     return _page(
         await _get_client(ctx).get(
             f"/docs/{doc_id}/tables/{table_id_or_name}/columns",
@@ -121,10 +103,7 @@ async def coda_list_columns(
 @tool_result
 async def coda_get_column(
     ctx: Context,
-    doc_id: Annotated[
-        str,
-        Field(description="The doc ID containing the table"),
-    ],
+    doc_id: DocId,
     table_id_or_name: Annotated[
         str,
         Field(description="Table ID or name"),
