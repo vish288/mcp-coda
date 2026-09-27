@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import pkgutil
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from importlib.metadata import version
@@ -46,25 +47,15 @@ mcp = FastMCP(
 
 
 def _register_tools() -> None:
-    """Import tool and resource modules so decorators execute."""
-    _modules = [
-        ".account",
-        ".docs",
-        ".pages",
-        ".tables",
-        ".rows",
-        ".formulas",
-        ".controls",
-        ".automations",
-        ".permissions",
-        ".publishing",
-        ".folders",
-        ".analytics",
-        ".resources",
-        ".prompts",
-    ]
-    for module in _modules:
-        importlib.import_module(module, __package__)
+    """Import every sibling module so its @mcp decorators run.
+
+    Discovered from the package directory rather than a hand-kept list, which
+    silently dropped a module when someone forgot the entry. Underscore-prefixed
+    modules are shared helpers, not registries.
+    """
+    for info in pkgutil.iter_modules(__path__):
+        if not info.name.startswith("_"):
+            importlib.import_module(f".{info.name}", __package__)
 
 
 _register_tools()

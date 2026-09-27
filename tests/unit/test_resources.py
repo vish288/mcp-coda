@@ -156,22 +156,6 @@ class TestResourcesDir:
     def test_resources_dir_exists(self) -> None:
         assert Path(_RESOURCES_DIR).is_dir()
 
-    def test_all_resource_files_exist(self) -> None:
-        expected = [
-            "coda-doc-structure.md",
-            "coda-table-design.md",
-            "coda-permissions.md",
-            "coda-automations.md",
-            "coda-api-patterns.md",
-            "row-operations.md",
-            "page-content.md",
-            "formula-controls.md",
-            "publishing-analytics.md",
-            "folder-organization.md",
-        ]
-        for filename in expected:
-            assert (Path(_RESOURCES_DIR) / filename).is_file(), f"Missing: {filename}"
-
 
 _STATIC_RESOURCES = [
     ("coda_doc_structure_rules", coda_doc_structure_rules, "Doc Structure"),

@@ -62,17 +62,6 @@ class TestPromptsDir:
     def test_prompts_dir_exists(self) -> None:
         assert Path(_PROMPTS_DIR).is_dir()
 
-    def test_all_prompt_files_exist(self) -> None:
-        expected = [
-            "analyze-doc-structure.md",
-            "design-table-schema.md",
-            "migrate-spreadsheet.md",
-            "setup-automation.md",
-            "audit-permissions.md",
-        ]
-        for filename in expected:
-            assert (Path(_PROMPTS_DIR) / filename).is_file(), f"Missing: {filename}"
-
 
 class TestAnalyzeDocStructure:
     def test_returns_messages(self) -> None:

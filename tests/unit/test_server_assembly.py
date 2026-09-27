@@ -1,8 +1,9 @@
 """Boot the real server (real lifespan, env-driven config) and count what it exposes.
 
 The counts are re-derived by scanning src/ for decorators at test time, so a
-module dropped from `_modules` or a decorator that silently fails to register
-shows up as a mismatch rather than a smaller number nobody notices.
+module that fails to import or a decorator that silently fails to register
+shows up as a mismatch rather than a smaller number nobody notices. Reading
+every resource is also what proves the packaged markdown files exist.
 """
 
 from __future__ import annotations

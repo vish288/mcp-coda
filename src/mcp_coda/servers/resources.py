@@ -256,33 +256,3 @@ async def doc_schema_resource(doc_id: str, ctx: Context) -> str:
     except Exception as e:
         _log.exception("doc_schema_resource failed")
         return json.dumps({"isError": True, "error": str(e)}, ensure_ascii=False)
-
-
-# ════════════════════════════════════════════════════════════════════
-# Startup validation
-# ════════════════════════════════════════════════════════════════════
-
-_RESOURCE_FILES = [
-    "coda-doc-structure.md",
-    "coda-table-design.md",
-    "coda-permissions.md",
-    "coda-automations.md",
-    "coda-api-patterns.md",
-    "row-operations.md",
-    "page-content.md",
-    "formula-controls.md",
-    "publishing-analytics.md",
-    "folder-organization.md",
-]
-
-
-def _validate_resources() -> None:
-    """Verify all expected resource files exist at import time."""
-    _dir = Path(_RESOURCES_DIR)
-    missing = [f for f in _RESOURCE_FILES if not (_dir / f).is_file()]
-    if missing:
-        msg = f"Missing resource files (packaging error): {missing}"
-        raise RuntimeError(msg)
-
-
-_validate_resources()
