@@ -17,12 +17,6 @@
     <expected_tool>coda_insert_rows</expected_tool>
   </qa_pair>
 
-  <qa_pair id="4">
-    <question>I got a 429 error. What should I do?</question>
-    <expected_answer>Wait the number of seconds indicated in the retry_after field of the error response, then retry. Use coda_rate_limit_budget to check remaining capacity before batch operations. Coda allows 100 reads/6s and 10 writes/6s.</expected_answer>
-    <expected_tool>coda_rate_limit_budget</expected_tool>
-  </qa_pair>
-
   <qa_pair id="5">
     <question>How do I check if a write operation completed successfully?</question>
     <expected_answer>Use coda_get_mutation_status with the requestId returned by the write operation. Poll every 2 seconds until the completed field is true (max 30 seconds).</expected_answer>
