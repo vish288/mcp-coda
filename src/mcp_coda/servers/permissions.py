@@ -97,6 +97,9 @@ async def coda_add_permission(
     what the principal can do: readonly, write, comment, or none (removes
     implicit access). Returns the created permission entry.
     """
+    if principal_email is None and principal_domain is None:
+        msg = "principal_email or principal_domain required"
+        raise ValueError(msg)
     body: dict[str, Any] = {"access": access}
     principal: dict[str, str] = {}
     if principal_email is not None:

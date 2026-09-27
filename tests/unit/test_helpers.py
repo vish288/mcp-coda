@@ -21,7 +21,6 @@ from mcp_coda.servers._helpers import (
     _get_config,
     _load_file,
     _ok,
-    _ok_markdown,
     _page,
     _parse_coda_doc_url,
     _truncate,
@@ -89,18 +88,6 @@ class TestOk:
 
     def test_oversized_non_list_still_truncates(self) -> None:
         result = _ok({"blob": "x" * (CHARACTER_LIMIT + 1000)})
-        assert len(result) <= CHARACTER_LIMIT + 200
-        assert "truncated" in result
-
-
-class TestOkMarkdown:
-    def test_returns_text(self) -> None:
-        result = _ok_markdown("# Hello\n\nSome content")
-        assert result == "# Hello\n\nSome content"
-
-    def test_truncates_large_markdown(self) -> None:
-        large_text = "x" * (CHARACTER_LIMIT + 1000)
-        result = _ok_markdown(large_text)
         assert len(result) <= CHARACTER_LIMIT + 200
         assert "truncated" in result
 
@@ -223,11 +210,6 @@ class TestFormatListAsMarkdown:
         items = [{"id": "d1", "name": "My Doc", "browserLink": "https://coda.io/d/d1"}]
         result = _format_list_as_markdown(items, total_count=1)
         assert "https://coda.io/d/d1" in result
-
-    def test_custom_keys(self) -> None:
-        items = [{"docId": "d1", "title": "Doc Title"}]
-        result = _format_list_as_markdown(items, total_count=1, name_key="title", id_key="docId")
-        assert "**Doc Title** (`d1`)" in result
 
     def test_missing_keys_use_defaults(self) -> None:
         items = [{"other": "field"}]

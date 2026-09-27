@@ -11,7 +11,7 @@ MCP server that wraps the Coda REST API v1. Provides CRUD operations across all 
 - **Transport**: stdio (default), SSE, streamable-http
 - **Registry**: `io.github.vish288/mcp-coda`
 - **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
-- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_SSL_VERIFY` (SSL verification)
+- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout)
 
 ## Documentation
 

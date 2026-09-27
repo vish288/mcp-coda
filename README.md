@@ -78,7 +78,6 @@ uv pip install mcp-coda
 | `CODA_READ_ONLY` | No | `false` | Set to `true` to disable write operations |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL |
 | `CODA_TIMEOUT` | No | `30` | Request timeout in seconds |
-| `CODA_SSL_VERIFY` | No | `true` | Set to `false` to skip SSL verification |
 
 ### Supported Token Types
 
@@ -321,7 +320,6 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 - **Token scope**: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production deployments to limit exposure.
 - **Read-only mode**: Set `CODA_READ_ONLY=true` to disable all write operations (create, update, delete). Read-only mode is enforced server-side before any API call.
 - **MCP tool annotations**: Each tool declares `readOnlyHint`, `destructiveHint`, and `idempotentHint` for client-side permission prompts.
-- **SSL verification**: `CODA_SSL_VERIFY=true` by default. Only disable for development against local proxies.
 - **No credential storage**: The server does not persist tokens. Credentials are read from environment variables at startup.
 
 ## Rate Limits & Permissions

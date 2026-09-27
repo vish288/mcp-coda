@@ -128,7 +128,6 @@ uvx mcp-coda --coda-token <token> --read-only             # CLI overrides for co
 | `CODA_READ_ONLY` | No | `false` | `true`/`1`/`yes` disables every write tool |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL (trailing slash stripped) |
 | `CODA_TIMEOUT` | No | `30` | HTTP timeout, seconds |
-| `CODA_SSL_VERIFY` | No | `true` | `false`/`0`/`no` skips certificate verification |
 
 The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — first non-empty wins. Tokens are generated at <https://coda.io/account#apiSettings> under "API settings". `CodaConfig.validate()` rejects non-ASCII tokens (httpx header encoding).
 

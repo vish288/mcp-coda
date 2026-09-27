@@ -48,7 +48,6 @@ class CodaClient:
                 "Content-Type": "application/json",
             },
             timeout=self.config.timeout,
-            verify=self.config.ssl_verify,
         )
 
     async def close(self) -> None:
@@ -81,7 +80,12 @@ class CodaClient:
 
         # Rate limit
         if resp.status_code == 429:
-            retry_after = int(resp.headers.get("Retry-After", "1"))
+            # Retry-After is delta-seconds or an HTTP-date; we only act on the
+            # numeric form and fall back to 1s rather than failing to parse.
+            try:
+                retry_after = int(resp.headers.get("Retry-After", "1"))
+            except ValueError:
+                retry_after = 1
             raise CodaRateLimitError(retry_after=retry_after, body=resp.text)
 
         # Auth errors
@@ -100,11 +104,8 @@ class CodaClient:
         if resp.status_code == 204 or not resp.content:
             return None
 
-        # Accepted (async mutation) — return full response including requestId
-        if resp.status_code == 202:
-            return resp.json()
-
-        # HTML guard
+        # HTML guard (202 async-mutation bodies fall through to the JSON parse
+        # below, which returns the full response including requestId)
         content_type = resp.headers.get("content-type", "")
         if "text/html" in content_type:
             msg = "Unexpected HTML response — check URL and authentication"

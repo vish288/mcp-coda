@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock
 
+import pytest
+from fastmcp.exceptions import ToolError
+
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.permissions import (
     coda_add_permission as _coda_add_permission,
@@ -134,6 +137,13 @@ class TestAddPermission:
         result = json.loads(await coda_add_permission(ctx, doc_id="d1", access="write"))
         assert result["isError"] is True
         assert "CODA_READ_ONLY" in result["error"]
+
+    async def test_requires_a_principal(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client)
+        with pytest.raises(ToolError, match="principal_email or principal_domain required"):
+            await coda_add_permission(ctx, doc_id="d1", access="write")
+        client.post.assert_not_called()
 
 
 class TestDeletePermission:

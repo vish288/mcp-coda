@@ -12,9 +12,7 @@ from ._helpers import _get_client, _load_file, _validate_id
 
 _log = logging.getLogger(__name__)
 
-# ════════════════════════════════════════════════════════════════════
-# Static resource loader
-# ════════════════════════════════════════════════════════════════════
+# --- Static resource loader ---
 
 _RESOURCES_DIR = str(Path(__file__).resolve().parent.parent / "resources")
 
@@ -24,9 +22,7 @@ def _load(filename: str) -> str:
     return _load_file(_RESOURCES_DIR, filename)
 
 
-# ════════════════════════════════════════════════════════════════════
-# Rules
-# ════════════════════════════════════════════════════════════════════
+# --- Rules ---
 
 
 @mcp.resource(
@@ -103,9 +99,7 @@ def coda_api_patterns_rules() -> str:
     return _load("coda-api-patterns.md")
 
 
-# ════════════════════════════════════════════════════════════════════
-# Guides
-# ════════════════════════════════════════════════════════════════════
+# --- Guides ---
 
 
 @mcp.resource(
@@ -176,9 +170,7 @@ def folder_organization_guide() -> str:
     return _load("folder-organization.md")
 
 
-# ════════════════════════════════════════════════════════════════════
-# Data resources (live API)
-# ════════════════════════════════════════════════════════════════════
+# --- Data resources (live API) ---
 
 
 @mcp.resource(
