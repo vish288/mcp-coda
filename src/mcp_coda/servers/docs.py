@@ -10,8 +10,8 @@ from ._helpers import (
     _format_list_as_markdown,
     _get_client,
     _ok,
-    _ok_markdown,
     _page,
+    _truncate,
     tool_result,
 )
 
@@ -70,7 +70,7 @@ async def coda_list_docs(
     has_more = next_cursor is not None
     total_count = len(items)
     if response_format == "markdown":
-        return _ok_markdown(
+        return _truncate(
             _format_list_as_markdown(
                 items,
                 has_more=has_more,
@@ -169,6 +169,8 @@ async def coda_update_doc(
         body["title"] = title
     if icon_name is not None:
         body["iconName"] = icon_name
+    if not body:
+        return _ok({"unchanged": True, "doc_id": doc_id})
     return _ok(await _get_client(ctx).patch(f"/docs/{doc_id}", json_data=body))
 
 

@@ -9,6 +9,11 @@ from . import mcp
 from ._helpers import _get_client, _ok, _page, tool_result
 
 
+def _csv(values: list[int]) -> str:
+    """Coda analytics filters take comma-separated ID lists."""
+    return ",".join(str(v) for v in values)
+
+
 @mcp.tool(
     tags={"coda", "analytics", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
@@ -181,7 +186,7 @@ async def coda_list_pack_analytics(
     """
     params: dict[str, Any] = {"limit": limit}
     if pack_ids is not None:
-        params["packIds"] = ",".join(str(p) for p in pack_ids)
+        params["packIds"] = _csv(pack_ids)
     if is_published is not None:
         params["isPublished"] = is_published
     if since_date is not None:
@@ -224,7 +229,7 @@ async def coda_get_pack_analytics_summary(
     """
     params: dict[str, Any] = {}
     if pack_ids is not None:
-        params["packIds"] = ",".join(str(p) for p in pack_ids)
+        params["packIds"] = _csv(pack_ids)
     if is_published is not None:
         params["isPublished"] = is_published
     if since_date is not None:

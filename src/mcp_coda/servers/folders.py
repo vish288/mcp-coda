@@ -102,6 +102,8 @@ async def coda_update_folder(
     body: dict[str, Any] = {}
     if name is not None:
         body["name"] = name
+    if not body:
+        return _ok({"unchanged": True, "folder_id": folder_id})
     return _ok(await _get_client(ctx).patch(f"/folders/{folder_id}", json_data=body))
 
 

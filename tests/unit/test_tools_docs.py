@@ -184,6 +184,13 @@ class TestUpdateDoc:
         result = json.loads(await coda_update_doc(ctx, doc_id="bad", title="X"))
         assert result["isError"] is True
 
+    async def test_no_op_when_nothing_to_update(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_update_doc(ctx, doc_id="d1"))
+        assert result == {"unchanged": True, "doc_id": "d1"}
+        client.patch.assert_not_called()
+
 
 class TestDeleteDoc:
     async def test_success(self) -> None:

@@ -119,6 +119,22 @@ class TestCodaClientRequest:
                 await client.get("/docs")
             assert exc_info.value.retry_after == 1
 
+    async def test_rate_limit_http_date_retry_after(self, config: CodaConfig) -> None:
+        # Retry-After may be an HTTP-date instead of delta-seconds; we can't act
+        # on that, so fall back to 1 rather than blowing up on int().
+        async with respx.mock:
+            respx.get(f"{TEST_BASE_URL}/docs").mock(
+                return_value=httpx.Response(
+                    429,
+                    headers={"Retry-After": "Wed, 21 Oct 2015 07:28:00 GMT"},
+                    text="slow down",
+                )
+            )
+            client = CodaClient(config)
+            with pytest.raises(CodaRateLimitError) as exc_info:
+                await client.get("/docs")
+            assert exc_info.value.retry_after == 1
+
     async def test_auth_error_401(self, config: CodaConfig) -> None:
         async with respx.mock:
             respx.get(f"{TEST_BASE_URL}/whoami").mock(

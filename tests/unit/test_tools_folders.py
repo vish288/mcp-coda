@@ -105,6 +105,13 @@ class TestUpdateFolder:
         result = json.loads(await coda_update_folder(ctx, folder_id="bad", name="X"))
         assert result["isError"] is True
 
+    async def test_no_op_when_nothing_to_update(self) -> None:
+        client = AsyncMock()
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_update_folder(ctx, folder_id="fl1"))
+        assert result == {"unchanged": True, "folder_id": "fl1"}
+        client.patch.assert_not_called()
+
 
 class TestDeleteFolder:
     async def test_success(self) -> None:

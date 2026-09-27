@@ -157,9 +157,14 @@ def _page(data: dict[str, Any]) -> str:
     )
 
 
-def _ok_markdown(text: str) -> str:
-    """Return a markdown-formatted response, with truncation guard."""
-    return _truncate(text)
+def _list_footer(
+    total_count: int, has_more: bool, next_cursor: str | None, *, noun: str = "items"
+) -> str:
+    """The trailing `N items returned (more available, cursor: …)` line."""
+    footer = f"\n\n{total_count} {noun} returned"
+    if has_more:
+        footer += f" (more available, cursor: `{next_cursor}`)"
+    return footer
 
 
 def _format_list_as_markdown(
@@ -168,14 +173,12 @@ def _format_list_as_markdown(
     has_more: bool = False,
     next_cursor: str | None = None,
     total_count: int = 0,
-    name_key: str = "name",
-    id_key: str = "id",
 ) -> str:
     """Format a list response as human-readable markdown."""
     lines: list[str] = []
     for item in items:
-        name = item.get(name_key, "Untitled")
-        item_id = item.get(id_key, "")
+        name = item.get("name", "Untitled")
+        item_id = item.get("id", "")
         line = f"- **{name}** (`{item_id}`)"
         # Add any extra useful fields
         if "type" in item:
@@ -187,10 +190,7 @@ def _format_list_as_markdown(
         lines.append(line)
     if not lines:
         lines.append("*No results found.*")
-    footer = f"\n\n{total_count} items returned"
-    if has_more:
-        footer += f" (more available, cursor: `{next_cursor}`)"
-    return "\n".join(lines) + footer
+    return "\n".join(lines) + _list_footer(total_count, has_more, next_cursor)
 
 
 def _err(error: Exception) -> str:

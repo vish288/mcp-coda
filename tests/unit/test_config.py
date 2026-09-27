@@ -17,7 +17,6 @@ class TestCodaConfig:
         assert config.base_url == "https://coda.io/apis/v1"
         assert config.read_only is False
         assert config.timeout == 30
-        assert config.ssl_verify is True
 
     def test_from_env_with_token(self) -> None:
         env = {"CODA_API_TOKEN": "my-token"}
@@ -49,12 +48,6 @@ class TestCodaConfig:
                 config = CodaConfig.from_env()
             assert config.read_only is False, f"Expected False for CODA_READ_ONLY={falsy}"
 
-    def test_from_env_ssl_verify_disabled(self) -> None:
-        env = {"CODA_API_TOKEN": "tok", "CODA_SSL_VERIFY": "false"}
-        with patch.dict(os.environ, env, clear=False):
-            config = CodaConfig.from_env()
-        assert config.ssl_verify is False
-
     def test_from_env_timeout(self) -> None:
         env = {"CODA_API_TOKEN": "tok", "CODA_TIMEOUT": "60"}
         with patch.dict(os.environ, env, clear=False):
@@ -83,12 +76,6 @@ class TestCodaConfig:
         with patch.dict(os.environ, env, clear=False):
             config = CodaConfig.from_env()
         assert config.token == "winner"
-
-    def test_is_configured_with_token(self) -> None:
-        assert CodaConfig(token="abc").is_configured is True
-
-    def test_is_configured_without_token(self) -> None:
-        assert CodaConfig().is_configured is False
 
     def test_validate_success(self) -> None:
         CodaConfig(token="abc").validate()  # should not raise

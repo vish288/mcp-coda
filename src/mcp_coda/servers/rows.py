@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, _ok_markdown, _page, tool_result
+from ._helpers import _get_client, _list_footer, _ok, _page, _truncate, tool_result
 
 
 @mcp.tool(
@@ -83,10 +83,8 @@ async def coda_list_rows(
             lines.append(f"- {row_name}: {cells}")
         if not lines:
             lines.append("*No rows found.*")
-        footer = f"\n\n{total_count} rows returned"
-        if has_more:
-            footer += f" (more available, cursor: `{next_cursor}`)"
-        return _ok_markdown("\n".join(lines) + footer)
+        footer = _list_footer(total_count, has_more, next_cursor, noun="rows")
+        return _truncate("\n".join(lines) + footer)
     return _page(data)
 
 
