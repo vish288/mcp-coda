@@ -115,20 +115,6 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_delete_rows` | Bulk delete multiple rows by ID in a single call. Returns requestId. |
 | `coda_push_button` | Push a button in a table row, triggering its configured action. Returns requestId. |
 
-### Formulas (2)
-
-| Tool | Description |
-|------|-------------|
-| `coda_list_formulas` | List all named formulas in a doc. Returns formula name, ID, and current value. |
-| `coda_get_formula` | Get the current value of a named formula. Returns name, ID, type, value, and error status. |
-
-### Controls (2)
-
-| Tool | Description |
-|------|-------------|
-| `coda_list_controls` | List all controls (sliders, select lists, date pickers, etc.) in a doc. Returns name, ID, type, and current value. |
-| `coda_get_control` | Get the current value of a specific control. Returns name, ID, type, and value. |
-
 ### Permissions (6)
 
 | Tool | Description |
@@ -140,14 +126,6 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_search_principals` | Search for users and groups that can be added to a doc's permissions. |
 | `coda_get_acl_settings` | Get doc-level ACL settings (copying, editor permissions, default access mode). |
 
-### Publishing (3)
-
-| Tool | Description |
-|------|-------------|
-| `coda_list_categories` | List all available publishing categories for the Coda gallery. |
-| `coda_publish_doc` | Publish a doc with optional gallery listing, URL slug, and mode (view/play). |
-| `coda_unpublish_doc` | Unpublish a doc, removing public access. Reversible. |
-
 ### Folders (5)
 
 | Tool | Description |
@@ -158,10 +136,17 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_update_folder` | Rename a folder. Idempotent. |
 | `coda_delete_folder` | Delete a folder. Folder must be empty (no docs). |
 
-### Automations (1)
+### Misc (8)
 
 | Tool | Description |
 |------|-------------|
+| `coda_list_formulas` | List all named formulas in a doc. Returns formula name, ID, and current value. |
+| `coda_get_formula` | Get the current value of a named formula. Returns name, ID, type, value, and error status. |
+| `coda_list_controls` | List all controls (sliders, select lists, date pickers, etc.) in a doc. Returns name, ID, type, and current value. |
+| `coda_get_control` | Get the current value of a specific control. Returns name, ID, type, and value. |
+| `coda_list_categories` | List all available publishing categories for the Coda gallery. |
+| `coda_publish_doc` | Publish a doc with optional gallery listing, URL slug, and mode (view/play). |
+| `coda_unpublish_doc` | Unpublish a doc, removing public access. Reversible. |
 | `coda_trigger_automation` | Trigger an automation rule with an optional JSON payload. Returns requestId. |
 
 ### Analytics (7)

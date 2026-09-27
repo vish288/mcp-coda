@@ -107,12 +107,9 @@ uvx mcp-coda --coda-token <token> --read-only             # CLI overrides for co
 | pages | 8 | read/write | list, get, create, update, delete, export pages; get/delete page content |
 | tables | 4 | read | list/get tables, list/get columns |
 | rows | 7 | read/write | list, get, insert (upsert via `key_columns`), update, delete row/rows, push button |
-| formulas | 2 | read | list, get formulas |
-| controls | 2 | read | list, get controls |
 | permissions | 6 | read/write | sharing metadata, list/add/delete permissions, search principals, ACL settings |
-| publishing | 3 | read/write | list categories, publish, unpublish |
 | folders | 5 | read/write | list, get, create, update, delete folders |
-| automations | 1 | write | trigger automation |
+| misc | 8 | read/write | list/get formulas, list/get controls, list categories, publish/unpublish, trigger automation |
 | analytics | 7 | read | doc/page/pack analytics + summaries, last-updated day |
 
 ## Common workflows
