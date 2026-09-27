@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, _get_client, _ok, _page, tool_result
 
 
 @mcp.tool(
@@ -24,10 +24,7 @@ async def coda_list_pages(
         int,
         Field(description="Maximum number of pages to return (1-200)", ge=1, le=200),
     ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    cursor: Cursor = None,
 ) -> str:
     """List all pages in a Coda doc.
 
@@ -36,9 +33,7 @@ async def coda_list_pages(
     coda_get_page_content for that. Use the returned page IDs (not names) for
     all subsequent page operations.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/docs/{doc_id}/pages", params=params))
 
 

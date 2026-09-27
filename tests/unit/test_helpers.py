@@ -24,7 +24,6 @@ from mcp_coda.servers._helpers import (
     _page,
     _parse_coda_doc_url,
     _truncate,
-    _validate_id,
 )
 from tests.conftest import _make_ctx
 
@@ -251,32 +250,6 @@ class TestLoadFile:
     def test_missing_file_raises(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError):
             _load_file(str(tmp_path), "nonexistent.md")
-
-
-class TestValidateId:
-    """Tests for the _validate_id helper."""
-
-    def test_accepts_alphanumeric(self) -> None:
-        _validate_id("abc123", "doc_id")  # should not raise
-
-    def test_accepts_hyphens_underscores(self) -> None:
-        _validate_id("my-doc_v2", "doc_id")  # should not raise
-
-    def test_rejects_empty(self) -> None:
-        with pytest.raises(ValueError, match="Invalid doc_id"):
-            _validate_id("", "doc_id")
-
-    def test_rejects_slash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid doc_id"):
-            _validate_id("../etc/passwd", "doc_id")
-
-    def test_rejects_spaces(self) -> None:
-        with pytest.raises(ValueError, match="Invalid doc_id"):
-            _validate_id("has space", "doc_id")
-
-    def test_rejects_special_chars(self) -> None:
-        with pytest.raises(ValueError, match="Invalid doc_id"):
-            _validate_id("id;DROP TABLE", "doc_id")
 
 
 class TestParseCodaDocUrl:

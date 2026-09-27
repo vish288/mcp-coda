@@ -1,12 +1,12 @@
 """Analytics tools — doc, page, pack analytics and last-updated info."""
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, Limit, _get_client, _ok, _page, tool_result
 
 
 def _csv(values: list[int]) -> str:
@@ -37,14 +37,8 @@ async def coda_list_doc_analytics(
         str | None,
         Field(description="End date for analytics (ISO 8601)"),
     ] = None,
-    limit: Annotated[
-        int,
-        Field(description="Maximum number of results (1-200)", ge=1, le=200),
-    ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    limit: Limit = 50,
+    cursor: Cursor = None,
 ) -> str:
     """List analytics data for docs (views, copies, likes, sessions).
 
@@ -53,17 +47,14 @@ async def coda_list_doc_analytics(
     available to doc owners. Use coda_get_doc_analytics_summary for aggregated
     totals instead of per-doc breakdown.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if doc_ids is not None:
-        params["docIds"] = ",".join(doc_ids)
-    if is_published is not None:
-        params["isPublished"] = is_published
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {
+        "limit": limit,
+        "docIds": ",".join(doc_ids) if doc_ids is not None else None,
+        "isPublished": is_published,
+        "sinceDate": since_date,
+        "untilDate": until_date,
+        "pageToken": cursor,
+    }
     return _page(await _get_client(ctx).get("/analytics/docs", params=params))
 
 
@@ -93,13 +84,7 @@ async def coda_get_doc_analytics_summary(
     across all accessible docs. Use this for a high-level overview — use
     coda_list_doc_analytics for per-doc breakdown.
     """
-    params: dict[str, Any] = {}
-    if is_published is not None:
-        params["isPublished"] = is_published
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
+    params = {"isPublished": is_published, "sinceDate": since_date, "untilDate": until_date}
     return _ok(await _get_client(ctx).get("/analytics/docs/summary", params=params))
 
 
@@ -122,14 +107,8 @@ async def coda_list_page_analytics(
         str | None,
         Field(description="End date for analytics (ISO 8601)"),
     ] = None,
-    limit: Annotated[
-        int,
-        Field(description="Maximum number of results (1-200)", ge=1, le=200),
-    ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    limit: Limit = 50,
+    cursor: Cursor = None,
 ) -> str:
     """List analytics data for pages within a doc.
 
@@ -137,13 +116,7 @@ async def coda_list_page_analytics(
     Only available to doc owners. Useful for understanding which pages get the
     most traffic.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "sinceDate": since_date, "untilDate": until_date, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/analytics/docs/{doc_id}/pages", params=params))
 
 
@@ -170,31 +143,22 @@ async def coda_list_pack_analytics(
         str | None,
         Field(description="End date for analytics (ISO 8601)"),
     ] = None,
-    limit: Annotated[
-        int,
-        Field(description="Maximum number of results (1-200)", ge=1, le=200),
-    ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    limit: Limit = 50,
+    cursor: Cursor = None,
 ) -> str:
     """List analytics data for Coda packs.
 
     Returns usage metrics for packs including install counts, doc usage, and
     formula invocations. Only available to pack makers for their own packs.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if pack_ids is not None:
-        params["packIds"] = _csv(pack_ids)
-    if is_published is not None:
-        params["isPublished"] = is_published
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {
+        "limit": limit,
+        "packIds": _csv(pack_ids) if pack_ids is not None else None,
+        "isPublished": is_published,
+        "sinceDate": since_date,
+        "untilDate": until_date,
+        "pageToken": cursor,
+    }
     return _page(await _get_client(ctx).get("/analytics/packs", params=params))
 
 
@@ -227,15 +191,12 @@ async def coda_get_pack_analytics_summary(
     Returns total installs, doc usage, and formula invocations summed across
     packs. Only available to pack makers.
     """
-    params: dict[str, Any] = {}
-    if pack_ids is not None:
-        params["packIds"] = _csv(pack_ids)
-    if is_published is not None:
-        params["isPublished"] = is_published
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
+    params = {
+        "packIds": _csv(pack_ids) if pack_ids is not None else None,
+        "isPublished": is_published,
+        "sinceDate": since_date,
+        "untilDate": until_date,
+    }
     return _ok(await _get_client(ctx).get("/analytics/packs/summary", params=params))
 
 
@@ -258,27 +219,15 @@ async def coda_list_pack_formula_analytics(
         str | None,
         Field(description="End date for analytics (ISO 8601)"),
     ] = None,
-    limit: Annotated[
-        int,
-        Field(description="Maximum number of results (1-200)", ge=1, le=200),
-    ] = 50,
-    cursor: Annotated[
-        str | None,
-        Field(description="Pagination cursor from a previous response"),
-    ] = None,
+    limit: Limit = 50,
+    cursor: Cursor = None,
 ) -> str:
     """List analytics data for individual formulas within a pack.
 
     Returns per-formula invocation counts, error rates, and execution times.
     Only available to the pack maker.
     """
-    params: dict[str, Any] = {"limit": limit}
-    if since_date is not None:
-        params["sinceDate"] = since_date
-    if until_date is not None:
-        params["untilDate"] = until_date
-    if cursor is not None:
-        params["pageToken"] = cursor
+    params = {"limit": limit, "sinceDate": since_date, "untilDate": until_date, "pageToken": cursor}
     return _page(await _get_client(ctx).get(f"/analytics/packs/{pack_id}/formulas", params=params))
 
 

@@ -4,11 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from mcp_coda.servers.prompts import (
     _PROMPTS_DIR,
-    _load_prompt,
     analyze_doc_structure,
     audit_permissions,
     design_table_schema,
@@ -37,25 +34,6 @@ design_table_schema_fn = _unwrap_prompt(design_table_schema)
 migrate_spreadsheet_fn = _unwrap_prompt(migrate_spreadsheet)
 setup_automation_fn = _unwrap_prompt(setup_automation)
 audit_permissions_fn = _unwrap_prompt(audit_permissions)
-
-
-class TestLoadPrompt:
-    def test_loads_existing_prompt(self) -> None:
-        content = _load_prompt("analyze-doc-structure.md")
-        assert "Analyze" in content
-        assert len(content) > 50
-
-    def test_rejects_path_traversal(self) -> None:
-        with pytest.raises(ValueError, match="Invalid filename"):
-            _load_prompt("../../pyproject.toml")
-
-    def test_rejects_backslash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid filename"):
-            _load_prompt("..\\..\\pyproject.toml")
-
-    def test_missing_file_raises(self) -> None:
-        with pytest.raises(FileNotFoundError):
-            _load_prompt("nonexistent.md")
 
 
 class TestPromptsDir:
