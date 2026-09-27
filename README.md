@@ -11,7 +11,7 @@
 
 **Install:** `uvx mcp-coda` | [PyPI](https://pypi.org/project/mcp-coda/) | [MCP Registry](https://registry.modelcontextprotocol.io) | [Changelog](https://github.com/vish288/mcp-coda/releases)
 
-**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **54 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **53 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
 Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
@@ -101,11 +101,11 @@ Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#ap
 | Windsurf | Yes | `~/.codeium/windsurf/mcp_config.json` |
 | Any MCP client | Yes | stdio or HTTP transport |
 
-## Tools (54)
+## Tools (53)
 
 | Category | Count | Tools |
 |----------|-------|-------|
-| **Account** | 4 | whoami, resolve browser link, mutation status, rate limit budget |
+| **Account** | 3 | whoami, resolve browser link, mutation status |
 | **Docs** | 5 | list, get, create, update, delete |
 | **Pages** | 8 | list, get, create, update, delete, get content, delete content, export |
 | **Tables** | 4 | list tables, get table, list columns, get column |
@@ -124,7 +124,6 @@ Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#ap
 | `coda_whoami` | Get current user info |
 | `coda_resolve_browser_link` | Convert browser URL to API IDs |
 | `coda_get_mutation_status` | Check async write status |
-| `coda_rate_limit_budget` | Get remaining rate limit budget |
 
 ### Docs
 | Tool | Description |
@@ -329,7 +328,7 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 
 ### Rate Limits
 
-Coda enforces per-token rate limits (varies by plan). When rate-limited, tools return a 429 error with `retry_after` seconds. Use `coda_rate_limit_budget` to check remaining budget before batch operations. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100); use `limit` to adjust.
+Coda enforces per-token rate limits (varies by plan). When rate-limited, tools return a 429 error with `retry_after` seconds; the server does not retry — wait that many seconds before retrying. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100); use `limit` to adjust.
 
 ### Async Mutations
 

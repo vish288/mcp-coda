@@ -1,6 +1,6 @@
 # mcp-coda
 
-> MCP server for the Coda API — 54 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+> MCP server for the Coda API — 53 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 MCP server that wraps the Coda REST API v1. Provides CRUD operations across all Coda resource types, ambient context via static knowledge and live API data, and prompt templates for common workflows. Built with FastMCP, httpx, and Pydantic.
 
@@ -15,7 +15,7 @@ MCP server that wraps the Coda REST API v1. Provides CRUD operations across all 
 
 ## Documentation
 
-- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 54 tools, 12 resources, 5 prompts
+- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 53 tools, 12 resources, 5 prompts
 - [PyPI](https://pypi.org/project/mcp-coda/): install via `pip install mcp-coda` or `uvx mcp-coda`
 - [GitHub](https://github.com/vish288/mcp-coda): source code, issue tracker, development setup
 - [MCP Registry](https://registry.modelcontextprotocol.io): discover and install MCP servers
@@ -60,16 +60,15 @@ uvx mcp-coda --coda-token your-token --read-only
 
 The server loads `.env` files from the working directory automatically via python-dotenv.
 
-## Tools (54)
+## Tools (53)
 
-### Account (4)
+### Account (3)
 
 | Tool | Description |
 |------|-------------|
 | `coda_whoami` | Get information about the current API token owner. Returns the user's name, email, and token scopes. Use this to verify that the API token is valid and has the expected permissions. |
 | `coda_resolve_browser_link` | Resolve a Coda browser URL to API resource IDs. Converts a browser URL into API-compatible IDs for the doc, page, table, row, or column it points to. Use this as the first step when a user provides a Coda URL instead of IDs. |
 | `coda_get_mutation_status` | Check the status of an asynchronous mutation (write operation). Coda write operations return 202 with a requestId. Use this to poll whether the mutation has completed, is still processing, or failed. Poll every 2 seconds, up to 30 seconds maximum. |
-| `coda_rate_limit_budget` | Check the current rate limit budget for reads and writes. Returns how many read and write API calls remain in the current sliding window (6 seconds). Coda allows 100 reads/6s and 10 writes/6s. |
 
 ### Docs (5)
 

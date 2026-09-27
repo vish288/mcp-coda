@@ -1,6 +1,6 @@
 # mcp-coda — Agent Context
 
-MCP server for the Coda v1 API. 54 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+MCP server for the Coda v1 API. 53 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-coda`.
 
@@ -98,11 +98,11 @@ uvx mcp-coda --transport streamable-http --port 9000
 uvx mcp-coda --coda-token <token> --read-only             # CLI overrides for config
 ```
 
-## Tool inventory (54)
+## Tool inventory (53)
 
 | Module | Tools | Type | Covers |
 |--------|-------|------|--------|
-| account | 4 | read | `coda_whoami`, `coda_resolve_browser_link`, `coda_get_mutation_status`, `coda_rate_limit_budget` |
+| account | 3 | read | `coda_whoami`, `coda_resolve_browser_link`, `coda_get_mutation_status` |
 | docs | 5 | read/write | list, get, create, update, delete docs |
 | pages | 8 | read/write | list, get, create, update, delete, export pages; get/delete page content |
 | tables | 4 | read | list/get tables, list/get columns |
@@ -136,7 +136,7 @@ The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — 
 
 - Browser URLs are not API IDs — run `coda_resolve_browser_link` first to get doc/page/table/row IDs
 - Pack formulas (DrawFlowchart, Mermaid, etc.) cannot be inserted or executed through the API
-- Rate limits are per-token and vary by plan; check `coda_rate_limit_budget` before batch operations
+- Rate limits are per-token and vary by plan; a 429 returns `retry_after` seconds and the server does not retry itself
 - Analytics endpoints generally require doc ownership, not just Viewer access
 - Minimum doc roles: Viewer for reads; Editor for page/row writes, folder management, and triggering automations; Doc Owner for permissions and publishing
 
