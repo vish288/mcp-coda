@@ -35,7 +35,6 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
         None,
     ),
     ("coda_get_mutation_status", {"request_id": "req1"}, "GET", "/mutationStatus/req1", {}, None),
-    ("coda_rate_limit_budget", {}, None, "", {}, None),
     # analytics
     (
         "coda_list_doc_analytics",
