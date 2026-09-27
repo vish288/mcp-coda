@@ -6,7 +6,7 @@ from pathlib import Path
 from string import Template
 from typing import Literal
 
-from fastmcp.prompts.prompt import Message
+from fastmcp.prompts import Message
 
 from . import mcp
 from ._helpers import _load_file, _parse_coda_doc_url

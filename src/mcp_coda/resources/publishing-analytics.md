@@ -9,11 +9,11 @@ How to publish docs and access analytics data in Coda.
 ```python
 coda_publish_doc(
     doc_id="docId",
-    slug="my-published-doc",           # URL-friendly identifier
-    discoverable=True,                  # listed in Coda gallery
-    earnCredit=True,                    # earn Coda credits for gallery listings
-    category="projectManagement",       # gallery category
-    mode="view"                         # "view" or "play" (interactive)
+    slug="my-published-doc",  # URL-friendly identifier
+    discoverable=True,  # listed in Coda gallery
+    earnCredit=True,  # earn Coda credits for gallery listings
+    category="projectManagement",  # gallery category
+    mode="view",  # "view" or "play" (interactive)
 )
 ```
 
@@ -64,7 +64,7 @@ coda_list_doc_analytics(
     doc_ids=["docId1", "docId2"],
     since_date="2024-01-01",
     until_date="2024-03-31",
-    scale="daily"                # "daily" or "cumulative"
+    scale="daily",  # "daily" or "cumulative"
 )
 ```
 

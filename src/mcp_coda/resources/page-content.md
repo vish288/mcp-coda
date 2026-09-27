@@ -23,7 +23,7 @@ coda_create_page(
     doc_id="docId",
     name="New Page",
     content="<h1>Title</h1><p>Body text</p>",
-    parent_page_id="canvas-123"  # optional nesting
+    parent_page_id="canvas-123",  # optional nesting
 )
 ```
 
@@ -33,9 +33,9 @@ coda_create_page(
 coda_update_page(
     doc_id="docId",
     page_id="canvas-456",
-    name="Updated Title",          # optional
+    name="Updated Title",  # optional
     content="<p>New content</p>",  # optional
-    insert_mode="replace"          # or "append"
+    insert_mode="replace",  # or "append"
 )
 ```
 
