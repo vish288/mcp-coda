@@ -72,7 +72,7 @@ Also pass `tags={"coda", "<domain>", "read"|"write"}`.
 
 ### Adding a tool
 
-1. Add it to the matching server module, or create a new module and register it in the `_modules` list in `servers/__init__.py`
+1. Add it to the matching server module, or create a new module under `servers/` — every non-underscore module there is imported automatically
 2. Import helpers from `._helpers` — never re-implement `_get_client`, `_ok`, `_err`, `_check_write`
 3. Include `annotations={}` and `tags={}` on the `@mcp.tool()` decorator
 4. Add unit tests in `tests/unit/test_tools_<module>.py`

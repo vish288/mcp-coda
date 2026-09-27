@@ -128,28 +128,3 @@ def audit_permissions(doc_id: str) -> list[Message]:
             ),
         ),
     ]
-
-
-# ════════════════════════════════════════════════════════════════════
-# Startup validation
-# ════════════════════════════════════════════════════════════════════
-
-_PROMPT_FILES = [
-    "analyze-doc-structure.md",
-    "design-table-schema.md",
-    "migrate-spreadsheet.md",
-    "setup-automation.md",
-    "audit-permissions.md",
-]
-
-
-def _validate_prompts() -> None:
-    """Verify all expected prompt files exist at import time."""
-    _dir = Path(_PROMPTS_DIR)
-    missing = [f for f in _PROMPT_FILES if not (_dir / f).is_file()]
-    if missing:
-        msg = f"Missing prompt files (packaging error): {missing}"
-        raise RuntimeError(msg)
-
-
-_validate_prompts()
