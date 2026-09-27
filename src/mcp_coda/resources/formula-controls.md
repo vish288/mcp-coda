@@ -9,7 +9,7 @@ Named formulas are doc-level computed values — like spreadsheet named ranges b
 ### Reading Formulas
 
 ```python
-coda_list_formulas(doc_id="docId")         # list all named formulas
+coda_list_formulas(doc_id="docId")  # list all named formulas
 coda_get_formula(doc_id="docId", formula_id="f-abc")  # get a specific formula
 ```
 
@@ -54,7 +54,7 @@ Controls are interactive UI elements on a page that hold a value.
 
 ```python
 coda_list_controls(doc_id="docId", page_id="canvas-123")  # all controls on a page
-coda_get_control(doc_id="docId", control_id="ctrl-xyz")    # specific control
+coda_get_control(doc_id="docId", control_id="ctrl-xyz")  # specific control
 ```
 
 Response includes:
