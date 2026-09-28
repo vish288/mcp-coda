@@ -1,6 +1,6 @@
 {
   "name": "mcp-coda",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "MCP server for Coda API — docs, pages, tables, rows, formulas, permissions, and automation.",
   "mcpServers": {
     "mcp-coda": {

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.1] - 2026-09-28
+
+### Bug Fixes
+- fix: close the closing-review findings on 0.7.0 (a4e02a2)
+
+### Documentation
+- docs: describe the derived Gemini settings accurately (d7441ce)
+
+
 ## [0.7.0] - 2026-09-27
 
 ### Features
