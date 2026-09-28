@@ -3,13 +3,10 @@
 
 Both files stay committed (Gemini CLI installs the extension straight from the
 repo; llms.txt is fetched from main), but hand-editing two files that restate
-data already in server.json / pyproject.toml / llms-full.txt lets them drift.
+data already in server.json / llms-full.txt lets them drift.
 This script is the single source of truth:
 
   * gemini-extension.json <- server.json (name, version, required env vars)
-    including the description: server.json is the single source, the same
-    rule as the sibling servers, so the two manifests cannot drift.
-    used here.
   * llms.txt <- the leading prefix of llms-full.txt, up to the first section
     (## Setup Examples) that belongs only to the full document.
 
@@ -35,7 +32,7 @@ _LLMS_SPLIT = "\n## Setup Examples"
 
 
 def derive_gemini() -> str:
-    """gemini-extension.json content, byte-for-byte, from server.json + pyproject."""
+    """gemini-extension.json content, byte-for-byte, from server.json."""
     server = json.loads(SERVER_JSON.read_text(encoding="utf-8"))
     package = server["packages"][0]
     name = package["identifier"]
@@ -47,7 +44,6 @@ def derive_gemini() -> str:
             "sensitive": env["isSecret"],
         }
         for env in package["environmentVariables"]
-        if env["isRequired"]
     ]
     extension = {
         "name": name,

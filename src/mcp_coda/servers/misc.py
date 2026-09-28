@@ -2,7 +2,7 @@
 
 These four small tool groups share no state and were one tool (automations),
 two (formulas), two (controls) and three (publishing) modules; folded into one
-file so 54 tools no longer need a dozen modules.
+file so the tools no longer need a dozen modules.
 """
 
 from typing import Annotated, Any

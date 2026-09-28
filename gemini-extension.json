@@ -16,6 +16,12 @@
       "description": "Coda API token (also accepts CODA_TOKEN or CODA_PAT)",
       "required": true,
       "sensitive": true
+    },
+    {
+      "name": "CODA_READ_ONLY",
+      "description": "Restrict to read-only operations (true/false)",
+      "required": false,
+      "sensitive": false
     }
   ]
 }
