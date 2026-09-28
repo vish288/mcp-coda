@@ -19,6 +19,10 @@
 - test: drop the eval pair that expected the removed budget tool (b40b738)
 
 ### Other
+- build: drop the import the description change left unused, and format (21a22ac)
+- build: source the Gemini description from server.json too (8a32de8)
+- build: derive gemini-extension.json and llms.txt instead of hand-maintaining them (f1d12ba)
+- deps: fastmcp 4.0.10 (417136c)
 
 
 ## [0.6.1] - 2026-09-27

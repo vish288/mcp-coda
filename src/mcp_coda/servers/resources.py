@@ -2,14 +2,13 @@
 
 import json
 import logging
-import re
 from pathlib import Path
 from typing import Any
 
 from fastmcp import Context
 
 from . import mcp
-from ._helpers import _get_client, _load_file
+from ._helpers import _ID_RE, _get_client, _load_file
 
 _log = logging.getLogger(__name__)
 
@@ -215,7 +214,7 @@ async def docs_resource(ctx: Context) -> str:
 async def doc_schema_resource(doc_id: str, ctx: Context) -> str:
     """Return table + column schema for a doc as JSON."""
     try:
-        if not doc_id or not re.match(r"^[a-zA-Z0-9_-]+$", doc_id):
+        if not doc_id or not _ID_RE.match(doc_id):
             msg = f"Invalid doc_id: {doc_id!r}"
             raise ValueError(msg)
         client = _get_client(ctx)
