@@ -6,7 +6,7 @@ repo; llms.txt is fetched from main), but hand-editing two files that restate
 data already in server.json / llms-full.txt lets them drift.
 This script is the single source of truth:
 
-  * gemini-extension.json <- server.json (name, version, required env vars)
+  * gemini-extension.json <- server.json (name, version, description, env vars as settings)
   * llms.txt <- the leading prefix of llms-full.txt, up to the first section
     (## Setup Examples) that belongs only to the full document.
 
