@@ -1,8 +1,8 @@
 # mcp-coda — Agent Context
 
-MCP server for the Coda v1 API. 53 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+MCP server for the Coda v1 API. It provides 53 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
-Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-coda`.
+mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it with `uvx mcp-coda`.
 
 ## Protocol support
 
@@ -28,7 +28,7 @@ Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-co
 
 ## Key patterns
 
-- Every tool sits under `@tool_result` (from `_helpers.py`), applied beneath `@mcp.tool`. A `CodaError` (401/403/404/429, other API statuses, read-only mode) is returned as the structured `_err(e)` JSON; any other exception is logged with its traceback and re-raised as `ToolError`, so the MCP result carries `isError: true`
+- Every tool sits under `@tool_result` (from `_helpers.py`), below `@mcp.tool`. `@tool_result` returns a `CodaError` (401/403/404/429, other API statuses, read-only mode) as the structured `_err(e)` JSON. It logs any other exception with its traceback and re-raises it as `ToolError`, so the MCP result carries `isError: true`
 - Every tool returns `str` (JSON via `_ok`/`_page`/`_err`, markdown via `_ok_markdown`)
 - Write tools are declared `@tool_result(write=True)`, which runs `_check_write(ctx)` before the body
 - List responses go through `_page(data)` and include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)
@@ -39,7 +39,7 @@ Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-co
 
 1. **Server-level**: `CODA_READ_ONLY=true` blocks all write tools before any API call
 2. **MCP annotations**: `readOnlyHint` / `destructiveHint` / `idempotentHint` drive client-side permission prompts
-3. **Coda token**: doc-level access is enforced by Coda's sharing settings — tokens have no scopes and reach everything their owner can reach
+3. **Coda token**: Coda's sharing settings enforce doc-level access. Tokens have no scopes and reach everything their owner can reach
 
 ## MCP compliance rules
 
@@ -141,9 +141,9 @@ The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — 
 ## Coda API gotchas
 
 - Browser URLs are not API IDs — run `coda_resolve_browser_link` first to get doc/page/table/row IDs
-- Pack formulas (DrawFlowchart, Mermaid, etc.) cannot be inserted or executed through the API
+- The API cannot insert or execute pack formulas (DrawFlowchart, Mermaid, etc.)
 - Rate limits are per-token and vary by plan; a 429 returns `retry_after` seconds and the server does not retry itself
-- Analytics endpoints generally require doc ownership, not just Viewer access
+- Analytics endpoints generally require doc ownership, not only Viewer access
 - Minimum doc roles: Viewer for reads; Editor for page/row writes, folder management, and triggering automations; Doc Owner for permissions and publishing
 
 ## Release workflow
@@ -165,7 +165,7 @@ Rules:
 - Never edit the `pyproject.toml` version directly — the workflow owns it
 - Never create tags manually
 - Commit messages must follow conventional commits (`feat:`, `fix:`, `docs:`, …) so the changelog generates
-- The release commit is authored by `github-actions[bot]` with message `chore(release): X.Y.Z`
+- `github-actions[bot]` authors the release commit with the message `chore(release): X.Y.Z`
 
 ## Documentation freshness (mandatory)
 
@@ -179,9 +179,9 @@ Any changeset that adds, removes, or modifies tools, resources, or prompts MUST 
 - `gemini-extension.json` — `description` field
 - `src/mcp_coda/resources/**.md` — the rules/guides shipped to clients; they must only name tools that exist
 
-Check: `uv run pytest tests/test_doc_parity.py` re-derives every count, tool name and version string from the source and fails on drift. To eyeball the total: `grep -c '^async def coda_' src/mcp_coda/servers/*.py`. Also confirm the category list is complete and new tools appear in the right sections with parameters and annotations.
+Check: `uv run pytest tests/test_doc_parity.py` re-derives every count, tool name and version string from the source and fails on drift. To count the total: `grep -c '^async def coda_' src/mcp_coda/servers/*.py`. Also confirm the category list is complete and new tools appear in the right sections with parameters and annotations.
 
 ## Known limitations
 
-- Errors come back as successful tool results carrying `{"error": ...}` (soft-error pattern) — callers must inspect the JSON body, not just the transport status
-- There are no response models — tools return the raw Coda API JSON straight through `_ok`, so field names keep the API's camelCase and unknown fields survive. The only shaping is `_truncate`'s 25k-character cap and the `{items, has_more, next_cursor, total_count}` list envelope each tool builds inline. Parsing responses into typed models would rename every field and silently drop extras, so it is a breaking change, not a refactor.
+- Errors return as successful tool results that carry `{"error": ...}` (soft-error pattern). Callers must inspect the JSON body, not only the transport status
+- There are no response models. Tools return the raw Coda API JSON through `_ok`, so field names keep the API's camelCase and unknown fields survive. `_truncate` caps output at 25k characters, and each tool builds the `{items, has_more, next_cursor, total_count}` list envelope inline. The server shapes nothing else. A move to typed response models would rename every field and silently drop extras, so it is a breaking change, not a refactor.
