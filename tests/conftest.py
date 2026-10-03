@@ -31,7 +31,7 @@ def _make_ctx(client_mock: AsyncMock | None = None, read_only: bool = False) -> 
     FastMCP; the contract layer goes through `tool_client` instead.
     """
     ctx = MagicMock()
-    ctx.request_context.lifespan_context = {
+    ctx.lifespan_context = {
         "config": CodaConfig(token="tok", read_only=read_only),
         "client": MagicMock() if client_mock is None else client_mock,
     }
