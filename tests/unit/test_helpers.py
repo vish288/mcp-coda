@@ -163,14 +163,14 @@ class TestGetClient:
     def test_returns_client_from_context(self) -> None:
         ctx = _make_ctx()
         client = _get_client(ctx)
-        assert client is ctx.request_context.lifespan_context["client"]
+        assert client is ctx.lifespan_context["client"]
 
 
 class TestGetConfig:
     def test_returns_config_from_context(self) -> None:
         ctx = _make_ctx()
         config = _get_config(ctx)
-        assert config is ctx.request_context.lifespan_context["config"]
+        assert config is ctx.lifespan_context["config"]
 
 
 class TestFormatListAsMarkdown:

@@ -15,7 +15,7 @@ from dotenv import load_dotenv
     "--transport",
     type=click.Choice(["stdio", "sse", "streamable-http"]),
     default="stdio",
-    help="MCP transport protocol.",
+    help="MCP transport protocol. (sse is deprecated; use streamable-http)",
 )
 @click.option("--port", default=8000, help="Port for SSE/HTTP transport.")
 @click.option("--host", default="127.0.0.1", help="Host for SSE/HTTP transport.")
@@ -42,6 +42,13 @@ def main(
     )
 
     from .servers import mcp
+
+    if transport == "sse":
+        click.echo(
+            "Warning: --transport sse uses the HTTP+SSE transport, deprecated in MCP 2026-07-28. "
+            "Use --transport streamable-http.",
+            err=True,
+        )
 
     run_kwargs: dict[str, object] = {"transport": transport}
     if transport != "stdio":

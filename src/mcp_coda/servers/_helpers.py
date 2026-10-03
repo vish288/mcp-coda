@@ -68,12 +68,12 @@ def _load_file(base_dir: str, filename: str) -> str:
 
 def _get_client(ctx: Context) -> CodaClient:
     """Retrieve the CodaClient from lifespan context."""
-    return ctx.request_context.lifespan_context["client"]
+    return ctx.lifespan_context["client"]
 
 
 def _get_config(ctx: Context) -> CodaConfig:
     """Retrieve the CodaConfig from lifespan context."""
-    return ctx.request_context.lifespan_context["config"]
+    return ctx.lifespan_context["config"]
 
 
 def _check_write(ctx: Context) -> None:
