@@ -1,7 +1,7 @@
 [project]
 name = "mcp-coda"
 version = "0.7.1"
-description = "MCP server for Coda API — docs, pages, tables, rows, formulas, permissions, and more"
+description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions, and automation"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -14,6 +14,7 @@ keywords = [
     "coda-api",
     "coda-io",
     "ai",
+    "ai-agents",
     "llm",
     "automation",
     "claude",
