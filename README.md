@@ -11,7 +11,7 @@
 
 **Install:** `uvx mcp-coda` | [PyPI](https://pypi.org/project/mcp-coda/) | [MCP Registry](https://registry.modelcontextprotocol.io) | [Changelog](https://github.com/vish288/mcp-coda/releases)
 
-**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for the [Coda API](https://coda.io/developers/apis/v1) — **53 tools**, **12 resources**, and **5 prompts** covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics. Works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **53 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
 Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
@@ -99,6 +99,15 @@ Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#ap
 | VS Code Copilot | Yes | One-click deeplink or `.vscode/mcp.json` |
 | Windsurf | Yes | `~/.codeium/windsurf/mcp_config.json` |
 | Any MCP client | Yes | stdio or HTTP transport |
+
+## Protocol support
+
+mcp-coda implements the **Model Context Protocol 2026-07-28** specification, often called MCP 2.0. It also stays compatible with **2025-11-25** clients. A regression test covers both modes over stdio and streamable HTTP.
+
+- **Spec version**: MCP 2026-07-28 (MCP 2.0), backward compatible with 2025-11-25.
+- **Built on**: FastMCP 4.x and the MCP Python SDK 2.x.
+- **Transports**: `stdio` (default) and `streamable-http` (recommended for remote). `sse` (HTTP+SSE) still works, but the 2026-07-28 specification deprecates it, so the server prints a warning.
+- **Capabilities**: tools, resources, and prompts. The server uses no Roots, Sampling, Logging, elicitation, or resource subscriptions, so the 2026-07-28 deprecations do not affect it.
 
 ## Tools (53)
 
@@ -366,6 +375,36 @@ uvx mcp-coda --coda-token your-token --read-only
 ```
 
 The server loads `.env` files from the working directory automatically via `python-dotenv`.
+
+## FAQ
+
+### Does mcp-coda support MCP 2.0?
+
+Yes. mcp-coda implements the MCP 2026-07-28 specification, commonly called MCP 2.0. It also works with 2025-11-25 clients.
+
+### Which transports does mcp-coda support?
+
+The server supports `stdio` (the default) and `streamable-http`. It also supports `sse`, but the 2026-07-28 specification deprecates `sse`, so prefer `streamable-http` for remote connections.
+
+### Is mcp-coda read-only safe?
+
+Yes. Set `CODA_READ_ONLY=true` to disable every write tool. The server enforces read-only mode before any API call.
+
+### What token scopes does mcp-coda need?
+
+Coda tokens have no scopes. A token reaches every doc its owner can reach. Coda's sharing settings control doc-level access. Use a dedicated service account to limit exposure.
+
+### Does mcp-coda work with self-hosted Coda?
+
+Coda is a hosted service, so there is no self-hosted deployment. Set `CODA_BASE_URL` only to target a proxy or a non-default API base.
+
+### Which clients work with mcp-coda?
+
+mcp-coda works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client over stdio or HTTP.
+
+### How many tools, resources, and prompts does it provide?
+
+mcp-coda provides 53 tools, 12 resources, and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 ## Related MCP Servers
 

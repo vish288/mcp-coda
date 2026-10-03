@@ -4,6 +4,13 @@ MCP server for the Coda v1 API. 53 tools, 12 resources (2 live data + 5 rules + 
 
 Built on FastMCP. Published to PyPI as `mcp-coda`; normal install is `uvx mcp-coda`.
 
+## Protocol support
+
+- Implements the MCP 2026-07-28 specification (MCP 2.0). Stays compatible with 2025-11-25 clients.
+- Built on FastMCP 4.x and the MCP Python SDK 2.x.
+- Transports: `stdio` (default) and `streamable-http` (recommended for remote). `sse` still works, but the 2026-07-28 spec deprecates it, so the server prints a warning.
+- Uses tools, resources, and prompts only. No Roots, Sampling, Logging, elicitation, or resource subscriptions, so the 2026-07-28 deprecations do not affect it.
+
 ## Layout
 
 - `src/mcp_coda/__init__.py` — click CLI, loads `.env` via python-dotenv, runs the FastMCP server
