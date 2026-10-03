@@ -5,7 +5,7 @@
 mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assistant CRUD access to all Coda resource types, live and static context, and prompt templates for common workflows. It implements the MCP 2026-07-28 specification (MCP 2.0) and stays compatible with 2025-11-25 clients. It uses FastMCP 4.x, httpx, and Pydantic.
 
 - **Install**: `uvx mcp-coda`
-- **Version**: 0.7.1
+- **Version**: 0.7.2
 - **Python**: >=3.10
 - **License**: MIT
 - **MCP protocol**: 2026-07-28 (MCP 2.0); compatible with 2025-11-25 clients

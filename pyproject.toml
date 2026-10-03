@@ -1,6 +1,6 @@
 [project]
 name = "mcp-coda"
-version = "0.7.1"
+version = "0.7.2"
 description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions, and automation"
 readme = "README.md"
 license = {text = "MIT"}
