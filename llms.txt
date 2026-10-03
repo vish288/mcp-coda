@@ -1,8 +1,8 @@
 # mcp-coda
 
-> MCP server for the Coda API — 53 tools, 12 resources, and 5 prompts covering docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+> MCP server for the Coda API. It provides 53 tools, 12 resources, and 5 prompts for docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
-mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assistant CRUD access to all Coda resource types, live and static context, and prompt templates for common workflows. It implements the MCP 2026-07-28 specification (MCP 2.0) and stays compatible with 2025-11-25 clients. It is built on FastMCP 4.x, httpx, and Pydantic.
+mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assistant CRUD access to all Coda resource types, live and static context, and prompt templates for common workflows. It implements the MCP 2026-07-28 specification (MCP 2.0) and stays compatible with 2025-11-25 clients. It uses FastMCP 4.x, httpx, and Pydantic.
 
 - **Install**: `uvx mcp-coda`
 - **Version**: 0.7.1

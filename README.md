@@ -13,7 +13,7 @@
 
 **mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **53 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
-Built with [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
+mcp-coda uses [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
 ## 1-Click Installation
 
@@ -87,7 +87,7 @@ The server checks these environment variables in order — first match wins:
 2. `CODA_TOKEN`
 3. `CODA_PAT`
 
-Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#apiSettings). Tokens grant access to all docs accessible by the token owner. There are no scope restrictions — access is controlled at the doc level via Coda's sharing settings.
+Generate tokens at [coda.io/account#apiSettings](https://coda.io/account#apiSettings). Tokens grant access to all docs accessible by the token owner. Tokens have no scope restrictions. Coda's sharing settings control doc-level access.
 
 ## Compatibility
 
@@ -102,7 +102,7 @@ Tokens are generated at [coda.io/account#apiSettings](https://coda.io/account#ap
 
 ## Protocol support
 
-mcp-coda implements the **Model Context Protocol 2026-07-28** specification, often called MCP 2.0. It also stays compatible with **2025-11-25** clients. A regression test covers both modes over stdio and streamable HTTP.
+mcp-coda implements the **Model Context Protocol 2026-07-28** specification, often called MCP 2.0. It also stays compatible with **2025-11-25** clients. A FastMCP client pinned to 2026-07-28 and a legacy client both list all tools and reach the Coda API over stdio. The companion code PR adds a regression test that checks `tools/list` with an in-memory client pinned to 2026-07-28.
 
 - **Spec version**: MCP 2026-07-28 (MCP 2.0), backward compatible with 2025-11-25.
 - **Built on**: FastMCP 4.x and the MCP Python SDK 2.x.
@@ -231,7 +231,7 @@ mcp-coda implements the **Model Context Protocol 2026-07-28** specification, oft
 
 ## Resources (12)
 
-The server exposes [MCP resources](https://modelcontextprotocol.io/docs/concepts/resources) that provide ambient context without consuming tool calls.
+The server exposes [MCP resources](https://modelcontextprotocol.io/docs/concepts/resources) that provide ambient context and do not consume tool calls.
 
 ### Data Resources (live API)
 
@@ -327,19 +327,19 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 ## Security Considerations
 
 - **Token scope**: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production deployments to limit exposure.
-- **Read-only mode**: Set `CODA_READ_ONLY=true` to disable all write operations (create, update, delete). Read-only mode is enforced server-side before any API call.
+- **Read-only mode**: Set `CODA_READ_ONLY=true` to disable all write operations (create, update, delete). The server enforces read-only mode before any API call.
 - **MCP tool annotations**: Each tool declares `readOnlyHint`, `destructiveHint`, and `idempotentHint` for client-side permission prompts.
-- **No credential storage**: The server does not persist tokens. Credentials are read from environment variables at startup.
+- **No credential storage**: The server does not persist tokens. It reads credentials from environment variables at startup.
 
 ## Rate Limits & Permissions
 
 ### Rate Limits
 
-Coda enforces per-token rate limits (varies by plan). When rate-limited, tools return a 429 error with `retry_after` seconds; the server does not retry — wait that many seconds before retrying. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100); use `limit` to adjust.
+Coda enforces per-token rate limits (varies by plan). When Coda rate-limits a request, the tool returns a 429 error with `retry_after` seconds. The server does not retry. Wait that many seconds, then retry. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100). Use `limit` to adjust.
 
 ### Async Mutations
 
-Write operations (insert, update, delete rows) are processed asynchronously. Tools return a `requestId` that can be checked with `coda_get_mutation_status` to confirm completion.
+Coda processes write operations (insert, update, delete rows) asynchronously. Tools return a `requestId`. Check it with `coda_get_mutation_status` to confirm completion.
 
 ### Required Permissions
 
@@ -378,13 +378,13 @@ The server loads `.env` files from the working directory automatically via `pyth
 
 ## FAQ
 
-### Does mcp-coda support MCP 2.0?
+### Does mcp-coda support MCP 2.0 (the 2026-07-28 spec)?
 
 Yes. mcp-coda implements the MCP 2026-07-28 specification, commonly called MCP 2.0. It also works with 2025-11-25 clients.
 
 ### Which transports does mcp-coda support?
 
-The server supports `stdio` (the default) and `streamable-http`. It also supports `sse`, but the 2026-07-28 specification deprecates `sse`, so prefer `streamable-http` for remote connections.
+The server supports `stdio` (the default) and `streamable-http`. It also supports `sse`, but the 2026-07-28 specification deprecates it. Prefer `streamable-http` for remote connections.
 
 ### Is mcp-coda read-only safe?
 
