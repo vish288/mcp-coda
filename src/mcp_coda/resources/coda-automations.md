@@ -18,15 +18,16 @@ Only webhooks and buttons are triggerable via the API. Time-based and row-change
 ### Triggering
 
 ```
-POST /docs/{docId}/hooks/{hookId}/trigger
+POST /docs/{docId}/hooks/automation/{ruleId}
 Content-Type: application/json
 
-{"payload": {"key": "value"}}
+{"eventType": "order_created", "orderId": "123"}
 ```
 
-- The payload is freeform JSON. Coda passes it to the automation rule as `EventData`.
-- Webhook URLs are doc-scoped — each doc has its own set of hooks.
-- Webhooks must be enabled in the doc's automation settings.
+- The tool is `coda_trigger_automation(doc_id, rule_id, payload)`. `rule_id` is the automation rule ID from the rule's settings in the Coda UI.
+- The request body is the freeform payload itself — do not wrap it in a `{"payload": ...}` envelope. Coda passes it to the automation rule as `EventData`.
+- Automation rules are doc-scoped — each doc has its own set of rules.
+- The rule's trigger must be a webhook-invoked event type.
 
 ### Payload Design
 
@@ -46,7 +47,12 @@ Content-Type: application/json
 ### Pushing Buttons via API
 
 ```python
-coda_push_button(doc_id="doc123", table_id="tbl456", row_id="row789", column_id="c-btnCol")
+coda_push_button(
+    doc_id="doc123",
+    table_id_or_name="grid-abc456",
+    row_id_or_name="i-row789",
+    column_id_or_name="c-btnCol",
+)
 ```
 
 - The button's formula executes server-side. You receive a `requestId` for polling.
@@ -69,7 +75,7 @@ coda_push_button(doc_id="doc123", table_id="tbl456", row_id="row789", column_id=
 ## Error Handling
 
 - Webhook trigger returns `202 Accepted` — it does not confirm the automation executed.
-- Button push returns a `requestId`. Poll `coda_get_mutation_status` for `completed` or `failed`.
+- Button push returns a `requestId`. Poll `coda_get_mutation_status` until its `completed` field is `true`.
 - Failed automations are logged in the doc's automation history (UI only — not queryable via API).
 
 ## Anti-Patterns

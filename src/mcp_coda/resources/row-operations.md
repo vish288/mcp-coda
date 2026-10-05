@@ -33,10 +33,11 @@ How to insert, update, upsert, and delete rows in Coda tables.
 | Checkbox | Boolean | `true`, `false` |
 | Date | ISO 8601 string | `"2024-03-15"` |
 | Select | Option value string | `"In Progress"` |
-| Multi-select | Comma-separated | `"Tag1,Tag2"` |
+| Multi-select | Array of option values | `["Tag1", "Tag2"]` |
 | Person | Email string | `"user@example.com"` |
 | Hyperlink | URL string | `"https://example.com"` |
-| Relation | Display column value or row ID | `"Project Alpha"` |
+| Relation (single) | Display column value or row ID | `"Project Alpha"` |
+| Relation (multiple) | Array of values or row IDs | `["Project Alpha", "Project Beta"]` |
 | Image | Image URL | `"https://example.com/img.png"` |
 
 - Use `useColumnNames=true` in requests to reference columns by name instead of ID.
