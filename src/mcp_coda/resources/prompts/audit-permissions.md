@@ -16,9 +16,7 @@ Audit sharing and permissions for Coda doc `$doc_id`.
    - Identify users with write access who may only need read
    - Flag external email addresses (outside the organization's domain)
    - Look for stale entries (users who may have left the organization)
-5. **Check page locks** — use `coda_list_pages` and review lock settings:
-   - Are sensitive pages locked to prevent accidental edits?
-   - Are locks appropriate (not too restrictive, not too permissive)?
+5. **Note page-lock scope** — page locks are a Coda UI feature and are not exposed by the API, so they cannot be audited programmatically. Flag this as a manual check in the UI if sensitive pages exist.
 6. **Summarize findings**:
    - Total ACL entries by type and access level
    - Risk assessment: high (public write), medium (broad domain), low (individual read)
@@ -26,4 +24,4 @@ Audit sharing and permissions for Coda doc `$doc_id`.
 7. **Suggest tightening**:
    - Convert `anyone` to domain-level where possible
    - Downgrade `write` to `readonly` for view-only users
-   - Add page locks to sensitive content pages
+   - Recommend locking sensitive pages in the Coda UI (not available via API)

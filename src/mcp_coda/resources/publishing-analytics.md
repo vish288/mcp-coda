@@ -11,9 +11,8 @@ coda_publish_doc(
     doc_id="docId",
     slug="my-published-doc",  # URL-friendly identifier
     discoverable=True,  # listed in Coda gallery
-    earnCredit=True,  # earn Coda credits for gallery listings
-    category="projectManagement",  # gallery category
-    mode="view",  # "view" or "play" (interactive)
+    category_names=["projectManagement"],  # gallery categories (list)
+    mode="view",  # "view", "play", or "edit"
 )
 ```
 
@@ -23,6 +22,7 @@ coda_publish_doc(
 |------|----------|
 | `view` | Read-only — visitors see content but cannot interact |
 | `play` | Interactive — visitors can use buttons, filters, controls |
+| `edit` | Visitors can edit the published copy |
 
 - Published docs get a public URL at `coda.io/@username/doc-slug`.
 - Publishing does not change doc permissions — it creates a separate public view.
@@ -48,7 +48,7 @@ Available categories for `coda_publish_doc`:
 | Tool | Returns |
 |------|---------|
 | `coda_list_doc_analytics` | Doc-level view/copy/like metrics across multiple docs |
-| `coda_get_doc_analytics_summary` | Aggregated totals for a single doc |
+| `coda_get_doc_analytics_summary` | Aggregated totals across all accessible docs |
 | `coda_list_page_analytics` | Per-page view counts within a doc |
 | `coda_list_pack_analytics` | Pack formula invocation metrics |
 | `coda_get_pack_analytics_summary` | Aggregated Pack usage |
@@ -64,12 +64,11 @@ coda_list_doc_analytics(
     doc_ids=["docId1", "docId2"],
     since_date="2024-01-01",
     until_date="2024-03-31",
-    scale="daily",  # "daily" or "cumulative"
 )
 ```
 
 - `since_date` / `until_date`: ISO 8601 date strings
-- `scale`: `daily` returns per-day data points; `cumulative` returns running totals
+- Data points are per-day (Coda's default `daily` scale). This server does not expose the `cumulative` scale option.
 - Analytics data is updated periodically (check `coda_get_analytics_updated`)
 - Data is available for the last 90 days for free plans, longer for paid plans
 
@@ -95,4 +94,3 @@ coda_list_doc_analytics(
 - Publishing docs with sensitive data — publishing creates public access regardless of doc permissions
 - Relying on real-time analytics — data has a refresh delay (check `last_updated`)
 - Querying analytics for 100+ docs in a single call — batch into groups of 50
-- Using `cumulative` scale for trend analysis — use `daily` to see actual patterns

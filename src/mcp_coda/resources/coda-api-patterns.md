@@ -6,11 +6,14 @@ Rules for effective use of the Coda REST API v1.
 
 | Category | Limit | Scope |
 |----------|-------|-------|
-| Read | 100 requests / 6 seconds | Per API token |
-| Write | 10 requests / 6 seconds | Per API token |
-| Burst | Short bursts above limit tolerated | Followed by throttling |
+| Read | 100 requests / 6 seconds | Per user |
+| Write (POST/PUT/PATCH) | 10 requests / 6 seconds | Per user |
+| Write doc content (pages, rows) | 5 requests / 10 seconds | Per user |
+| List docs | 4 requests / 6 seconds | Per user |
+| Read analytics | 100 requests / 6 seconds | Per user |
 
-- Rate limits are per-token, not per-doc or per-IP.
+- Rate limits are per-user, not per-token, per-doc, or per-IP. All of a user's tokens share one budget.
+- Doc-content writes (page create/update, row writes) use the stricter 5-per-10-second limit.
 - Exceeding the limit returns `429 Too Many Requests` with a `Retry-After` header (seconds).
 - Strategy: respect `Retry-After`, then exponential backoff starting at 1s, max 60s.
 
@@ -42,10 +45,10 @@ Write operations that modify data return a `requestId`:
 ```
 
 - The mutation may not be complete when the response arrives.
-- Poll `GET /mutationStatus/{requestId}` to check completion.
-- Status values: `queued`, `processing`, `completed`, `failed`.
+- Poll `GET /mutationStatus/{requestId}` (tool: `coda_get_mutation_status`) to check completion.
+- The response is `{"completed": <boolean>}`, plus an optional `warning` string when it completed with caveats. There is no separate `failed` status.
 - Polling interval: start at 500ms, back off to 2s. Timeout after 60s.
-- Do not fire dependent writes until the previous mutation is `completed`.
+- Do not fire dependent writes until `completed` is `true`.
 
 ## Error Handling
 

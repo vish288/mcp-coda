@@ -43,10 +43,10 @@ Permissions flow **top-down**: a doc's sharing settings determine who can access
 
 ## Page Locking
 
-- `coda_update_page` with lock settings restricts who can edit a specific page.
+- Page locking is a Coda UI feature. The REST API does not read or set it — the page object carries no lock field, and `coda_update_page` has no lock parameter.
 - Locked pages are still **viewable** by anyone with doc access.
-- Page locking is not a security boundary — it prevents accidental edits.
-- Lock types: `creator` (only page creator), `editors` (only doc editors), `none` (unlocked).
+- Page locking is not a security boundary — it only prevents accidental edits.
+- To control editing programmatically, use doc-level sharing (`coda_add_permission`), not page locks.
 
 ## Domain Sharing
 
@@ -57,7 +57,7 @@ Permissions flow **top-down**: a doc's sharing settings determine who can access
 ## API Constraints
 
 - Permission changes require doc owner access. Editor-level tokens cannot modify ACLs.
-- `coda_add_permission` can notify the user via email (`notify: true`).
+- `coda_add_permission` emails the user by default. Pass `suppress_notification=True` to skip the email.
 - Removing the last owner is not allowed — the API will reject it.
 - Permission IDs are opaque strings. Always list permissions first to get IDs for deletion.
 

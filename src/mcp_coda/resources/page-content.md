@@ -4,13 +4,14 @@ How to read, write, and export page content in Coda.
 
 ## Content Formats
 
-| Format | `outputFormat` | Description |
-|--------|---------------|-------------|
+| Format | `output_format` | Description |
+|--------|-----------------|-------------|
 | HTML | `html` | Full rich-text content with embedded objects |
 | Markdown | `markdown` | Simplified text representation |
 
-- `coda_get_page` with `outputFormat="html"` returns the page body as HTML.
-- `coda_get_page` with `outputFormat="markdown"` returns a markdown approximation.
+- `coda_get_page` returns page metadata only (name, parent, icon) — not the body text.
+- `coda_get_page_content` with `output_format="html"` returns the page body as HTML.
+- `coda_get_page_content` with `output_format="markdown"` returns a markdown approximation (the default).
 - HTML format preserves tables, images, buttons, and embedded views.
 - Markdown format loses embedded objects but is easier to process as text.
 
@@ -67,7 +68,7 @@ coda_update_page(
 - `coda_export_page` initiates an async export of a page to HTML or Markdown.
 - Returns an export `id`. Polling the export status is not exposed as a tool — re-read the
   page with `coda_get_page_content` once the export has had time to finish.
-- Once complete, the export provides a download URL (temporary, expires in hours).
+- Once complete, the export provides a download URL. It is temporary and expires a short time after the export finishes — download promptly.
 - Export formats: `html`, `markdown`. PDF export is not available via API.
 - Large pages with many tables may take 30+ seconds to export.
 
