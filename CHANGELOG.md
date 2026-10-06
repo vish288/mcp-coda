@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.3] - 2026-10-06
+
+### Documentation
+- docs(resources): verify and correct shipped rules, guides and prompts (db92687)
+
+
 ## [0.7.2] - 2026-10-03
 
 ### Bug Fixes
