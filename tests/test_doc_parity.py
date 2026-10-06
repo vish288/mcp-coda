@@ -44,7 +44,7 @@ def _read(name: str) -> str:
 
 # Docs link to sibling MCP servers and quote *their* inventories; those numbers
 # describe other repos and must not be checked against this one.
-_SIBLING_REPOS = ("mcp-gitlab", "mcp-atlassian")
+_SIBLING_REPOS = ("mcp-gitlab", "mcp-atlassian", "mcp-argocd")
 
 
 def _read_self(name: str) -> str:
