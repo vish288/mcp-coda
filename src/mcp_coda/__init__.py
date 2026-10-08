@@ -54,6 +54,12 @@ def main(
     if transport != "stdio":
         run_kwargs["host"] = host
         run_kwargs["port"] = port
+        # DNS-rebinding protection: validate Host/Origin before a request reaches
+        # the MCP endpoint. "auto" guards loopback-bound servers, allowing the
+        # configured host plus localhost/127.0.0.1/[::1] and rejecting any other
+        # Host (421) or cross-site Origin (403). Without this a rebinding page
+        # could drive the local server with the user's Coda token.
+        run_kwargs["host_origin_protection"] = "auto"
 
     asyncio.run(mcp.run_async(show_banner=False, **run_kwargs))
 

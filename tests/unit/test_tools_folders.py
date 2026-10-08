@@ -47,6 +47,26 @@ class TestListFolders:
         result = json.loads(await coda_list_folders(ctx))
         assert result["isError"] is True
 
+    async def test_paginates(self) -> None:
+        # CO-R05: /folders defaults to 25 per page with a nextPageToken. The
+        # tool must surface the cursor instead of pretending the list is whole.
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": [{"id": "fl1"}], "nextPageToken": "tok2"})
+        ctx = _make_ctx(client)
+        result = json.loads(await coda_list_folders(ctx, limit=25, cursor="tok1"))
+        assert result["has_more"] is True
+        assert result["next_cursor"] == "tok2"
+        params = client.get.call_args[1]["params"]
+        assert params["limit"] == 25
+        assert params["pageToken"] == "tok1"
+
+    async def test_workspace_filter(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"items": []})
+        ctx = _make_ctx(client)
+        await coda_list_folders(ctx, workspace_id="ws1")
+        assert client.get.call_args[1]["params"]["workspaceId"] == "ws1"
+
 
 class TestGetFolder:
     async def test_success(self) -> None:

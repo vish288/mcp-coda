@@ -31,8 +31,10 @@ Workspace
 ## Doc-Folder Relationships
 
 - A doc belongs to at most one folder. Unfiled docs sit in the workspace root.
-- Moving a doc to a folder: `coda_update_doc(doc_id, folder_id="folder-123")`.
-- Removing a doc from a folder: `coda_update_doc(doc_id, folder_id="")` (moves to root).
+- **The API cannot move a doc between folders.** `updateDoc` accepts only `title`
+  and `iconName`, so `coda_update_doc` has no `folder_id` parameter. A doc's
+  folder is set when it is created (`coda_create_doc`) and changed only in the
+  Coda UI. Read a doc's current folder from its `folderId` via `coda_get_doc`.
 - Folder membership does not affect doc permissions — sharing is doc-level.
 
 ## Folder Naming
@@ -50,15 +52,10 @@ Workspace
 
 ## Bulk Organization
 
-To reorganize multiple docs into folders:
-
-1. `coda_list_docs` — get all docs with their current `folderId`
-2. `coda_create_folder` — create target folders
-3. Loop: `coda_update_doc(doc_id, folder_id=target)` for each doc
-4. Wait for each mutation to complete before the next (write rate limit: 10/6s)
-
-- There is no bulk-move API. Each doc move is a separate write operation.
-- Plan moves to stay within rate limits — at 10/6s, moving 100 docs takes ~60 seconds.
+The API provides no way to move an existing doc into a folder — neither in bulk
+nor one at a time (see Doc-Folder Relationships above). You can create folders
+(`coda_create_folder`) and create new docs inside a folder (`coda_create_doc`),
+but re-filing docs that already exist is a UI-only operation.
 
 ## Folder Deletion
 

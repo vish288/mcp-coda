@@ -11,6 +11,7 @@ from ._helpers import (
     _format_list_as_markdown,
     _get_client,
     _ok,
+    _p,
     _page,
     _truncate,
     tool_result,
@@ -96,7 +97,7 @@ async def coda_get_doc(
     coda_list_tables for those. The doc_id can be obtained from coda_list_docs
     or coda_resolve_browser_link.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id)))
 
 
 @mcp.tool(
@@ -167,7 +168,7 @@ async def coda_update_doc(
         body["iconName"] = icon_name
     if not body:
         return _ok({"unchanged": True, "doc_id": doc_id})
-    return _ok(await _get_client(ctx).patch(f"/docs/{doc_id}", json_data=body))
+    return _ok(await _get_client(ctx).patch(_p("docs", doc_id), json_data=body))
 
 
 @mcp.tool(
@@ -188,5 +189,5 @@ async def coda_delete_doc(
     permanently removed. Verify the doc name with coda_get_doc before calling
     this. Returns a confirmation status.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}")
+    await _get_client(ctx).delete(_p("docs", doc_id))
     return _ok({"status": "deleted", "doc_id": doc_id})

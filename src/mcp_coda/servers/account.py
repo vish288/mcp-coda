@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, tool_result
+from ._helpers import _get_client, _ok, _p, tool_result
 
 
 @mcp.tool(
@@ -70,4 +70,4 @@ async def coda_get_mutation_status(
     a completed boolean and any error details. Poll every 2 seconds, up to 30
     seconds maximum.
     """
-    return _ok(await _get_client(ctx).get(f"/mutationStatus/{request_id}"))
+    return _ok(await _get_client(ctx).get(_p("mutationStatus", request_id)))

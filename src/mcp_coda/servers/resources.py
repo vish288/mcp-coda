@@ -8,7 +8,7 @@ from typing import Any
 from fastmcp import Context
 
 from . import mcp
-from ._helpers import _ID_RE, _get_client, _load_file
+from ._helpers import _ID_RE, _get_client, _load_file, _p
 
 _log = logging.getLogger(__name__)
 
@@ -218,13 +218,13 @@ async def doc_schema_resource(doc_id: str, ctx: Context) -> str:
             msg = f"Invalid doc_id: {doc_id!r}"
             raise ValueError(msg)
         client = _get_client(ctx)
-        tables_data = await client.get(f"/docs/{doc_id}/tables", params={"limit": 200})
+        tables_data = await client.get(_p("docs", doc_id, "tables"), params={"limit": 200})
         tables = tables_data.get("items", [])
         schema: list[dict[str, Any]] = []
         for table in tables:
             table_id = table.get("id", "")
             cols_data = await client.get(
-                f"/docs/{doc_id}/tables/{table_id}/columns",
+                _p("docs", doc_id, "tables", table_id, "columns"),
                 params={"limit": 200},
             )
             columns = [

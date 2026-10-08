@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, DocId, _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, DocId, _get_client, _ok, _p, _page, tool_result
 
 
 @mcp.tool(
@@ -37,7 +37,7 @@ async def coda_list_tables(
     Use coda_list_columns to get the column schema of a specific table.
     """
     params = {"limit": limit, "tableTypes": table_types, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/tables", params=params))
+    return _page(await _get_client(ctx).get(_p("docs", doc_id, "tables"), params=params))
 
 
 @mcp.tool(
@@ -59,7 +59,7 @@ async def coda_get_table(
     info. Does NOT return row data or column definitions — use coda_list_rows
     and coda_list_columns for those.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/tables/{table_id_or_name}"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "tables", table_id_or_name)))
 
 
 @mcp.tool(
@@ -90,7 +90,7 @@ async def coda_list_columns(
     params = {"limit": limit, "pageToken": cursor}
     return _page(
         await _get_client(ctx).get(
-            f"/docs/{doc_id}/tables/{table_id_or_name}/columns",
+            _p("docs", doc_id, "tables", table_id_or_name, "columns"),
             params=params,
         )
     )
@@ -121,6 +121,6 @@ async def coda_get_column(
     """
     return _ok(
         await _get_client(ctx).get(
-            f"/docs/{doc_id}/tables/{table_id_or_name}/columns/{column_id_or_name}"
+            _p("docs", doc_id, "tables", table_id_or_name, "columns", column_id_or_name)
         )
     )

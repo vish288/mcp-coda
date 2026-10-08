@@ -6,7 +6,17 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, DocId, _get_client, _list_footer, _ok, _page, _truncate, tool_result
+from ._helpers import (
+    Cursor,
+    DocId,
+    _get_client,
+    _list_footer,
+    _ok,
+    _p,
+    _page,
+    _truncate,
+    tool_result,
+)
 
 
 @mcp.tool(
@@ -26,8 +36,13 @@ async def coda_list_rows(
         Field(description="Filter formula (e.g. 'Status:\"Active\"' or 'c-abc123:\"value\"')"),
     ] = None,
     sort_by: Annotated[
-        str | None,
-        Field(description="Sort by column (prefix with '-' for descending, e.g. '-Created')"),
+        Literal["createdAt", "natural", "updatedAt"] | None,
+        Field(
+            description=(
+                "Row sort order. One of 'createdAt', 'natural' (the table's own "
+                "order), or 'updatedAt'. The API does not sort by an arbitrary column."
+            )
+        ),
     ] = None,
     use_column_names: Annotated[
         bool,
@@ -58,7 +73,7 @@ async def coda_list_rows(
         "pageToken": cursor,
     }
     data = await _get_client(ctx).get(
-        f"/docs/{doc_id}/tables/{table_id_or_name}/rows",
+        _p("docs", doc_id, "tables", table_id_or_name, "rows"),
         params=params,
     )
     items = data.get("items", [])
@@ -109,7 +124,7 @@ async def coda_get_row(
     params: dict[str, Any] = {"useColumnNames": use_column_names}
     return _ok(
         await _get_client(ctx).get(
-            f"/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}",
+            _p("docs", doc_id, "tables", table_id_or_name, "rows", row_id_or_name),
             params=params,
         )
     )
@@ -159,7 +174,7 @@ async def coda_insert_rows(
         body["keyColumns"] = key_columns
     return _ok(
         await _get_client(ctx).post(
-            f"/docs/{doc_id}/tables/{table_id_or_name}/rows",
+            _p("docs", doc_id, "tables", table_id_or_name, "rows"),
             json_data=body,
         )
     )
@@ -201,7 +216,7 @@ async def coda_update_row(
     body: dict[str, Any] = {"row": {"cells": cells}}
     return _ok(
         await _get_client(ctx).put(
-            f"/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}",
+            _p("docs", doc_id, "tables", table_id_or_name, "rows", row_id_or_name),
             json_data=body,
         )
     )
@@ -230,7 +245,9 @@ async def coda_delete_row(
     coda_get_row before deleting. For bulk deletion, use coda_delete_rows
     with a list of row IDs instead.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}/tables/{table_id_or_name}/rows/{row_id_or_name}")
+    await _get_client(ctx).delete(
+        _p("docs", doc_id, "tables", table_id_or_name, "rows", row_id_or_name)
+    )
     return _ok(
         {
             "status": "deleted",
@@ -267,7 +284,7 @@ async def coda_delete_rows(
     """
     body: dict[str, Any] = {"rowIds": row_ids}
     data = await _get_client(ctx).delete(
-        f"/docs/{doc_id}/tables/{table_id_or_name}/rows",
+        _p("docs", doc_id, "tables", table_id_or_name, "rows"),
         json_data=body,
     )
     return _ok(data or {"status": "deleted", "row_count": len(row_ids)})
@@ -303,7 +320,15 @@ async def coda_push_button(
     """
     return _ok(
         await _get_client(ctx).post(
-            f"/docs/{doc_id}/tables/{table_id_or_name}"
-            f"/rows/{row_id_or_name}/buttons/{column_id_or_name}",
+            _p(
+                "docs",
+                doc_id,
+                "tables",
+                table_id_or_name,
+                "rows",
+                row_id_or_name,
+                "buttons",
+                column_id_or_name,
+            ),
         )
     )

@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, Limit, _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, Limit, _get_client, _ok, _p, _page, tool_result
 
 
 def _csv(values: list[int]) -> str:
@@ -117,7 +117,9 @@ async def coda_list_page_analytics(
     most traffic.
     """
     params = {"limit": limit, "sinceDate": since_date, "untilDate": until_date, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/analytics/docs/{doc_id}/pages", params=params))
+    return _page(
+        await _get_client(ctx).get(_p("analytics", "docs", doc_id, "pages"), params=params)
+    )
 
 
 @mcp.tool(
@@ -228,7 +230,9 @@ async def coda_list_pack_formula_analytics(
     Only available to the pack maker.
     """
     params = {"limit": limit, "sinceDate": since_date, "untilDate": until_date, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/analytics/packs/{pack_id}/formulas", params=params))
+    return _page(
+        await _get_client(ctx).get(_p("analytics", "packs", pack_id, "formulas"), params=params)
+    )
 
 
 @mcp.tool(

@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, _get_client, _ok, _p, _page, tool_result
 
 
 @mcp.tool(
@@ -27,7 +27,7 @@ async def coda_get_sharing_metadata(
     This is metadata about the doc's sharing configuration, not the list of
     who has access — use coda_list_permissions for that.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/acl/metadata"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "acl", "metadata")))
 
 
 @mcp.tool(
@@ -54,7 +54,9 @@ async def coda_list_permissions(
     Use coda_add_permission to grant access or coda_delete_permission to revoke.
     """
     params = {"limit": limit, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/acl/permissions", params=params))
+    return _page(
+        await _get_client(ctx).get(_p("docs", doc_id, "acl", "permissions"), params=params)
+    )
 
 
 @mcp.tool(
@@ -106,7 +108,9 @@ async def coda_add_permission(
     body["principal"] = principal
     if suppress_notification:
         body["suppressEmail"] = True
-    return _ok(await _get_client(ctx).post(f"/docs/{doc_id}/acl/permissions", json_data=body))
+    return _ok(
+        await _get_client(ctx).post(_p("docs", doc_id, "acl", "permissions"), json_data=body)
+    )
 
 
 @mcp.tool(
@@ -131,7 +135,7 @@ async def coda_delete_permission(
     unless they have access through another permission (e.g. domain-level).
     Get the permission_id from coda_list_permissions first.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}/acl/permissions/{permission_id}")
+    await _get_client(ctx).delete(_p("docs", doc_id, "acl", "permissions", permission_id))
     return _ok({"status": "deleted", "doc_id": doc_id, "permission_id": permission_id})
 
 
@@ -159,7 +163,7 @@ async def coda_search_principals(
     """
     return _ok(
         await _get_client(ctx).get(
-            f"/docs/{doc_id}/acl/principals/search",
+            _p("docs", doc_id, "acl", "principals", "search"),
             params={"query": query},
         )
     )
@@ -183,4 +187,4 @@ async def coda_get_acl_settings(
     copying, whether editors can change permissions, and the default access
     mode. These are administrative settings, not individual permission entries.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/acl/settings"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "acl", "settings")))
