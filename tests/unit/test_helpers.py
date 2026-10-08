@@ -51,21 +51,23 @@ class TestOk:
         assert len(result) <= CHARACTER_LIMIT + 200  # truncation notice overhead
         assert "truncated" in result
 
-    def test_oversized_list_stays_parseable_and_keeps_cursor(self) -> None:
+    def test_oversized_list_drops_items_and_clears_skipping_cursor(self) -> None:
         """Truncation must drop items, never slice the JSON string.
 
         Slicing produced output json.loads could not read, so the caller lost
-        every row rather than the overflow -- and next_cursor, serialized after
-        items, was the first field cut.
+        every row rather than the overflow. CO-R03: the API's next_cursor
+        resumes *after* this page, so keeping it skips the dropped items -- it
+        must be cleared, not preserved.
         """
         data = {
             "items": [{"id": f"i-{n}", "blob": "x" * 200} for n in range(500)],
             "has_more": True,
             "next_cursor": "cursor-abc",
         }
-        parsed = json.loads(_ok(data))  # would raise before the fix
+        parsed = json.loads(_ok(data))  # would raise before the slicing fix
 
-        assert parsed["next_cursor"] == "cursor-abc"
+        assert parsed["next_cursor"] is None  # not "cursor-abc" (would skip rows)
+        assert parsed["has_more"] is True
         assert 0 < len(parsed["items"]) < 500
         assert parsed["truncated"]["dropped"] == 500 - len(parsed["items"])
         assert all(item["id"].startswith("i-") for item in parsed["items"])
@@ -83,7 +85,9 @@ class TestOk:
             "next_cursor": "c1",
         }
         parsed = json.loads(_ok(data))
-        assert parsed["next_cursor"] == "c1"
+        # When items are dropped the skipping cursor is cleared; when the whole
+        # page fits, the original cursor is passed through unchanged.
+        assert parsed["next_cursor"] == (None if "truncated" in parsed else "c1")
 
     def test_oversized_non_list_still_truncates(self) -> None:
         result = _ok({"blob": "x" * (CHARACTER_LIMIT + 1000)})
@@ -120,6 +124,27 @@ class TestPage:
     def test_last_page(self) -> None:
         out = json.loads(_page({"items": []}))
         assert out == {"items": [], "has_more": False, "next_cursor": None, "total_count": 0}
+
+    def test_oversized_page_does_not_emit_skipping_cursor(self) -> None:
+        """CO-R03 repro: 100 rows of ~500 chars with a forward nextPageToken.
+
+        Before the fix the envelope came back with 41 items, next_cursor=T100
+        and total_count=100 -- following T100 skipped rows 41-99. The cursor is
+        now cleared, total_count matches the items returned, and the hint steers
+        the caller to retry this page at a smaller limit.
+        """
+        rows = [{"id": f"r-{n}", "values": {"text": "x" * 500}} for n in range(100)]
+        out = json.loads(_page({"items": rows, "nextPageToken": "T100"}))
+
+        assert len(out["items"]) < 100  # page was truncated
+        assert out["next_cursor"] is None  # not "T100"
+        assert out["has_more"] is True
+        assert out["total_count"] == len(out["items"])
+        assert out["truncated"]["dropped"] == 100 - len(out["items"])
+        assert "do NOT follow" in out["truncated"]["hint"]
+        # The first dropped row must still be reachable: it is not silently
+        # skipped, the caller is told to re-fetch this page at a smaller size.
+        assert out["items"][0]["id"] == "r-0"
 
 
 class TestErr:

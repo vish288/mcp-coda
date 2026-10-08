@@ -62,7 +62,7 @@ How to insert, update, upsert, and delete rows in Coda tables.
 - `coda_list_rows` returns up to 500 rows per page with pagination.
 - `coda_get_row` fetches a single row by ID with full cell values.
 - Use `query` parameter for server-side filtering: `query='Status:"Done"'`.
-- Use `sortBy` for server-side sorting (column ID or name).
+- Use `sortBy` for server-side sorting: one of `createdAt`, `natural` (the table's own order), or `updatedAt`. It is not an arbitrary column, and there is no `-` descending prefix.
 - `valueFormat=simpleWithArrays` returns clean values instead of rich objects.
 
 ## Anti-Patterns

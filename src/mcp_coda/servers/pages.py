@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, _get_client, _ok, _p, _page, tool_result
 
 
 @mcp.tool(
@@ -34,7 +34,7 @@ async def coda_list_pages(
     all subsequent page operations.
     """
     params = {"limit": limit, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/pages", params=params))
+    return _page(await _get_client(ctx).get(_p("docs", doc_id, "pages"), params=params))
 
 
 @mcp.tool(
@@ -59,7 +59,7 @@ async def coda_get_page(
     return the page's text content — use coda_get_page_content for that. Page
     names can change; always use page IDs for reliable access.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/pages/{page_id_or_name}"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "pages", page_id_or_name)))
 
 
 @mcp.tool(
@@ -114,7 +114,7 @@ async def coda_create_page(
                 "content": content,
             },
         }
-    return _ok(await _get_client(ctx).post(f"/docs/{doc_id}/pages", json_data=body))
+    return _ok(await _get_client(ctx).post(_p("docs", doc_id, "pages"), json_data=body))
 
 
 @mcp.tool(
@@ -175,7 +175,7 @@ async def coda_update_page(
         }
         body["contentUpdate"] = content_update
     return _ok(
-        await _get_client(ctx).put(f"/docs/{doc_id}/pages/{page_id_or_name}", json_data=body)
+        await _get_client(ctx).put(_p("docs", doc_id, "pages", page_id_or_name), json_data=body)
     )
 
 
@@ -201,7 +201,7 @@ async def coda_delete_page(
     pages are reparented to the deleted page's parent. Verify the page name with
     coda_get_page before calling this.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}")
+    await _get_client(ctx).delete(_p("docs", doc_id, "pages", page_id_or_name))
     return _ok({"status": "deleted", "doc_id": doc_id, "page_id": page_id_or_name})
 
 
@@ -234,7 +234,7 @@ async def coda_get_page_content(
     """
     return _ok(
         await _get_client(ctx).get(
-            f"/docs/{doc_id}/pages/{page_id_or_name}/content",
+            _p("docs", doc_id, "pages", page_id_or_name, "content"),
             params={"outputFormat": output_format},
         )
     )
@@ -262,7 +262,7 @@ async def coda_delete_page_content(
     page remains in the doc with its name and metadata intact. This is
     irreversible. Use coda_delete_page to remove the page entirely.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}/pages/{page_id_or_name}/content")
+    await _get_client(ctx).delete(_p("docs", doc_id, "pages", page_id_or_name, "content"))
     return _ok({"status": "content_deleted", "doc_id": doc_id, "page_id": page_id_or_name})
 
 
@@ -295,7 +295,7 @@ async def coda_export_page(
     """
     return _ok(
         await _get_client(ctx).post(
-            f"/docs/{doc_id}/pages/{page_id_or_name}/export",
+            _p("docs", doc_id, "pages", page_id_or_name, "export"),
             json_data={"outputFormat": output_format},
         )
     )

@@ -153,7 +153,7 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
     ),
     ("coda_delete_doc", {"doc_id": "d1"}, "DELETE", "/docs/d1", {}, None),
     # folders
-    ("coda_list_folders", {}, "GET", "/folders", {}, None),
+    ("coda_list_folders", {}, "GET", "/folders", {"limit": "50"}, None),
     ("coda_get_folder", {"folder_id": "f1"}, "GET", "/folders/f1", {}, None),
     (
         "coda_create_folder",
@@ -352,7 +352,7 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
             "doc_id": "d1",
             "table_id_or_name": "t1",
             "query": 'Status:"Active"',
-            "sort_by": "-Created",
+            "sort_by": "createdAt",
             "use_column_names": False,
             "limit": 5,
             "cursor": "c1",
@@ -363,7 +363,7 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
             "limit": "5",
             "useColumnNames": "false",
             "query": 'Status:"Active"',
-            "sortBy": "-Created",
+            "sortBy": "createdAt",
             "pageToken": "c1",
         },
         None,
@@ -563,3 +563,20 @@ async def test_unexpected_failure_is_a_tool_error(
     assert "RuntimeError: schema changed" in result.content[0].text
     assert "coda_get_doc failed" in caplog.text
     assert "Traceback" in caplog.text
+
+
+async def test_list_rows_sort_by_is_enum(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """CO-R04: sort_by is the API's sortBy enum, not a free-form column string.
+
+    On origin/main sort_by was a bare `str` (its description told the model to
+    pass '-Created'), so the schema carried no enum and the upstream API 400'd.
+    """
+    client, _ = tool_client
+    tools = {t.name: t for t in await client.list_tools()}
+    sort_by = tools["coda_list_rows"].input_schema["properties"]["sort_by"]
+    flat = json.dumps(sort_by)
+    assert "createdAt" in flat
+    assert "natural" in flat
+    assert "updatedAt" in flat

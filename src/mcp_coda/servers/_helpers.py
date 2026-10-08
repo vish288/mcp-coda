@@ -9,6 +9,7 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import quote
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
@@ -64,6 +65,28 @@ def _load_file(base_dir: str, filename: str) -> str:
         msg = f"Invalid filename: {filename}"
         raise ValueError(msg)
     return path.read_text(encoding="utf-8")
+
+
+def _p(*segments: str) -> str:
+    """Build an API path from segments, percent-encoding each one.
+
+    Doc/page/table/row IDs and names reach us from a model and are untrusted.
+    Interpolated raw, a `#` or `?` in a segment ends the path (so a DELETE lands
+    on a parent resource), and `/` or `%` corrupt it. Every segment is encoded
+    with `safe=""` so each one is exactly one path component — a row named
+    "a/b" or "Fix?" reaches the right resource instead of retargeting the call.
+
+    Dot segments are rejected outright: `quote` leaves `.`/`..` unchanged, and
+    those are the segments httpx resolves away to a different endpoint.
+    """
+    parts: list[str] = []
+    for segment in segments:
+        text = str(segment)
+        if text in (".", ".."):
+            msg = f"Unsafe path segment {text!r}"
+            raise ValueError(msg)
+        parts.append(quote(text, safe=""))
+    return "/" + "/".join(parts)
 
 
 def _get_client(ctx: Context) -> CodaClient:
@@ -123,12 +146,26 @@ def _ok(data: Any) -> str:
         # appending afterwards pushed the payload back over the limit in the
         # boundary case, which fell through to slicing -- reintroducing exactly
         # the unparseable output this function exists to prevent.
+        dropped = len(items) - len(kept)
         shrunk["truncated"] = {
             "returned": len(kept),
-            "dropped": len(items) - len(kept),
+            "dropped": dropped,
             "reason": f"response exceeded {CHARACTER_LIMIT} characters",
-            "hint": "narrow with filters, a smaller limit, or follow next_cursor",
+            "hint": (
+                "re-call the same request with a smaller limit "
+                f"(e.g. limit={len(kept)}) or add filters; do NOT follow "
+                "next_cursor, it resumes past the dropped items"
+            ),
         }
+        # The API's next_cursor resumes *after* this page, so emitting it here
+        # would skip the items just dropped (rows 41-99 in the review's repro
+        # became unreachable). Clear it and keep has_more so the caller retries
+        # this page at a smaller size. total_count must count what we return.
+        if "next_cursor" in shrunk:
+            shrunk["next_cursor"] = None
+            shrunk["has_more"] = True
+        if "total_count" in shrunk:
+            shrunk["total_count"] = len(kept)
         return shrunk
 
     # Drop ~10% at a time so a 5,000-item response costs a handful of dumps

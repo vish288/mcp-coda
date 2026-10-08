@@ -73,9 +73,9 @@ class TestListRows:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": []})
         ctx = _make_ctx(client)
-        await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1", sort_by="-Created")
+        await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1", sort_by="createdAt")
         call_params = client.get.call_args[1]["params"]
-        assert call_params["sortBy"] == "-Created"
+        assert call_params["sortBy"] == "createdAt"
 
     async def test_with_cursor(self) -> None:
         client = AsyncMock()

@@ -6,7 +6,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import _get_client, _ok, tool_result
+from ._helpers import Cursor, _get_client, _ok, _p, _page, tool_result
 
 
 @mcp.tool(
@@ -14,16 +14,27 @@ from ._helpers import _get_client, _ok, tool_result
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
 @tool_result
-async def coda_list_folders(ctx: Context) -> str:
-    """List all folders accessible to the current API token.
+async def coda_list_folders(
+    ctx: Context,
+    workspace_id: Annotated[
+        str | None,
+        Field(description="Limit results to folders in this workspace (e.g. 'ws-AbCdEf')"),
+    ] = None,
+    limit: Annotated[
+        int,
+        Field(description="Maximum number of folders to return (1-200)", ge=1, le=200),
+    ] = 50,
+    cursor: Cursor = None,
+) -> str:
+    """List folders accessible to the current API token, one page at a time.
 
-    Returns folder metadata including name, ID, and parent folder. Folders
-    organize docs in the Coda workspace. Use the returned folder IDs with
-    coda_create_doc to place new docs in specific folders.
+    Returns folder metadata (name, ID, parent folder) with pagination — the API
+    defaults to 25 per page, so pass cursor to fetch the rest. Folders organize
+    docs in the Coda workspace. Use the returned folder IDs with coda_create_doc
+    to place new docs in specific folders.
     """
-    data = await _get_client(ctx).get("/folders")
-    items = data.get("items", [])
-    return _ok({"items": items, "total_count": len(items)})
+    params = {"limit": limit, "workspaceId": workspace_id, "pageToken": cursor}
+    return _page(await _get_client(ctx).get("/folders", params=params))
 
 
 @mcp.tool(
@@ -43,7 +54,7 @@ async def coda_get_folder(
     Returns the folder's name, ID, parent folder, and child items. Use
     coda_list_folders to discover available folders first.
     """
-    return _ok(await _get_client(ctx).get(f"/folders/{folder_id}"))
+    return _ok(await _get_client(ctx).get(_p("folders", folder_id)))
 
 
 @mcp.tool(
@@ -104,7 +115,7 @@ async def coda_update_folder(
         body["name"] = name
     if not body:
         return _ok({"unchanged": True, "folder_id": folder_id})
-    return _ok(await _get_client(ctx).patch(f"/folders/{folder_id}", json_data=body))
+    return _ok(await _get_client(ctx).patch(_p("folders", folder_id), json_data=body))
 
 
 @mcp.tool(
@@ -125,5 +136,5 @@ async def coda_delete_folder(
     the root level or deleted depending on Coda's behavior. Verify the folder
     with coda_get_folder before deleting.
     """
-    await _get_client(ctx).delete(f"/folders/{folder_id}")
+    await _get_client(ctx).delete(_p("folders", folder_id))
     return _ok({"status": "deleted", "folder_id": folder_id})

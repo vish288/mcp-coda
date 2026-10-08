@@ -11,7 +11,7 @@ from fastmcp import Context
 from pydantic import Field
 
 from . import mcp
-from ._helpers import Cursor, _get_client, _ok, _page, tool_result
+from ._helpers import Cursor, _get_client, _ok, _p, _page, tool_result
 
 # --- Automations ---
 
@@ -46,7 +46,7 @@ async def coda_trigger_automation(
     body: dict[str, Any] = payload if payload is not None else {}
     return _ok(
         await _get_client(ctx).post(
-            f"/docs/{doc_id}/hooks/automation/{rule_id}",
+            _p("docs", doc_id, "hooks", "automation", rule_id),
             json_data=body,
         )
     )
@@ -79,7 +79,7 @@ async def coda_list_formulas(
     get a specific formula's current value.
     """
     params = {"limit": limit, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/formulas", params=params))
+    return _page(await _get_client(ctx).get(_p("docs", doc_id, "formulas"), params=params))
 
 
 @mcp.tool(
@@ -104,7 +104,7 @@ async def coda_get_formula(
     an error. The value is computed by Coda and reflects the latest state.
     Use coda_list_formulas to discover available formulas in a doc.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/formulas/{formula_id_or_name}"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "formulas", formula_id_or_name)))
 
 
 # --- Controls ---
@@ -134,7 +134,7 @@ async def coda_list_controls(
     read a specific control's current value.
     """
     params = {"limit": limit, "pageToken": cursor}
-    return _page(await _get_client(ctx).get(f"/docs/{doc_id}/controls", params=params))
+    return _page(await _get_client(ctx).get(_p("docs", doc_id, "controls"), params=params))
 
 
 @mcp.tool(
@@ -160,7 +160,7 @@ async def coda_get_control(
     reflects the current user-facing state. Use coda_list_controls to discover
     available controls.
     """
-    return _ok(await _get_client(ctx).get(f"/docs/{doc_id}/controls/{control_id_or_name}"))
+    return _ok(await _get_client(ctx).get(_p("docs", doc_id, "controls", control_id_or_name)))
 
 
 # --- Publishing ---
@@ -224,7 +224,7 @@ async def coda_publish_doc(
         body["categoryNames"] = category_names
     if mode is not None:
         body["mode"] = mode
-    return _ok(await _get_client(ctx).put(f"/docs/{doc_id}/publish", json_data=body))
+    return _ok(await _get_client(ctx).put(_p("docs", doc_id, "publish"), json_data=body))
 
 
 @mcp.tool(
@@ -244,5 +244,5 @@ async def coda_unpublish_doc(
     Reverts a previously published doc to private. The public URL will stop
     working. This is reversible — you can publish again with coda_publish_doc.
     """
-    await _get_client(ctx).delete(f"/docs/{doc_id}/publish")
+    await _get_client(ctx).delete(_p("docs", doc_id, "publish"))
     return _ok({"status": "unpublished", "doc_id": doc_id})
