@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0] - 2026-10-10
+
+### Bug Fixes
+- fix: encode path segments, guard transport, correct pagination/docs (review 2026-10-06) (db30e4e)
+
+### Documentation
+- docs: list mcp-argocd in related servers and refresh counts (fc99fae)
+
+
 ## [0.7.4] - 2026-10-06
 
 
