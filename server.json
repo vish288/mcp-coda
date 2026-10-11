@@ -29,6 +29,13 @@
           "isRequired": false,
           "format": "string",
           "isSecret": false
+        },
+        {
+          "name": "CODA_HTTP_BEARER_TOKEN",
+          "description": "Bearer token (min 16 chars) to authenticate HTTP transports on a non-loopback host",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
         }
       ]
     }
