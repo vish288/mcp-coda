@@ -28,8 +28,8 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 
 ## Key patterns
 
-- Every tool sits under `@tool_result` (from `_helpers.py`), below `@mcp.tool`. For an expected `CodaError` (401/403/404/429, other API statuses, read-only mode) it returns a `ToolResult(is_error=True)` whose text is the `_err(e)` JSON and whose `structuredContent` is the same object. Any other exception is logged with its traceback and re-raised as `ToolError`, so the MCP result is also `isError: true` but with `TypeName: message` text and no `structuredContent`
-- Errors: expected failures are `isError: true` results whose text and `structuredContent` are the same `{"error", ...}` object; bugs are `isError: true` with `TypeName: message` text and no `structuredContent`, logged with a traceback
+- Every tool sits under `@tool_result` (from `_helpers.py`), below `@mcp.tool`. For an expected `CodaError` (401/403/404/429, other API statuses, read-only mode) it returns a `ToolResult(is_error=True)` whose text is the `_err(e)` JSON and no `structuredContent`. Any other exception is logged with its traceback and re-raised as `ToolError`, so the MCP result is also `isError: true` with `TypeName: message` text
+- Errors: expected failures are `isError: true` results whose error body (`{"isError", "error", ...}`) is the text content; bugs are `isError: true` with `TypeName: message` text, logged with a traceback. No error result carries `structuredContent` — the TS MCP SDK validates it against the output schema even when `isError` is true, so an error payload there would make strict clients reject the result
 - Every tool returns `str` on success (JSON via `_ok`/`_page`, markdown via `_ok_markdown`); expected failures return a fastmcp `ToolResult` from `_error_result(_err(e))`
 - Write tools are declared `@tool_result(write=True)`, which runs `_check_write(ctx)` before the body
 - List responses go through `_page(data)` and include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)

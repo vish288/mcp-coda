@@ -111,7 +111,7 @@ mcp-coda implements the **Model Context Protocol 2026-07-28** specification, oft
 
 ### Error results
 
-An expected failure — a 404, a 401, a rate limit, or a write blocked by read-only mode — comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. The result body is a JSON object with `error` and, where relevant, `status_code`, `body`, and `retry_after`. That same object is returned as the result's `structuredContent`, so a client can read either the text or the structured payload and get an identical shape. Unexpected exceptions (a bug in a tool) are also `isError: true`, but their text is `TypeName: message` with no `structuredContent`, and the server logs them with a traceback.
+An expected failure — a 404, a 401, a rate limit, or a write blocked by read-only mode — comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. The result body is the text content: a JSON object with `isError`, `error`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` — the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
 
 ## Tools (53)
 
