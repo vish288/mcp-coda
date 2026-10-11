@@ -27,7 +27,7 @@ from mcp_coda.servers.rows import (
 from mcp_coda.servers.rows import (
     coda_update_row as _coda_update_row,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_delete_row = getattr(_coda_delete_row, "fn", _coda_delete_row)
@@ -140,7 +140,7 @@ class TestListRows:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "server error"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
+        result = _err_body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["isError"] is True
         assert result["status_code"] == 500
 
@@ -159,7 +159,7 @@ class TestGetRow:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no such row"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_get_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
         )
         assert result["isError"] is True
@@ -190,9 +190,7 @@ class TestInsertRows:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
-            await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=[])
-        )
+        result = _err_body(await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=[]))
         assert "CODA_READ_ONLY" in result["error"]
 
 
@@ -213,7 +211,7 @@ class TestUpdateRow:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         cells = [{"column": "Status", "value": "Done"}]
-        result = json.loads(
+        result = _err_body(
             await coda_update_row(
                 ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1", cells=cells
             )
@@ -225,7 +223,7 @@ class TestUpdateRow:
         client.put = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no row"))
         ctx = _make_ctx(client)
         cells = [{"column": "Status", "value": "Done"}]
-        result = json.loads(
+        result = _err_body(
             await coda_update_row(
                 ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad", cells=cells
             )
@@ -246,7 +244,7 @@ class TestDeleteRow:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
+        result = _err_body(
             await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
         )
         assert result["isError"] is True
@@ -255,7 +253,7 @@ class TestDeleteRow:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no row"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
         )
         assert result["isError"] is True
@@ -284,7 +282,7 @@ class TestDeleteRows:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
+        result = _err_body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["isError"] is True
@@ -293,7 +291,7 @@ class TestDeleteRows:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["isError"] is True
@@ -318,7 +316,7 @@ class TestPushButton:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
+        result = _err_body(
             await coda_push_button(
                 ctx,
                 doc_id="d1",
@@ -333,7 +331,7 @@ class TestPushButton:
         client = AsyncMock()
         client.post = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no button"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_push_button(
                 ctx,
                 doc_id="d1",

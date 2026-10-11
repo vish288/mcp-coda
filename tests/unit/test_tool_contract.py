@@ -477,9 +477,10 @@ def test_table_covers_every_registered_tool() -> None:
     assert len(_IDS) == len(registered), "duplicate rows"
 
 
-async def _call(client: Client, tool: str, args: dict[str, Any]) -> dict[str, Any]:
-    result = await client.call_tool(tool, args)
-    return json.loads(result.content[0].text)
+async def _call(client: Client, tool: str, args: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """Call a tool without raising on error; return (is_error, JSON body)."""
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    return result.is_error, json.loads(result.content[0].text)
 
 
 @pytest.mark.parametrize("row", ROWS, ids=_IDS)
@@ -489,11 +490,14 @@ async def test_request_shape(
     tool, args, method, path, query, body = row
     client, router = tool_client
     if method is None:
-        assert "isError" not in await _call(client, tool, args)
+        is_error, out = await _call(client, tool, args)
+        assert is_error is False
+        assert "isError" not in out
         assert not router.calls
         return
     route = router.request(method, path).mock(return_value=Response(200, json={"items": []}))
-    out = await _call(client, tool, args)
+    is_error, out = await _call(client, tool, args)
+    assert is_error is False
     assert "isError" not in out, out
     req = route.calls.last.request
     assert req.method == method
@@ -510,7 +514,8 @@ async def test_forced_failure(
     client, router = tool_client
     status = 401 if tool == "coda_whoami" else 404
     router.request(method, path).mock(return_value=Response(status, text="nope"))
-    out = await _call(client, tool, args)
+    is_error, out = await _call(client, tool, args)
+    assert is_error is True
     assert set(out) == {"isError", "error", "status_code", "body"}
     assert out["isError"] is True
     assert out["status_code"] == status
@@ -525,23 +530,56 @@ async def test_read_only_blocks_write(
 ) -> None:
     tool, args, *_ = row
     client, router = readonly_client
-    out = await _call(client, tool, args)
+    is_error, out = await _call(client, tool, args)
+    assert is_error is True
     assert out["isError"] is True
     assert "CODA_READ_ONLY" in out["error"]
     assert not router.calls
 
 
-async def test_expected_failure_is_a_successful_result(
+async def test_api_error_is_an_error_result_with_hint(
     tool_client: tuple[Client, respx.MockRouter],
 ) -> None:
-    """A 404 is something the caller can act on: JSON with isError inside, MCP-level success."""
+    """A 404 is an isError result the caller can act on; its text and structuredContent agree."""
     client, router = tool_client
     router.get("/docs/d1").mock(return_value=Response(404, text="gone"))
     result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
-    assert result.is_error is False
+    assert result.is_error is True
     out = json.loads(result.content[0].text)
     assert out["isError"] is True
     assert out["status_code"] == 404
+    assert result.structured_content == out
+
+
+async def _assert_error_result(client: Client, tool: str, args: dict[str, Any]) -> None:
+    """Call fails as an isError result whose text parses to its structuredContent."""
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    assert result.is_error is True
+    body = json.loads(result.content[0].text)
+    assert body["isError"] is True
+    assert "error" in body
+    assert result.structured_content == body
+
+
+async def test_every_expected_failure_is_an_error_result(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """API-origin failure types land as isError with text == structuredContent."""
+    client, router = tool_client
+    router.get("/docs/d1").mock(return_value=Response(404, text="gone"))  # CodaApiError
+    await _assert_error_result(client, "coda_get_doc", {"doc_id": "d1"})
+    router.get("/whoami").mock(return_value=Response(401, text="bad token"))  # CodaAuthError
+    await _assert_error_result(client, "coda_whoami", {})
+    router.get("/docs/d2").mock(return_value=Response(429, text="slow down"))  # CodaRateLimitError
+    await _assert_error_result(client, "coda_get_doc", {"doc_id": "d2"})
+
+
+async def test_read_only_failure_is_an_error_result(
+    readonly_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """CodaWriteDisabledError (read-only) is an isError result, text == structuredContent."""
+    client, _ = readonly_client
+    await _assert_error_result(client, "coda_create_doc", {"title": "x"})
 
 
 async def test_unexpected_failure_is_a_tool_error(
@@ -560,6 +598,7 @@ async def test_unexpected_failure_is_a_tool_error(
     with caplog.at_level("ERROR", logger="mcp_coda.servers._helpers"):
         result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
     assert result.is_error is True
+    assert result.structured_content is None
     assert "RuntimeError: schema changed" in result.content[0].text
     assert "coda_get_doc failed" in caplog.text
     assert "Traceback" in caplog.text

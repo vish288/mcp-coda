@@ -30,7 +30,7 @@ from mcp_coda.servers.pages import (
 from mcp_coda.servers.pages import (
     coda_update_page as _coda_update_page,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_page = getattr(_coda_create_page, "fn", _coda_create_page)
@@ -68,7 +68,7 @@ class TestListPages:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_pages(ctx, doc_id="bad"))
+        result = _err_body(await coda_list_pages(ctx, doc_id="bad"))
         assert result["isError"] is True
 
 
@@ -84,7 +84,7 @@ class TestGetPage:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_page(ctx, doc_id="d1", page_id_or_name="bad"))
+        result = _err_body(await coda_get_page(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -134,7 +134,7 @@ class TestCreatePage:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_create_page(ctx, doc_id="d1", name="Blocked"))
+        result = _err_body(await coda_create_page(ctx, doc_id="d1", name="Blocked"))
         assert "CODA_READ_ONLY" in result["error"]
 
 
@@ -179,7 +179,7 @@ class TestUpdatePage:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(
+        result = _err_body(
             await coda_update_page(ctx, doc_id="d1", page_id_or_name="p1", name="Blocked")
         )
         assert result["isError"] is True
@@ -188,7 +188,7 @@ class TestUpdatePage:
         client = AsyncMock()
         client.put = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_update_page(ctx, doc_id="d1", page_id_or_name="bad", name="X")
         )
         assert result["isError"] is True
@@ -210,7 +210,7 @@ class TestGetPageContent:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_page_content(ctx, doc_id="d1", page_id_or_name="bad"))
+        result = _err_body(await coda_get_page_content(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -225,14 +225,14 @@ class TestDeletePage:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _err_body(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["isError"] is True
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="bad"))
+        result = _err_body(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -247,14 +247,14 @@ class TestDeletePageContent:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _err_body(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["isError"] is True
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _err_body(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["isError"] is True
 
 
@@ -280,5 +280,5 @@ class TestExportPage:
         client = AsyncMock()
         client.post = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad"))
+        result = _err_body(await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True

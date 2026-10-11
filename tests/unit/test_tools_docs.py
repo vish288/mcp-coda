@@ -21,7 +21,7 @@ from mcp_coda.servers.docs import (
 from mcp_coda.servers.docs import (
     coda_update_doc as _coda_update_doc,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_doc = getattr(_coda_create_doc, "fn", _coda_create_doc)
@@ -103,7 +103,7 @@ class TestListDocs:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_docs(ctx))
+        result = _err_body(await coda_list_docs(ctx))
         assert result["isError"] is True
 
 
@@ -119,7 +119,7 @@ class TestGetDoc:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaNotFoundError("no such doc"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_doc(ctx, doc_id="nope"))
+        result = _err_body(await coda_get_doc(ctx, doc_id="nope"))
         assert result["status_code"] == 404
         assert result["isError"] is True
 
@@ -151,7 +151,7 @@ class TestCreateDoc:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_create_doc(ctx, title="Blocked"))
+        result = _err_body(await coda_create_doc(ctx, title="Blocked"))
         assert "CODA_READ_ONLY" in result["error"]
 
 
@@ -174,14 +174,14 @@ class TestUpdateDoc:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_update_doc(ctx, doc_id="d1", title="Blocked"))
+        result = _err_body(await coda_update_doc(ctx, doc_id="d1", title="Blocked"))
         assert result["isError"] is True
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_update_doc(ctx, doc_id="bad", title="X"))
+        result = _err_body(await coda_update_doc(ctx, doc_id="bad", title="X"))
         assert result["isError"] is True
 
     async def test_no_op_when_nothing_to_update(self) -> None:
@@ -204,5 +204,5 @@ class TestDeleteDoc:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_delete_doc(ctx, doc_id="d1"))
+        result = _err_body(await coda_delete_doc(ctx, doc_id="d1"))
         assert "CODA_READ_ONLY" in result["error"]

@@ -28,8 +28,9 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 
 ## Key patterns
 
-- Every tool sits under `@tool_result` (from `_helpers.py`), below `@mcp.tool`. `@tool_result` returns a `CodaError` (401/403/404/429, other API statuses, read-only mode) as the structured `_err(e)` JSON. It logs any other exception with its traceback and re-raises it as `ToolError`, so the MCP result carries `isError: true`
-- Every tool returns `str` (JSON via `_ok`/`_page`/`_err`, markdown via `_ok_markdown`)
+- Every tool sits under `@tool_result` (from `_helpers.py`), below `@mcp.tool`. For an expected `CodaError` (401/403/404/429, other API statuses, read-only mode) it returns a `ToolResult(is_error=True)` whose text is the `_err(e)` JSON and whose `structuredContent` is the same object. Any other exception is logged with its traceback and re-raised as `ToolError`, so the MCP result is also `isError: true` but with `TypeName: message` text and no `structuredContent`
+- Errors: expected failures are `isError: true` results whose text and `structuredContent` are the same `{"error", ...}` object; bugs are `isError: true` with `TypeName: message` text and no `structuredContent`, logged with a traceback
+- Every tool returns `str` on success (JSON via `_ok`/`_page`, markdown via `_ok_markdown`); expected failures return a fastmcp `ToolResult` from `_error_result(_err(e))`
 - Write tools are declared `@tool_result(write=True)`, which runs `_check_write(ctx)` before the body
 - List responses go through `_page(data)` and include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)
 - Rate-limit errors carry `retry_after` seconds; the server does **not** retry 429s itself
@@ -185,5 +186,4 @@ Check: `uv run pytest tests/test_doc_parity.py` re-derives every count, tool nam
 
 ## Known limitations
 
-- Errors return as successful tool results that carry `{"error": ...}` (soft-error pattern). Callers must inspect the JSON body, not only the transport status
 - There are no response models. Tools return the raw Coda API JSON through `_ok`, so field names keep the API's camelCase and unknown fields survive. `_truncate` caps output at 25k characters, and each tool builds the `{items, has_more, next_cursor, total_count}` list envelope inline. The server shapes nothing else. A move to typed response models would rename every field and silently drop extras, so it is a breaking change, not a refactor.
