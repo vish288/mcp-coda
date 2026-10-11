@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import os
-from unittest.mock import patch
+from collections.abc import Iterator
+from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from click.testing import CliRunner
 
-from mcp_coda import main
+from mcp_coda import _BearerTokenVerifier, main
+from mcp_coda.servers import mcp as server_mcp
+
+_TOKEN32 = "0123456789abcdef0123456789abcdef"
 
 
 @pytest.fixture
 def runner() -> CliRunner:
     return CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _reset_auth() -> Iterator[None]:
+    """main() mutates the module-level server's auth; keep tests isolated."""
+    yield
+    server_mcp.auth = None
 
 
 def test_sse_deprecation_warning(runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -65,3 +77,83 @@ def test_env_coda_token_does_not_warn(runner: CliRunner, monkeypatch: pytest.Mon
         assert result.exit_code == 0
         mock_run.assert_called_once()
         assert "deprecated" not in result.stderr
+
+
+class TestHttpBearerToken:
+    """CO-R17: an HTTP transport on a non-loopback host needs a bearer token."""
+
+    def test_non_loopback_without_token_exits(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODA_API_TOKEN", "tok")
+        monkeypatch.delenv("CODA_HTTP_BEARER_TOKEN", raising=False)
+        with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
+            result = runner.invoke(main, ["--transport", "streamable-http", "--host", "0.0.0.0"])
+        assert result.exit_code == 2
+        assert "CODA_HTTP_BEARER_TOKEN" in result.output
+        mock_run.assert_not_called()
+
+    def test_token_sets_static_auth(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODA_API_TOKEN", "tok")
+        monkeypatch.setenv("CODA_HTTP_BEARER_TOKEN", _TOKEN32)
+        with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
+            result = runner.invoke(main, ["--transport", "streamable-http", "--host", "0.0.0.0"])
+        assert result.exit_code == 0
+        assert isinstance(server_mcp.auth, _BearerTokenVerifier)
+        mock_run.assert_called_once()
+
+    def test_loopback_without_token_no_auth(
+        self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODA_API_TOKEN", "tok")
+        monkeypatch.delenv("CODA_HTTP_BEARER_TOKEN", raising=False)
+        with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
+            result = runner.invoke(main, ["--transport", "streamable-http", "--host", "127.0.0.1"])
+        assert result.exit_code == 0
+        assert server_mcp.auth is None
+        mock_run.assert_called_once()
+
+    def test_short_token_exits(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CODA_API_TOKEN", "tok")
+        monkeypatch.setenv("CODA_HTTP_BEARER_TOKEN", "deadbeef")  # 8 chars
+        with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
+            result = runner.invoke(main, ["--transport", "streamable-http", "--host", "0.0.0.0"])
+        assert result.exit_code == 2
+        assert "at least 16" in result.output
+        mock_run.assert_not_called()
+
+    def test_stdio_ignores_token(self, runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CODA_API_TOKEN", "tok")
+        monkeypatch.setenv("CODA_HTTP_BEARER_TOKEN", _TOKEN32)
+        with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
+            result = runner.invoke(main, [])
+        assert result.exit_code == 0
+        assert server_mcp.auth is None
+        mock_run.assert_called_once()
+
+
+async def test_bearer_middleware_rejects_missing_header(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Wire check: with auth set, the ASGI app 401s a request with no bearer."""
+    monkeypatch.setenv("CODA_API_TOKEN", "tok")
+    server_mcp.auth = _BearerTokenVerifier(_TOKEN32)
+    try:
+        app = server_mcp.http_app()
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            async with app.router.lifespan_context(app):
+                no_header = await client.post("/mcp", json={})
+                with_header = await client.post(
+                    "/mcp",
+                    json={},
+                    headers={"Authorization": f"Bearer {_TOKEN32}"},
+                )
+        assert no_header.status_code == 401
+        # The middleware ran and let the authenticated request through to the
+        # endpoint; any non-401 status proves that.
+        assert with_header.status_code != 401
+    finally:
+        server_mcp.auth = None

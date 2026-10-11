@@ -22,6 +22,12 @@
       "description": "Restrict to read-only operations (true/false)",
       "required": false,
       "sensitive": false
+    },
+    {
+      "name": "CODA_HTTP_BEARER_TOKEN",
+      "description": "Bearer token (min 16 chars) to authenticate HTTP transports on a non-loopback host",
+      "required": false,
+      "sensitive": true
     }
   ]
 }

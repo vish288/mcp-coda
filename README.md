@@ -78,6 +78,7 @@ uv pip install mcp-coda
 | `CODA_READ_ONLY` | No | `false` | Set to `true` to disable write operations |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL |
 | `CODA_TIMEOUT` | No | `30` | Request timeout in seconds |
+| `CODA_HTTP_BEARER_TOKEN` | No | - | Required to bind an HTTP transport to a non-loopback host. Clients send `Authorization: Bearer <token>`. Minimum 16 characters |
 
 ### Supported Token Types
 
@@ -335,6 +336,7 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 - **Read-only mode**: Set `CODA_READ_ONLY=true` to disable all write operations (create, update, delete). The server enforces read-only mode before any API call.
 - **MCP tool annotations**: Each tool declares `readOnlyHint`, `destructiveHint`, and `idempotentHint` for client-side permission prompts.
 - **No credential storage**: The server does not persist tokens. It reads credentials from environment variables at startup.
+- **HTTP transport auth**: Host/Origin protection is not authentication. Binding an HTTP transport to a non-loopback host requires `CODA_HTTP_BEARER_TOKEN` (min 16 chars); clients send `Authorization: Bearer <token>` and anything else gets a 401. Without it the server refuses to start on a non-loopback host.
 
 ## Rate Limits & Permissions
 
@@ -374,6 +376,12 @@ uvx mcp-coda
 # HTTP transport (SSE or streamable-http)
 uvx mcp-coda --transport sse --host 127.0.0.1 --port 8000
 uvx mcp-coda --transport streamable-http --port 9000
+
+# Binding to a non-loopback host requires a bearer token
+CODA_HTTP_BEARER_TOKEN=$(openssl rand -hex 32) \
+  uvx mcp-coda --transport streamable-http --host 0.0.0.0 --port 9000
+# Clients authenticate with the token:
+#   curl -H "Authorization: Bearer $CODA_HTTP_BEARER_TOKEN" http://host:9000/mcp
 
 # Config comes from env vars
 CODA_API_TOKEN=your-token uvx mcp-coda --read-only

@@ -42,6 +42,8 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 2. **MCP annotations**: `readOnlyHint` / `destructiveHint` / `idempotentHint` drive client-side permission prompts
 3. **Coda token**: Coda's sharing settings enforce doc-level access. Tokens have no scopes and reach everything their owner can reach
 
+HTTP transports add a network layer: Host/Origin protection is not authentication, so binding to a non-loopback host requires `CODA_HTTP_BEARER_TOKEN` (min 16 chars, constant-time compared via a `TokenVerifier` subclass). The CLI refuses to start on a non-loopback host without it.
+
 ## MCP compliance rules
 
 ### Tool annotations (mandatory)
@@ -137,6 +139,7 @@ uvx mcp-coda --read-only                                  # CODA_API_TOKEN from 
 | `CODA_READ_ONLY` | No | `false` | `true`/`1`/`yes` disables every write tool |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL (trailing slash stripped) |
 | `CODA_TIMEOUT` | No | `30` | HTTP timeout, seconds |
+| `CODA_HTTP_BEARER_TOKEN` | No | — | Bearer token (min 16 chars) required to bind an HTTP transport to a non-loopback host; clients send `Authorization: Bearer` |
 
 The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — first non-empty wins. Tokens are generated at <https://coda.io/account#apiSettings> under "API settings". `CodaConfig.validate()` rejects non-ASCII tokens (httpx header encoding).
 
