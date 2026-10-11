@@ -5,7 +5,7 @@ two (formulas), two (controls) and three (publishing) modules; folded into one
 file so the tools no longer need a dozen modules.
 """
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastmcp import Context
 from pydantic import Field
@@ -204,18 +204,25 @@ async def coda_publish_doc(
     ] = None,
     discoverable: Annotated[
         bool,
-        Field(description="Whether the doc is discoverable in the Coda gallery"),
-    ] = True,
+        Field(
+            description=(
+                "Whether the doc is listed in the public Coda gallery. Defaults to "
+                "False — publishing alone makes the doc reachable by URL; set True "
+                "to list it."
+            )
+        ),
+    ] = False,
     mode: Annotated[
-        str | None,
+        Literal["view", "play", "edit"] | None,
         Field(description="Publishing mode (e.g. 'view', 'play', 'edit')"),
     ] = None,
 ) -> str:
     """Publish a Coda doc to make it publicly accessible.
 
-    Publishes the doc with optional gallery listing and URL slug. The doc
-    becomes accessible via a public URL. Use coda_unpublish_doc to revert.
-    Returns the published doc's URL and settings.
+    Publishes the doc with optional gallery listing and URL slug. Publishing
+    alone makes the doc public by link; setting discoverable=True is a separate,
+    more public step that lists it in the Coda gallery. Use coda_unpublish_doc
+    to revert. Returns the published doc's URL and settings.
     """
     body: dict[str, Any] = {"discoverable": discoverable}
     if slug is not None:

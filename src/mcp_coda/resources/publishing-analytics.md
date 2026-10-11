@@ -10,7 +10,7 @@ How to publish docs and access analytics data in Coda.
 coda_publish_doc(
     doc_id="docId",
     slug="my-published-doc",  # URL-friendly identifier
-    discoverable=True,  # listed in Coda gallery
+    discoverable=True,  # opt-in; default is unlisted. Listed in Coda gallery
     category_names=["projectManagement"],  # gallery categories (list)
     mode="view",  # "view", "play", or "edit"
 )

@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock
 
+import respx
+from fastmcp import Client
+
 from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.misc import (
     coda_get_control as _coda_get_control,
@@ -233,6 +236,28 @@ class TestPublishDoc:
         await coda_publish_doc(ctx, doc_id="d1", mode="view")
         body = client.put.call_args[1]["json_data"]
         assert body["mode"] == "view"
+
+    async def test_default_is_unlisted(self) -> None:
+        """CO-R23: publishing alone no longer lists the doc in the public gallery."""
+        client = AsyncMock()
+        client.put = AsyncMock(return_value={})
+        ctx = _make_ctx(client)
+        await coda_publish_doc(ctx, doc_id="d1")
+        body = client.put.call_args[1]["json_data"]
+        assert body["discoverable"] is False
+
+    async def test_mode_rejects_unknown(self, tool_client: tuple[Client, respx.MockRouter]) -> None:
+        """CO-R23: mode is the view/play/edit enum. The .fn path bypasses pydantic,
+        so this goes through the real server where validation runs."""
+        client, router = tool_client
+        result = await client.call_tool(
+            "coda_publish_doc", {"doc_id": "d1", "mode": "banana"}, raise_on_error=False
+        )
+        assert result.is_error is True
+        # A pydantic Literal rejection names the allowed values; a bare-str default
+        # would have let "banana" through to an (unmocked) HTTP call instead.
+        assert "view" in result.content[0].text
+        assert not router.calls
 
     async def test_error(self) -> None:
         client = AsyncMock()
