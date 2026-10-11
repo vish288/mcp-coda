@@ -246,15 +246,15 @@ def _err(error: Exception) -> dict[str, Any]:
 def _error_result(detail: dict[str, Any]) -> ToolResult:
     """Wrap an error-detail body as an `isError` result.
 
-    Text content is byte-identical to the pre-change `_err` output (same
-    `json.dumps`); `structured_content` carries the same dict un-escaped;
-    `is_error=True` maps to `CallToolResult.isError` so the client sees the
-    failure and can self-correct (MCP 2026-07-28, "Error Handling").
+    The error body is the text content only; no `structured_content`. The TS MCP
+    SDK validates `structuredContent` against the tool's outputSchema even when
+    `isError` is true, so an error dict (which lacks the schema's `result` key)
+    would make the client throw McpError and lose the error text. `is_error=True`
+    maps to `CallToolResult.isError` (MCP 2026-07-28, "Error Handling").
     """
     text = json.dumps(detail, indent=2, ensure_ascii=False)
     return ToolResult(
         content=[TextContent(type="text", text=text)],
-        structured_content=detail,
         is_error=True,
     )
 

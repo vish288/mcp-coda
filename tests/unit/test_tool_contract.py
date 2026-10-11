@@ -15,6 +15,7 @@ import asyncio
 import json
 from typing import Any
 
+import jsonschema
 import pytest
 import respx
 from fastmcp import Client
@@ -540,7 +541,7 @@ async def test_read_only_blocks_write(
 async def test_api_error_is_an_error_result_with_hint(
     tool_client: tuple[Client, respx.MockRouter],
 ) -> None:
-    """A 404 is an isError result the caller can act on; its text and structuredContent agree."""
+    """A 404 is an isError result the caller can act on; its body is the text only."""
     client, router = tool_client
     router.get("/docs/d1").mock(return_value=Response(404, text="gone"))
     result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
@@ -548,23 +549,23 @@ async def test_api_error_is_an_error_result_with_hint(
     out = json.loads(result.content[0].text)
     assert out["isError"] is True
     assert out["status_code"] == 404
-    assert result.structured_content == out
+    assert result.structured_content is None
 
 
 async def _assert_error_result(client: Client, tool: str, args: dict[str, Any]) -> None:
-    """Call fails as an isError result whose text parses to its structuredContent."""
+    """Call fails as an isError result whose body is the text content, no structuredContent."""
     result = await client.call_tool(tool, args, raise_on_error=False)
     assert result.is_error is True
     body = json.loads(result.content[0].text)
     assert body["isError"] is True
     assert "error" in body
-    assert result.structured_content == body
+    assert result.structured_content is None
 
 
 async def test_every_expected_failure_is_an_error_result(
     tool_client: tuple[Client, respx.MockRouter],
 ) -> None:
-    """API-origin failure types land as isError with text == structuredContent."""
+    """API-origin failure types land as isError results carrying the error body as text."""
     client, router = tool_client
     router.get("/docs/d1").mock(return_value=Response(404, text="gone"))  # CodaApiError
     await _assert_error_result(client, "coda_get_doc", {"doc_id": "d1"})
@@ -577,7 +578,7 @@ async def test_every_expected_failure_is_an_error_result(
 async def test_read_only_failure_is_an_error_result(
     readonly_client: tuple[Client, respx.MockRouter],
 ) -> None:
-    """CodaWriteDisabledError (read-only) is an isError result, text == structuredContent."""
+    """CodaWriteDisabledError (read-only) is an isError result carrying the error body as text."""
     client, _ = readonly_client
     await _assert_error_result(client, "coda_create_doc", {"title": "x"})
 
@@ -602,6 +603,29 @@ async def test_unexpected_failure_is_a_tool_error(
     assert "RuntimeError: schema changed" in result.content[0].text
     assert "coda_get_doc failed" in caplog.text
     assert "Traceback" in caplog.text
+
+
+_OUTPUT_SCHEMAS = {t.name: t.output_schema for t in asyncio.run(mcp.list_tools())}
+
+
+@pytest.mark.parametrize("row", HTTP_ROWS, ids=[r[0] for r in HTTP_ROWS])
+async def test_error_result_passes_strict_output_schema(
+    tool_client: tuple[Client, respx.MockRouter], row: tuple[Any, ...]
+) -> None:
+    """Guard: the TS MCP SDK validates structuredContent even when isError is true.
+
+    An error result must therefore carry no structuredContent, or one that matches
+    the tool's outputSchema; otherwise callTool throws McpError and the error text
+    and hint are lost in Claude Code / Cursor / VS Code.
+    """
+    tool, args, method, path, _, _ = row
+    client, router = tool_client
+    status = 401 if tool == "coda_whoami" else 404
+    router.request(method, path).mock(return_value=Response(status, text="nope"))
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    assert result.is_error is True
+    if result.structured_content is not None:
+        jsonschema.validate(result.structured_content, _OUTPUT_SCHEMAS[tool])
 
 
 async def test_list_rows_sort_by_is_enum(
