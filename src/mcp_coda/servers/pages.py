@@ -289,7 +289,7 @@ async def coda_export_page(
     """Export a page's content, initiating an async export if needed.
 
     Starts an export job and returns the export status. For small pages, the
-    content may be returned immediately. For large pages, then call
+    content may be returned immediately. For large pages, call
     coda_get_export_status with the returned id. Prefer coda_get_page_content
     for quick reads — use this only when you need a full export with embedded
     images resolved.

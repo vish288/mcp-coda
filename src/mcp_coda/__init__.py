@@ -23,15 +23,18 @@ class _BearerTokenVerifier(TokenVerifier):
 
     StaticTokenVerifier resolves tokens with a dict `.get`, which is not
     constant-time. For a single env-sourced secret, hmac.compare_digest avoids
-    leaking the token's length or matching prefix through response timing.
+    leaking how long a matching prefix the presented token has through response
+    timing. Compare encoded bytes: compare_digest raises TypeError on a str
+    containing non-ASCII, so a non-ASCII bearer would otherwise 500 instead of
+    being rejected.
     """
 
     def __init__(self, token: str) -> None:
         super().__init__()
-        self._token = token
+        self._token = token.encode()
 
     async def verify_token(self, token: str) -> AccessToken | None:
-        if hmac.compare_digest(token, self._token):
+        if hmac.compare_digest(token.encode(), self._token):
             return AccessToken(token=token, client_id="mcp-coda", scopes=[])
         return None
 
@@ -74,7 +77,7 @@ def main(
 
     from .servers import mcp
 
-    bearer_token = os.getenv("CODA_HTTP_BEARER_TOKEN", "")
+    bearer_token = os.getenv("CODA_HTTP_BEARER_TOKEN", "").strip()
 
     if transport == "sse":
         click.echo(

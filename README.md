@@ -338,6 +338,13 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 - **No credential storage**: The server does not persist tokens. It reads credentials from environment variables at startup.
 - **HTTP transport auth**: Host/Origin protection is not authentication. Binding an HTTP transport to a non-loopback host requires `CODA_HTTP_BEARER_TOKEN` (min 16 chars); clients send `Authorization: Bearer <token>` and anything else gets a 401. Without it the server refuses to start on a non-loopback host.
 
+## Upgrading to 0.9.0
+
+Two defaults changed. Both are breaking for callers that relied on the old behaviour:
+
+- **`coda_publish_doc` no longer lists docs in the public gallery by default.** `discoverable` now defaults to `False` — publishing alone makes a doc reachable by URL; pass `discoverable=True` to list it in the Coda gallery. `mode` is now restricted to `view`, `play`, or `edit`.
+- **An HTTP transport on a non-loopback host now requires a bearer token.** `uvx mcp-coda --transport streamable-http --host 0.0.0.0` (or any non-loopback host) exits with an error unless `CODA_HTTP_BEARER_TOKEN` (min 16 chars) is set; clients then send `Authorization: Bearer <token>`. Binding to `127.0.0.1` is unchanged.
+
 ## Rate Limits & Permissions
 
 ### Rate Limits

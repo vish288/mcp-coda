@@ -214,7 +214,7 @@ async def coda_publish_doc(
     ] = False,
     mode: Annotated[
         Literal["view", "play", "edit"] | None,
-        Field(description="Publishing mode (e.g. 'view', 'play', 'edit')"),
+        Field(description="Publishing mode. One of 'view', 'play', or 'edit'"),
     ] = None,
 ) -> str:
     """Publish a Coda doc to make it publicly accessible.
