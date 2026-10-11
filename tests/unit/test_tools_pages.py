@@ -19,6 +19,9 @@ from mcp_coda.servers.pages import (
     coda_export_page as _coda_export_page,
 )
 from mcp_coda.servers.pages import (
+    coda_get_export_status as _coda_get_export_status,
+)
+from mcp_coda.servers.pages import (
     coda_get_page as _coda_get_page,
 )
 from mcp_coda.servers.pages import (
@@ -37,6 +40,7 @@ coda_create_page = getattr(_coda_create_page, "fn", _coda_create_page)
 coda_delete_page = getattr(_coda_delete_page, "fn", _coda_delete_page)
 coda_delete_page_content = getattr(_coda_delete_page_content, "fn", _coda_delete_page_content)
 coda_export_page = getattr(_coda_export_page, "fn", _coda_export_page)
+coda_get_export_status = getattr(_coda_get_export_status, "fn", _coda_get_export_status)
 coda_get_page = getattr(_coda_get_page, "fn", _coda_get_page)
 coda_get_page_content = getattr(_coda_get_page_content, "fn", _coda_get_page_content)
 coda_list_pages = getattr(_coda_list_pages, "fn", _coda_list_pages)
@@ -282,3 +286,50 @@ class TestExportPage:
         ctx = _make_ctx(client)
         result = _err_body(await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad"))
         assert result["isError"] is True
+
+
+class TestGetExportStatus:
+    async def test_calls_export_status_path_no_params(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"id": "req-1", "status": "inProgress"})
+        ctx = _make_ctx(client)
+        await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="req-1")
+        assert client.get.call_args[0][0] == "/docs/d1/pages/p1/export/req-1"
+        # No query params — the request_id is a path segment.
+        assert client.get.call_args == (("/docs/d1/pages/p1/export/req-1",), {})
+
+    async def test_complete_passes_download_link(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(
+            return_value={
+                "id": "req-1",
+                "status": "complete",
+                "downloadLink": "https://coda.io/blob/x",
+            }
+        )
+        ctx = _make_ctx(client)
+        result = json.loads(
+            await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="req-1")
+        )
+        assert result["status"] == "complete"
+        assert result["downloadLink"] == "https://coda.io/blob/x"
+
+    async def test_failed_passes_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(return_value={"status": "failed", "error": "too big"})
+        ctx = _make_ctx(client)
+        result = json.loads(
+            await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="req-1")
+        )
+        assert result["status"] == "failed"
+        assert result["error"] == "too big"
+
+    async def test_error(self) -> None:
+        client = AsyncMock()
+        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "expired"))
+        ctx = _make_ctx(client)
+        result = _err_body(
+            await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="gone")
+        )
+        assert result["isError"] is True
+        assert result["status_code"] == 404

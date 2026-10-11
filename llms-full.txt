@@ -1,6 +1,6 @@
 # mcp-coda
 
-> MCP server for the Coda API. It provides 53 tools, 12 resources, and 5 prompts for docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+> MCP server for the Coda API. It provides 54 tools, 12 resources, and 5 prompts for docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assistant CRUD access to all Coda resource types, live and static context, and prompt templates for common workflows. It implements the MCP 2026-07-28 specification (MCP 2.0) and stays compatible with 2025-11-25 clients. It uses FastMCP 4.x, httpx, and Pydantic.
 
@@ -16,7 +16,7 @@ mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assist
 
 ## Documentation
 
-- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 53 tools, 12 resources, 5 prompts
+- [README](https://github.com/vish288/mcp-coda#readme): canonical reference for setup, env vars, all 54 tools, 12 resources, 5 prompts
 - [PyPI](https://pypi.org/project/mcp-coda/): install via `pip install mcp-coda` or `uvx mcp-coda`
 - [GitHub](https://github.com/vish288/mcp-coda): source code, issue tracker, development setup
 - [MCP Registry](https://registry.modelcontextprotocol.io): discover and install MCP servers
@@ -63,7 +63,7 @@ CODA_API_TOKEN=your-token uvx mcp-coda --read-only
 
 The server loads `.env` files from the working directory automatically via python-dotenv.
 
-## Tools (53)
+## Tools (54)
 
 ### Account (3)
 
@@ -83,7 +83,7 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_update_doc` | Update metadata for an existing Coda doc. Updates the doc's title and/or icon. Idempotent. |
 | `coda_delete_doc` | Permanently delete a Coda doc. Irreversible -- the doc and all its pages, tables, and data will be removed. |
 
-### Pages (8)
+### Pages (9)
 
 | Tool | Description |
 |------|-------------|
@@ -95,6 +95,7 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_get_page_content` | Get the text content of a page in HTML or markdown format. |
 | `coda_delete_page_content` | Delete all content from a page, leaving it blank. The page itself remains. Irreversible. |
 | `coda_export_page` | Export a page's content, initiating an async export. Returns export status or content directly for small pages. |
+| `coda_get_export_status` | Poll a page export started by coda_export_page using its request id. Returns status (inProgress/failed/complete) and, when complete, a short-lived downloadLink. |
 
 ### Tables (4)
 
@@ -254,7 +255,7 @@ HTML vs markdown, insert modes, export workflows.
 - HTML preserves tables, images, buttons, embedded views. Markdown loses embedded objects.
 - Writing: content via coda_create_page or coda_update_page with content_format html/markdown.
 - Insert modes: replace (overwrites entire page), append (adds to end). No prepend.
-- Export via coda_export_page: async, returns export ID. Formats: html, markdown. No PDF via API.
+- Export via coda_export_page: async, returns export ID. Poll with coda_get_export_status; downloadLink expires quickly. Formats: html, markdown. No PDF via API.
 - Max page content size via API: ~256 KB HTML.
 - Pack formulas appear as placeholder text in API responses.
 

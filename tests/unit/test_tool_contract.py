@@ -285,6 +285,14 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
         {},
         {"outputFormat": "html"},
     ),
+    (
+        "coda_get_export_status",
+        {"doc_id": "d1", "page_id_or_name": "p1", "request_id": "req-1"},
+        "GET",
+        "/docs/d1/pages/p1/export/req-1",
+        {},
+        None,
+    ),
     # permissions
     ("coda_get_sharing_metadata", {"doc_id": "d1"}, "GET", "/docs/d1/acl/metadata", {}, None),
     (

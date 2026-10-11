@@ -1,6 +1,6 @@
 # mcp-coda — Agent Context
 
-MCP server for the Coda v1 API. It provides 53 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+MCP server for the Coda v1 API. It provides 54 tools, 12 resources (2 live data + 5 rules + 5 guides), and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it with `uvx mcp-coda`.
 
@@ -107,13 +107,13 @@ uvx mcp-coda --transport streamable-http --port 9000
 uvx mcp-coda --read-only                                  # CODA_API_TOKEN from env (--coda-token is deprecated, hidden, warns on stderr)
 ```
 
-## Tool inventory (53)
+## Tool inventory (54)
 
 | Module | Tools | Type | Covers |
 |--------|-------|------|--------|
 | account | 3 | read | `coda_whoami`, `coda_resolve_browser_link`, `coda_get_mutation_status` |
 | docs | 5 | read/write | list, get, create, update, delete docs |
-| pages | 8 | read/write | list, get, create, update, delete, export pages; get/delete page content |
+| pages | 9 | read/write | list, get, create, update, delete, export pages; get/delete page content; export status |
 | tables | 4 | read | list/get tables, list/get columns |
 | rows | 7 | read/write | list, get, insert (upsert via `key_columns`), update, delete row/rows, push button |
 | permissions | 6 | read/write | sharing metadata, list/add/delete permissions, search principals, ACL settings |
