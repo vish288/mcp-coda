@@ -27,7 +27,7 @@ from mcp_coda.servers.analytics import (
 from mcp_coda.servers.analytics import (
     coda_list_page_analytics as _coda_list_page_analytics,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_analytics_updated = getattr(_coda_get_analytics_updated, "fn", _coda_get_analytics_updated)
@@ -94,7 +94,7 @@ class TestListDocAnalytics:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(403, "Forbidden", "no access"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_doc_analytics(ctx))
+        result = _err_body(await coda_list_doc_analytics(ctx))
         assert result["isError"] is True
 
 
@@ -122,7 +122,7 @@ class TestGetDocAnalyticsSummary:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_doc_analytics_summary(ctx))
+        result = _err_body(await coda_get_doc_analytics_summary(ctx))
         assert result["isError"] is True
 
 
@@ -154,7 +154,7 @@ class TestListPageAnalytics:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_page_analytics(ctx, doc_id="bad"))
+        result = _err_body(await coda_list_page_analytics(ctx, doc_id="bad"))
         assert result["isError"] is True
 
 
@@ -188,7 +188,7 @@ class TestListPackAnalytics:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(403, "Forbidden", "no access"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_pack_analytics(ctx))
+        result = _err_body(await coda_list_pack_analytics(ctx))
         assert result["isError"] is True
 
 
@@ -219,7 +219,7 @@ class TestGetPackAnalyticsSummary:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_pack_analytics_summary(ctx))
+        result = _err_body(await coda_get_pack_analytics_summary(ctx))
         assert result["isError"] is True
 
 
@@ -253,7 +253,7 @@ class TestListPackFormulaAnalytics:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no pack"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_pack_formula_analytics(ctx, pack_id=999))
+        result = _err_body(await coda_list_pack_formula_analytics(ctx, pack_id=999))
         assert result["isError"] is True
 
 
@@ -269,5 +269,5 @@ class TestGetAnalyticsUpdated:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_analytics_updated(ctx))
+        result = _err_body(await coda_get_analytics_updated(ctx))
         assert result["isError"] is True

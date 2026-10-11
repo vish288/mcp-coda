@@ -18,7 +18,7 @@ from mcp_coda.servers.tables import (
 from mcp_coda.servers.tables import (
     coda_list_tables as _coda_list_tables,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_column = getattr(_coda_get_column, "fn", _coda_get_column)
@@ -62,7 +62,7 @@ class TestListTables:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_tables(ctx, doc_id="bad"))
+        result = _err_body(await coda_list_tables(ctx, doc_id="bad"))
         assert result["isError"] is True
 
 
@@ -79,7 +79,7 @@ class TestGetTable:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_table(ctx, doc_id="d1", table_id_or_name="bad"))
+        result = _err_body(await coda_get_table(ctx, doc_id="d1", table_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -104,7 +104,7 @@ class TestListColumns:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad"))
+        result = _err_body(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad"))
         assert result["isError"] is True
 
 
@@ -122,7 +122,7 @@ class TestGetColumn:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no col"))
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _err_body(
             await coda_get_column(ctx, doc_id="d1", table_id_or_name="t1", column_id_or_name="bad")
         )
         assert result["isError"] is True

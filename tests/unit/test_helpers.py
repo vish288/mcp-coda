@@ -149,25 +149,25 @@ class TestPage:
 
 class TestErr:
     def test_generic_exception(self) -> None:
-        result = json.loads(_err(ValueError("bad input")))
+        result = _err(ValueError("bad input"))
         assert result["error"] == "bad input"
         assert result["isError"] is True
         assert "status_code" not in result
 
     def test_api_error(self) -> None:
-        result = json.loads(_err(CodaApiError(500, "ISE", "details")))
+        result = _err(CodaApiError(500, "ISE", "details"))
         assert result["status_code"] == 500
         assert result["body"] == "details"
         assert result["isError"] is True
 
     def test_rate_limit_error(self) -> None:
-        result = json.loads(_err(CodaRateLimitError(retry_after=3)))
+        result = _err(CodaRateLimitError(retry_after=3))
         assert result["status_code"] == 429
         assert result["retry_after"] == 3
         assert result["isError"] is True
 
     def test_write_disabled_error(self) -> None:
-        result = json.loads(_err(CodaWriteDisabledError()))
+        result = _err(CodaWriteDisabledError())
         assert "CODA_READ_ONLY" in result["error"]
         assert result["isError"] is True
         assert "status_code" not in result

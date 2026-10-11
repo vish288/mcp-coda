@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -10,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 import respx
 from fastmcp import Client, FastMCP
+from fastmcp.tools import ToolResult
 
 from mcp_coda.client import CodaClient
 from mcp_coda.config import CodaConfig
@@ -17,6 +19,17 @@ from mcp_coda.servers import mcp
 
 TEST_BASE_URL = "https://coda.io/apis/v1"
 TEST_TOKEN = "test-coda-token"
+
+
+def _err_body(res: ToolResult) -> dict[str, Any]:
+    """Assert a `.fn`-level call failed and return its JSON error body.
+
+    Expected failures now come back as `ToolResult(is_error=True)` whose text is
+    the same `_err` JSON as before; success paths still return a plain `str`.
+    """
+    assert isinstance(res, ToolResult)
+    assert res.is_error is True
+    return json.loads(res.content[0].text)
 
 
 @pytest.fixture

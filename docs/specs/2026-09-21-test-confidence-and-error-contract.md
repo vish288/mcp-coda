@@ -79,3 +79,5 @@ State (2026-09-26, v0.6.0): 54 tools, 587 tests, src/ coverage 99.30%.
 
 - Released versions: 0.5.9 (harness), 0.6.0 (contract), 0.6.1 (dedup)
 - Closed issues: #54, #56, #58, #59
+
+> Superseded for expected failures by 2026-10-11 X1: expected failures now return `isError: true` results (text plus matching `structuredContent`) instead of successful soft-error results.

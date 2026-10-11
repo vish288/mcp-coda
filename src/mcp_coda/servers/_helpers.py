@@ -13,6 +13,8 @@ from urllib.parse import quote
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
+from fastmcp.tools import ToolResult
+from mcp.types import TextContent
 from pydantic import Field
 
 from ..client import CodaClient
@@ -229,8 +231,8 @@ def _format_list_as_markdown(
     return "\n".join(lines) + _list_footer(total_count, has_more, next_cursor)
 
 
-def _err(error: Exception) -> str:
-    """Serialize an error response to JSON string with recovery hints."""
+def _err(error: Exception) -> dict[str, Any]:
+    """Build the error-detail body (with recovery hints) for an expected failure."""
     detail: dict[str, Any] = {"isError": True, "error": str(error)}
     if isinstance(error, CodaRateLimitError):
         detail["status_code"] = 429
@@ -238,7 +240,23 @@ def _err(error: Exception) -> str:
     elif isinstance(error, CodaApiError):
         detail["status_code"] = error.status_code
         detail["body"] = error.body
-    return json.dumps(detail, indent=2, ensure_ascii=False)
+    return detail
+
+
+def _error_result(detail: dict[str, Any]) -> ToolResult:
+    """Wrap an error-detail body as an `isError` result.
+
+    Text content is byte-identical to the pre-change `_err` output (same
+    `json.dumps`); `structured_content` carries the same dict un-escaped;
+    `is_error=True` maps to `CallToolResult.isError` so the client sees the
+    failure and can self-correct (MCP 2026-07-28, "Error Handling").
+    """
+    text = json.dumps(detail, indent=2, ensure_ascii=False)
+    return ToolResult(
+        content=[TextContent(type="text", text=text)],
+        structured_content=detail,
+        is_error=True,
+    )
 
 
 def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) -> Any:
@@ -256,13 +274,13 @@ def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) ->
 
     def wrap(f: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(f)
-        async def inner(ctx: Context, *args: Any, **kwargs: Any) -> str:
+        async def inner(ctx: Context, *args: Any, **kwargs: Any) -> str | ToolResult:
             try:
                 if write:
                     _check_write(ctx)
                 return await f(ctx, *args, **kwargs)
             except CodaError as e:
-                return _err(e)
+                return _error_result(_err(e))
             except Exception as e:
                 _log.exception("%s failed", f.__name__)
                 msg = f"{type(e).__name__}: {e}"

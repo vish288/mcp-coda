@@ -21,7 +21,7 @@ from mcp_coda.servers.folders import (
 from mcp_coda.servers.folders import (
     coda_update_folder as _coda_update_folder,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_folder = getattr(_coda_create_folder, "fn", _coda_create_folder)
@@ -44,7 +44,7 @@ class TestListFolders:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_folders(ctx))
+        result = _err_body(await coda_list_folders(ctx))
         assert result["isError"] is True
 
     async def test_paginates(self) -> None:
@@ -80,7 +80,7 @@ class TestGetFolder:
         client = AsyncMock()
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_folder(ctx, folder_id="bad"))
+        result = _err_body(await coda_get_folder(ctx, folder_id="bad"))
         assert result["isError"] is True
 
 
@@ -106,7 +106,7 @@ class TestCreateFolder:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_create_folder(ctx, name="Blocked", workspace_id="ws1"))
+        result = _err_body(await coda_create_folder(ctx, name="Blocked", workspace_id="ws1"))
         assert result["isError"] is True
 
 
@@ -122,7 +122,7 @@ class TestUpdateFolder:
         client = AsyncMock()
         client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
         ctx = _make_ctx(client)
-        result = json.loads(await coda_update_folder(ctx, folder_id="bad", name="X"))
+        result = _err_body(await coda_update_folder(ctx, folder_id="bad", name="X"))
         assert result["isError"] is True
 
     async def test_no_op_when_nothing_to_update(self) -> None:
@@ -145,5 +145,5 @@ class TestDeleteFolder:
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
-        result = json.loads(await coda_delete_folder(ctx, folder_id="fl1"))
+        result = _err_body(await coda_delete_folder(ctx, folder_id="fl1"))
         assert result["isError"] is True
