@@ -134,10 +134,10 @@ class TestHttpBearerToken:
         mock_run.assert_called_once()
 
 
-async def test_bearer_middleware_rejects_missing_header(
+async def test_bearer_middleware_streamable_http(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Wire check: with auth set, the ASGI app 401s a request with no bearer."""
+    """Wire check: with auth set, the streamable-http ASGI app enforces the token."""
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
     server_mcp.auth = _BearerTokenVerifier(_TOKEN32)
     try:
@@ -146,14 +146,40 @@ async def test_bearer_middleware_rejects_missing_header(
         async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
             async with app.router.lifespan_context(app):
                 no_header = await client.post("/mcp", json={})
+                wrong_token = await client.post(
+                    "/mcp", json={}, headers={"Authorization": "Bearer wrong-token-value"}
+                )
+                # Non-ASCII must be rejected, not crash: compare_digest raises
+                # TypeError on a non-ASCII str, which would 500 with a traceback.
+                # HTTP headers are latin-1, so send raw bytes — httpx refuses to
+                # ascii-encode a non-ASCII str value, but a real client can send
+                # these bytes on the wire.
+                non_ascii = await client.post(
+                    "/mcp", json={}, headers={"Authorization": "Bearer café".encode("latin-1")}
+                )
                 with_header = await client.post(
-                    "/mcp",
-                    json={},
-                    headers={"Authorization": f"Bearer {_TOKEN32}"},
+                    "/mcp", json={}, headers={"Authorization": f"Bearer {_TOKEN32}"}
                 )
         assert no_header.status_code == 401
+        assert wrong_token.status_code == 401
+        assert non_ascii.status_code == 401
         # The middleware ran and let the authenticated request through to the
         # endpoint; any non-401 status proves that.
         assert with_header.status_code != 401
+    finally:
+        server_mcp.auth = None
+
+
+async def test_bearer_middleware_sse(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The bearer guard also covers the (deprecated) SSE transport endpoint."""
+    monkeypatch.setenv("CODA_API_TOKEN", "tok")
+    server_mcp.auth = _BearerTokenVerifier(_TOKEN32)
+    try:
+        app = server_mcp.http_app(transport="sse")
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            async with app.router.lifespan_context(app):
+                no_header = await client.get("/sse")
+        assert no_header.status_code == 401
     finally:
         server_mcp.auth = None

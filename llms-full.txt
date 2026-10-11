@@ -151,7 +151,7 @@ The server loads `.env` files from the working directory automatically via pytho
 | `coda_list_controls` | List all controls (sliders, select lists, date pickers, etc.) in a doc. Returns name, ID, type, and current value. |
 | `coda_get_control` | Get the current value of a specific control. Returns name, ID, type, and value. |
 | `coda_list_categories` | List all available publishing categories for the Coda gallery. |
-| `coda_publish_doc` | Publish a doc with optional gallery listing (off by default), URL slug, and mode (view/play). |
+| `coda_publish_doc` | Publish a doc with optional gallery listing (off by default), URL slug, and mode (view/play/edit). |
 | `coda_unpublish_doc` | Unpublish a doc, removing public access. Reversible. |
 | `coda_trigger_automation` | Trigger an automation rule with an optional JSON payload. Returns requestId. |
 
