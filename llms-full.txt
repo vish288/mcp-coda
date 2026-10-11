@@ -56,8 +56,10 @@ uvx mcp-coda --transport streamable-http --port 9000
 ### CLI overrides
 
 ```bash
-uvx mcp-coda --coda-token your-token --read-only
+CODA_API_TOKEN=your-token uvx mcp-coda --read-only
 ```
+
+`--coda-token` still works but is deprecated and hidden from `--help`: it exposes the token to `ps` and shell history. Use `CODA_API_TOKEN`.
 
 The server loads `.env` files from the working directory automatically via python-dotenv.
 

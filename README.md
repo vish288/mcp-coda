@@ -370,9 +370,11 @@ uvx mcp-coda
 uvx mcp-coda --transport sse --host 127.0.0.1 --port 8000
 uvx mcp-coda --transport streamable-http --port 9000
 
-# CLI overrides for config
-uvx mcp-coda --coda-token your-token --read-only
+# Config comes from env vars
+CODA_API_TOKEN=your-token uvx mcp-coda --read-only
 ```
+
+`--coda-token` still works but is deprecated and hidden from `--help`: it exposes the token to `ps` and shell history. Use `CODA_API_TOKEN`.
 
 The server loads `.env` files from the working directory automatically via `python-dotenv`.
 

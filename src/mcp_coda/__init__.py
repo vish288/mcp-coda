@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 )
 @click.option("--port", default=8000, help="Port for SSE/HTTP transport.")
 @click.option("--host", default="127.0.0.1", help="Host for SSE/HTTP transport.")
-@click.option("--coda-token", envvar="CODA_API_TOKEN", help="Coda API token.")
+@click.option("--coda-token", hidden=True, help="Deprecated: set CODA_API_TOKEN instead.")
 @click.option("--read-only", is_flag=True, help="Disable all write operations.")
 def main(
     transport: str,
@@ -32,6 +32,11 @@ def main(
     load_dotenv()
 
     if coda_token:
+        click.echo(
+            "Warning: --coda-token is deprecated. It puts the token in the process argument "
+            "list, where `ps` and shell history can read it. Set CODA_API_TOKEN instead.",
+            err=True,
+        )
         os.environ["CODA_API_TOKEN"] = coda_token
     if read_only:
         os.environ["CODA_READ_ONLY"] = "true"
