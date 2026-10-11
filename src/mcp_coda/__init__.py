@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from typing import Any, Literal
 
 import click
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ from dotenv import load_dotenv
 @click.option("--coda-token", hidden=True, help="Deprecated: set CODA_API_TOKEN instead.")
 @click.option("--read-only", is_flag=True, help="Disable all write operations.")
 def main(
-    transport: str,
+    transport: Literal["stdio", "sse", "streamable-http"],
     port: int,
     host: str,
     coda_token: str | None,
@@ -55,18 +56,18 @@ def main(
             err=True,
         )
 
-    run_kwargs: dict[str, object] = {"transport": transport}
+    transport_kwargs: dict[str, Any] = {}
     if transport != "stdio":
-        run_kwargs["host"] = host
-        run_kwargs["port"] = port
+        transport_kwargs["host"] = host
+        transport_kwargs["port"] = port
         # DNS-rebinding protection: validate Host/Origin before a request reaches
         # the MCP endpoint. "auto" guards loopback-bound servers, allowing the
         # configured host plus localhost/127.0.0.1/[::1] and rejecting any other
         # Host (421) or cross-site Origin (403). Without this a rebinding page
         # could drive the local server with the user's Coda token.
-        run_kwargs["host_origin_protection"] = "auto"
+        transport_kwargs["host_origin_protection"] = "auto"
 
-    asyncio.run(mcp.run_async(show_banner=False, **run_kwargs))
+    asyncio.run(mcp.run_async(transport=transport, show_banner=False, **transport_kwargs))
 
 
 if __name__ == "__main__":

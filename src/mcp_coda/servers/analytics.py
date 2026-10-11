@@ -231,7 +231,9 @@ async def coda_list_pack_formula_analytics(
     """
     params = {"limit": limit, "sinceDate": since_date, "untilDate": until_date, "pageToken": cursor}
     return _page(
-        await _get_client(ctx).get(_p("analytics", "packs", pack_id, "formulas"), params=params)
+        await _get_client(ctx).get(
+            _p("analytics", "packs", str(pack_id), "formulas"), params=params
+        )
     )
 
 
