@@ -11,7 +11,7 @@
 
 **Install:** `uvx mcp-coda` | [PyPI](https://pypi.org/project/mcp-coda/) | [MCP Registry](https://registry.modelcontextprotocol.io) | [Changelog](https://github.com/vish288/mcp-coda/releases)
 
-**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **53 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **54 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
 
 mcp-coda uses [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
@@ -113,13 +113,13 @@ mcp-coda implements the **Model Context Protocol 2026-07-28** specification, oft
 
 An expected failure — a 404, a 401, a rate limit, or a write blocked by read-only mode — comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. The result body is the text content: a JSON object with `isError`, `error`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` — the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
 
-## Tools (53)
+## Tools (54)
 
 | Category | Count | Tools |
 |----------|-------|-------|
 | **Account** | 3 | whoami, resolve browser link, mutation status |
 | **Docs** | 5 | list, get, create, update, delete |
-| **Pages** | 8 | list, get, create, update, delete, get content, delete content, export |
+| **Pages** | 9 | list, get, create, update, delete, get content, delete content, export, export status |
 | **Tables** | 4 | list tables, get table, list columns, get column |
 | **Rows** | 7 | list, get, insert/upsert, update, delete, bulk delete, push button |
 | **Permissions** | 6 | sharing metadata, list, add, delete, search principals, ACL settings |
@@ -157,6 +157,7 @@ An expected failure — a 404, a 401, a rate limit, or a write blocked by read-o
 | `coda_get_page_content` | Read page content |
 | `coda_delete_page_content` | Clear page content |
 | `coda_export_page` | Export page as HTML or markdown |
+| `coda_get_export_status` | Poll an export started by coda_export_page |
 
 ### Tables
 | Tool | Description |
@@ -410,7 +411,7 @@ mcp-coda works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copil
 
 ### How many tools, resources, and prompts does it provide?
 
-mcp-coda provides 53 tools, 12 resources, and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
+mcp-coda provides 54 tools, 12 resources, and 5 prompts. They cover docs, pages, tables, rows, formulas, controls, permissions, folders, publishing, automations, and analytics.
 
 ## Related MCP Servers
 

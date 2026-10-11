@@ -65,10 +65,9 @@ coda_update_page(
 
 ## Export Workflows
 
-- `coda_export_page` initiates an async export of a page to HTML or Markdown.
-- Returns an export `id`. Polling the export status is not exposed as a tool — re-read the
-  page with `coda_get_page_content` once the export has had time to finish.
-- Once complete, the export provides a download URL. It is temporary and expires a short time after the export finishes — download promptly.
+- `coda_export_page` initiates an async export of a page to HTML or Markdown and returns an export `id`.
+- Poll that `id` with `coda_get_export_status` (every 2 s, up to 30 s) until `status` is `complete`.
+- Once complete, the response carries a `downloadLink`. It is temporary and expires a short time after the export finishes — download promptly, and call `coda_get_export_status` again for a fresh link if it lapses.
 - Export formats: `html`, `markdown`. PDF export is not available via API.
 - Large pages with many tables may take 30+ seconds to export.
 

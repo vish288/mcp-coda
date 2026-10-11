@@ -289,13 +289,50 @@ async def coda_export_page(
     """Export a page's content, initiating an async export if needed.
 
     Starts an export job and returns the export status. For small pages, the
-    content may be returned immediately. For large pages, poll the returned
-    export ID until complete. Prefer coda_get_page_content for quick reads —
-    use this only when you need a full export with embedded images resolved.
+    content may be returned immediately. For large pages, then call
+    coda_get_export_status with the returned id. Prefer coda_get_page_content
+    for quick reads — use this only when you need a full export with embedded
+    images resolved.
     """
     return _ok(
         await _get_client(ctx).post(
             _p("docs", doc_id, "pages", page_id_or_name, "export"),
             json_data={"outputFormat": output_format},
+        )
+    )
+
+
+@mcp.tool(
+    tags={"coda", "pages", "read"},
+    annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
+)
+@tool_result
+async def coda_get_export_status(
+    ctx: Context,
+    doc_id: Annotated[
+        str,
+        Field(description="The doc ID containing the page"),
+    ],
+    page_id_or_name: Annotated[
+        str,
+        Field(description="Page ID or name that was exported"),
+    ],
+    request_id: Annotated[
+        str,
+        Field(description="Export request ID returned by coda_export_page", min_length=1),
+    ],
+) -> str:
+    """Check a page export started by coda_export_page.
+
+    Pass the `id` from coda_export_page as request_id. `status` is inProgress,
+    failed or complete. When complete, `downloadLink` holds the exported file;
+    the link expires after a short time — call this tool again for a fresh one.
+    When failed, `error` says why. Poll every 2 s for up to 30 s (same cadence
+    as coda_get_mutation_status). The request itself expires: 404/410 means
+    start a new export.
+    """
+    return _ok(
+        await _get_client(ctx).get(
+            _p("docs", doc_id, "pages", page_id_or_name, "export", request_id)
         )
     )
