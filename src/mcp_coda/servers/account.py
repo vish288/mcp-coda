@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -14,7 +15,7 @@ from ._helpers import _get_client, _ok, _p, tool_result
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
 @tool_result
-async def coda_whoami(ctx: Context) -> str:
+async def coda_whoami(ctx: Context) -> ToolResult:
     """Get information about the current API token owner.
 
     Returns the user's name, email, and token scopes. Use this to verify
@@ -35,7 +36,7 @@ async def coda_resolve_browser_link(
         str,
         Field(description="A Coda browser URL to resolve (e.g. https://coda.io/d/...)"),
     ],
-) -> str:
+) -> ToolResult:
     """Resolve a Coda browser URL to API resource IDs.
 
     Converts a browser URL (e.g. from the address bar or a shared link) into
@@ -62,7 +63,7 @@ async def coda_get_mutation_status(
         str,
         Field(description="The requestId returned by a write operation (202 response)"),
     ],
-) -> str:
+) -> ToolResult:
     """Check the status of an asynchronous mutation (write operation).
 
     Coda write operations return 202 with a requestId. Use this tool to poll

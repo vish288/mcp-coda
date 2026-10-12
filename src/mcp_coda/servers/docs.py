@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -13,7 +14,7 @@ from ._helpers import (
     _ok,
     _p,
     _page,
-    _truncate,
+    _text,
     tool_result,
 )
 
@@ -46,7 +47,7 @@ async def coda_list_docs(
         Literal["json", "markdown"],
         Field(description="'json' for structured data, 'markdown' for readable text"),
     ] = "json",
-) -> str:
+) -> ToolResult:
     """List Coda docs accessible to the current API token.
 
     Returns doc metadata including name, owner, folder, and timestamps. Does NOT
@@ -67,7 +68,7 @@ async def coda_list_docs(
     has_more = next_cursor is not None
     total_count = len(items)
     if response_format == "markdown":
-        return _truncate(
+        return _text(
             _format_list_as_markdown(
                 items,
                 has_more=has_more,
@@ -89,7 +90,7 @@ async def coda_get_doc(
         str,
         Field(description="The ID of the doc (from coda_list_docs or coda_resolve_browser_link)"),
     ],
-) -> str:
+) -> ToolResult:
     """Get metadata for a single Coda doc by ID.
 
     Returns name, owner email, folder, created/updated timestamps, and doc size.
@@ -119,7 +120,7 @@ async def coda_create_doc(
         str | None,
         Field(description="Doc ID to copy as a starting point"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Create a new Coda doc.
 
     Creates a blank doc or a copy of an existing doc. Returns the new doc's ID,
@@ -154,7 +155,7 @@ async def coda_update_doc(
         str | None,
         Field(description="New icon name (e.g. 'rocket', 'star')"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Update metadata for an existing Coda doc.
 
     Updates the doc's title and/or icon. Does NOT update page content — use
@@ -182,7 +183,7 @@ async def coda_delete_doc(
         str,
         Field(description="The ID of the doc to delete"),
     ],
-) -> str:
+) -> ToolResult:
     """Permanently delete a Coda doc.
 
     This is irreversible — the doc and all its pages, tables, and data will be

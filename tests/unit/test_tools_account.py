@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError, CodaAuthError
@@ -15,7 +14,7 @@ from mcp_coda.servers.account import (
 from mcp_coda.servers.account import (
     coda_whoami as _coda_whoami,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_mutation_status = getattr(_coda_get_mutation_status, "fn", _coda_get_mutation_status)
@@ -28,7 +27,7 @@ class TestWhoami:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"name": "Test User", "loginId": "test@example.com"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_whoami(ctx))
+        result = _body(await coda_whoami(ctx))
         assert result["name"] == "Test User"
         client.get.assert_called_once_with("/whoami")
 
@@ -46,7 +45,7 @@ class TestResolveBrowserLink:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"type": "doc", "docId": "abc123"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_resolve_browser_link(ctx, url="https://coda.io/d/abc123"))
+        result = _body(await coda_resolve_browser_link(ctx, url="https://coda.io/d/abc123"))
         assert result["type"] == "doc"
         assert result["docId"] == "abc123"
 
@@ -55,7 +54,7 @@ class TestResolveBrowserLink:
         client.get = AsyncMock(side_effect=CodaApiError(400, "Bad Request", "invalid url"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_resolve_browser_link(ctx, url="not-a-url"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestMutationStatus:
@@ -63,7 +62,7 @@ class TestMutationStatus:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"completed": True})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_mutation_status(ctx, request_id="req-1"))
+        result = _body(await coda_get_mutation_status(ctx, request_id="req-1"))
         assert result["completed"] is True
         client.get.assert_called_once_with("/mutationStatus/req-1")
 
@@ -72,4 +71,4 @@ class TestMutationStatus:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no such request"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_mutation_status(ctx, request_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]

@@ -19,7 +19,14 @@ from pydantic import Field
 
 from ..client import CodaClient
 from ..config import CodaConfig
-from ..exceptions import CodaApiError, CodaError, CodaRateLimitError, CodaWriteDisabledError
+from ..exceptions import (
+    CodaApiError,
+    CodaAuthError,
+    CodaError,
+    CodaNotFoundError,
+    CodaRateLimitError,
+    CodaWriteDisabledError,
+)
 
 # Shared parameter type aliases
 DocId = Annotated[str, Field(description="The doc ID containing the table")]
@@ -121,8 +128,36 @@ def _dumps(data: Any) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
-def _ok(data: Any) -> str:
-    """Serialize a successful response to JSON, shrinking it to fit if needed.
+def _result(data: dict[str, Any], *, is_error: bool = False) -> ToolResult:
+    """Pretty JSON as text (byte-identical to the pre-X2 output) plus the same
+    object as `structuredContent`.
+
+    Error results carry text only: strict MCP clients (TS SDK 1.x) validate
+    `structuredContent` against the tool's outputSchema even when `isError` is
+    true, and an error dict there (no schema to match) makes them reject the
+    whole result and lose the error text.
+    """
+    return ToolResult(
+        content=[TextContent(type="text", text=_dumps(data))],
+        structured_content=None if is_error else data,
+        is_error=is_error,
+    )
+
+
+def _text(md: str) -> ToolResult:
+    """A markdown / plain-text result: text only, no `structuredContent`.
+
+    The two `response_format="markdown"` branches return human-readable text
+    that is not JSON, so there is nothing to put in `structuredContent`.
+    """
+    return ToolResult(content=[TextContent(type="text", text=_truncate(md))])
+
+
+def _ok(data: Any) -> ToolResult:
+    """Serialize a successful response, shrinking it to fit if needed.
+
+    The result is a `ToolResult` whose text is the pretty JSON (byte-identical
+    to the pre-X2 output) and whose `structuredContent` is the same object.
 
     Oversized payloads drop whole items until the serialized form fits, rather
     than slicing the JSON string. Slicing produced output that was neither valid
@@ -133,12 +168,13 @@ def _ok(data: Any) -> str:
     """
     result = _dumps(data)
     if len(result) <= CHARACTER_LIMIT:
-        return result
+        return _result(data)
 
     items = data.get("items") if isinstance(data, dict) else None
     if not isinstance(items, list) or not items:
-        # Not a list envelope (e.g. a single large doc): fall back to slicing.
-        return _truncate(result)
+        # Not a list envelope (e.g. a single large doc): slice the text. A sliced
+        # JSON string is not valid JSON, so this result carries no structuredContent.
+        return _text(result)
 
     kept = list(items)
     shrunk = {**data, "items": kept}
@@ -178,10 +214,10 @@ def _ok(data: Any) -> str:
     # Even zero items can overflow if the rest of the envelope is huge. Return a
     # valid, empty envelope rather than a sliced string: a caller that can parse
     # the response can still read next_cursor and retry with a narrower query.
-    return _dumps(_with_notice())
+    return _result(_with_notice())
 
 
-def _page(data: dict[str, Any]) -> str:
+def _page(data: dict[str, Any]) -> ToolResult:
     """Serialize a Coda list response as the standard pagination envelope."""
     items = data.get("items", [])
     next_cursor = data.get("nextPageToken")
@@ -232,31 +268,51 @@ def _format_list_as_markdown(
 
 
 def _err(error: Exception) -> dict[str, Any]:
-    """Build the error-detail body (with recovery hints) for an expected failure."""
-    detail: dict[str, Any] = {"isError": True, "error": str(error)}
-    if isinstance(error, CodaRateLimitError):
+    """Build the error-detail body (with a recovery hint) for an expected failure.
+
+    The protocol-level `isError` flag (set on the `ToolResult`) is the single
+    source of truth for "this failed"; the body no longer repeats it in-band.
+    Shape matches the sibling MCP servers: `error`, optional `status_code`/`body`,
+    `retry_after` for 429s, and an actionable `hint`.
+    """
+    detail: dict[str, Any] = {"error": str(error)}
+    if isinstance(error, CodaWriteDisabledError):
+        detail["hint"] = "Server is in read-only mode. Set CODA_READ_ONLY=false to enable writes."
+    elif isinstance(error, CodaRateLimitError):
         detail["status_code"] = 429
         detail["retry_after"] = error.retry_after
+        detail["hint"] = (
+            "Rate limited. Wait retry_after seconds before retrying; "
+            "the server does not retry 429s itself."
+        )
+    elif isinstance(error, CodaAuthError):
+        detail["status_code"] = error.status_code
+        detail["body"] = error.body
+        detail["hint"] = (
+            "Token rejected. Check CODA_API_TOKEN is valid and the token owner "
+            "can access this resource."
+        )
+    elif isinstance(error, CodaNotFoundError):
+        detail["status_code"] = error.status_code
+        detail["body"] = error.body
+        detail["hint"] = (
+            "Resource not found. Verify the ID, or resolve a browser URL with "
+            "coda_resolve_browser_link first."
+        )
     elif isinstance(error, CodaApiError):
         detail["status_code"] = error.status_code
         detail["body"] = error.body
+        detail["hint"] = "Check the request parameters and the resource ID, then retry."
     return detail
 
 
 def _error_result(detail: dict[str, Any]) -> ToolResult:
-    """Wrap an error-detail body as an `isError` result.
-
-    The error body is the text content only; no `structured_content`. The TS MCP
-    SDK validates `structuredContent` against the tool's outputSchema even when
-    `isError` is true, so an error dict (which lacks the schema's `result` key)
-    would make the client throw McpError and lose the error text. `is_error=True`
-    maps to `CallToolResult.isError` (MCP 2026-07-28, "Error Handling").
+    """Wrap an error-detail body as an `isError` result (text only, no
+    `structuredContent`). See `_result` for why errors carry no structured
+    content. `is_error=True` maps to `CallToolResult.isError`
+    (MCP 2026-07-28, "Error Handling").
     """
-    text = json.dumps(detail, indent=2, ensure_ascii=False)
-    return ToolResult(
-        content=[TextContent(type="text", text=text)],
-        is_error=True,
-    )
+    return _result(detail, is_error=True)
 
 
 def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) -> Any:
@@ -274,7 +330,7 @@ def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) ->
 
     def wrap(f: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(f)
-        async def inner(ctx: Context, *args: Any, **kwargs: Any) -> str | ToolResult:
+        async def inner(ctx: Context, *args: Any, **kwargs: Any) -> ToolResult:
             try:
                 if write:
                     _check_write(ctx)

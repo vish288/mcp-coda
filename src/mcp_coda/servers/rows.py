@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -14,7 +15,7 @@ from ._helpers import (
     _ok,
     _p,
     _page,
-    _truncate,
+    _text,
     tool_result,
 )
 
@@ -57,7 +58,7 @@ async def coda_list_rows(
         Literal["json", "markdown"],
         Field(description="'json' for structured data, 'markdown' for readable text"),
     ] = "json",
-) -> str:
+) -> ToolResult:
     """List rows in a Coda table with optional filtering and sorting.
 
     Returns row data with column values. By default uses column names (not IDs)
@@ -90,7 +91,7 @@ async def coda_list_rows(
         if not lines:
             lines.append("*No rows found.*")
         footer = _list_footer(total_count, has_more, next_cursor, noun="rows")
-        return _truncate("\n".join(lines) + footer)
+        return _text("\n".join(lines) + footer)
     return _page(data)
 
 
@@ -114,7 +115,7 @@ async def coda_get_row(
         bool,
         Field(description="Use column names (True) or IDs (False) in row values"),
     ] = True,
-) -> str:
+) -> ToolResult:
     """Get a single row from a Coda table by ID or display column value.
 
     Returns all column values for the specified row. Use this when you have a
@@ -161,7 +162,7 @@ async def coda_insert_rows(
             )
         ),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Insert one or more rows into a Coda table, with optional upsert.
 
     Inserts up to 500 rows per call. Use column names (not IDs) in the cells.
@@ -205,7 +206,7 @@ async def coda_update_row(
             )
         ),
     ],
-) -> str:
+) -> ToolResult:
     """Update a single row in a Coda table.
 
     Updates specific column values for one row. Only the specified columns are
@@ -238,7 +239,7 @@ async def coda_delete_row(
         str,
         Field(description="Row ID or name to delete"),
     ],
-) -> str:
+) -> ToolResult:
     """Delete a single row from a Coda table.
 
     Permanently removes the row. This is irreversible. Verify the row with
@@ -274,7 +275,7 @@ async def coda_delete_rows(
         list[str],
         Field(description="List of row IDs to delete"),
     ],
-) -> str:
+) -> ToolResult:
     """Delete multiple rows from a Coda table in a single call.
 
     Permanently removes all specified rows. This is irreversible. List the rows
@@ -310,7 +311,7 @@ async def coda_push_button(
         str,
         Field(description="Column ID or name of the button column"),
     ],
-) -> str:
+) -> ToolResult:
     """Push a button in a Coda table row.
 
     Triggers the button's configured action (e.g. run automation, modify row).

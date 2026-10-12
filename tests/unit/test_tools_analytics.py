@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError
@@ -27,7 +26,7 @@ from mcp_coda.servers.analytics import (
 from mcp_coda.servers.analytics import (
     coda_list_page_analytics as _coda_list_page_analytics,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_analytics_updated = getattr(_coda_get_analytics_updated, "fn", _coda_get_analytics_updated)
@@ -55,7 +54,7 @@ class TestListDocAnalytics:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_doc_analytics(ctx))
+        result = _body(await coda_list_doc_analytics(ctx))
         assert result["total_count"] == 1
         assert result["has_more"] is True
 
@@ -95,7 +94,7 @@ class TestListDocAnalytics:
         client.get = AsyncMock(side_effect=CodaApiError(403, "Forbidden", "no access"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_doc_analytics(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetDocAnalyticsSummary:
@@ -103,7 +102,7 @@ class TestGetDocAnalyticsSummary:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"totalViews": 500, "totalCopies": 10})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_doc_analytics_summary(ctx))
+        result = _body(await coda_get_doc_analytics_summary(ctx))
         assert result["totalViews"] == 500
 
     async def test_with_filters(self) -> None:
@@ -123,7 +122,7 @@ class TestGetDocAnalyticsSummary:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_doc_analytics_summary(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListPageAnalytics:
@@ -131,7 +130,7 @@ class TestListPageAnalytics:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [{"page": {"id": "p1"}, "views": 50}]})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_page_analytics(ctx, doc_id="d1"))
+        result = _body(await coda_list_page_analytics(ctx, doc_id="d1"))
         assert result["total_count"] == 1
 
     async def test_with_filters(self) -> None:
@@ -155,7 +154,7 @@ class TestListPageAnalytics:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_page_analytics(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListPackAnalytics:
@@ -189,7 +188,7 @@ class TestListPackAnalytics:
         client.get = AsyncMock(side_effect=CodaApiError(403, "Forbidden", "no access"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_pack_analytics(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetPackAnalyticsSummary:
@@ -197,7 +196,7 @@ class TestGetPackAnalyticsSummary:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"totalInstalls": 200})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_pack_analytics_summary(ctx))
+        result = _body(await coda_get_pack_analytics_summary(ctx))
         assert result["totalInstalls"] == 200
 
     async def test_with_filters(self) -> None:
@@ -220,7 +219,7 @@ class TestGetPackAnalyticsSummary:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_pack_analytics_summary(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListPackFormulaAnalytics:
@@ -230,7 +229,7 @@ class TestListPackFormulaAnalytics:
             return_value={"items": [{"formulaName": "MyFormula", "invocations": 100}]}
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_pack_formula_analytics(ctx, pack_id=42))
+        result = _body(await coda_list_pack_formula_analytics(ctx, pack_id=42))
         assert result["total_count"] == 1
 
     async def test_with_filters(self) -> None:
@@ -254,7 +253,7 @@ class TestListPackFormulaAnalytics:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no pack"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_pack_formula_analytics(ctx, pack_id=999))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetAnalyticsUpdated:
@@ -262,7 +261,7 @@ class TestGetAnalyticsUpdated:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"updated": "2024-06-15T10:00:00Z"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_analytics_updated(ctx))
+        result = _body(await coda_get_analytics_updated(ctx))
         assert "updated" in result
 
     async def test_error(self) -> None:
@@ -270,4 +269,4 @@ class TestGetAnalyticsUpdated:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_analytics_updated(ctx))
-        assert result["isError"] is True
+        assert result["error"]

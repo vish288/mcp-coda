@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError
@@ -18,7 +17,7 @@ from mcp_coda.servers.tables import (
 from mcp_coda.servers.tables import (
     coda_list_tables as _coda_list_tables,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_get_column = getattr(_coda_get_column, "fn", _coda_get_column)
@@ -37,7 +36,7 @@ class TestListTables:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_tables(ctx, doc_id="d1"))
+        result = _body(await coda_list_tables(ctx, doc_id="d1"))
         assert result["total_count"] == 1
         assert result["has_more"] is True
         assert result["next_cursor"] == "cur2"
@@ -63,7 +62,7 @@ class TestListTables:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_tables(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetTable:
@@ -71,7 +70,7 @@ class TestGetTable:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "t1", "name": "Tasks", "rowCount": 42})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_table(ctx, doc_id="d1", table_id_or_name="t1"))
+        result = _body(await coda_get_table(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["name"] == "Tasks"
         assert result["rowCount"] == 42
 
@@ -80,7 +79,7 @@ class TestGetTable:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_table(ctx, doc_id="d1", table_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListColumns:
@@ -88,7 +87,7 @@ class TestListColumns:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [{"id": "c1", "name": "Status"}]})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="t1"))
+        result = _body(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["total_count"] == 1
         assert result["items"][0]["name"] == "Status"
 
@@ -105,7 +104,7 @@ class TestListColumns:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no table"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_columns(ctx, doc_id="d1", table_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetColumn:
@@ -113,7 +112,7 @@ class TestGetColumn:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "c1", "name": "Status", "type": "select"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_get_column(ctx, doc_id="d1", table_id_or_name="t1", column_id_or_name="c1")
         )
         assert result["type"] == "select"
@@ -125,4 +124,4 @@ class TestGetColumn:
         result = _err_body(
             await coda_get_column(ctx, doc_id="d1", table_id_or_name="t1", column_id_or_name="bad")
         )
-        assert result["isError"] is True
+        assert result["error"]

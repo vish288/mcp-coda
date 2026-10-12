@@ -24,12 +24,38 @@ TEST_TOKEN = "test-coda-token"
 def _err_body(res: ToolResult) -> dict[str, Any]:
     """Assert a `.fn`-level call failed and return its JSON error body.
 
-    Expected failures now come back as `ToolResult(is_error=True)` whose text is
-    the same `_err` JSON as before; success paths still return a plain `str`.
+    Expected failures come back as `ToolResult(is_error=True)` whose text is the
+    `_err` JSON and which carries no `structuredContent`.
     """
     assert isinstance(res, ToolResult)
     assert res.is_error is True
+    assert res.structured_content is None
     return json.loads(res.content[0].text)
+
+
+def _body(res: ToolResult) -> dict[str, Any]:
+    """Assert a `.fn`-level success result and return its JSON object.
+
+    Success tools return a `ToolResult` whose text is the pretty JSON and whose
+    `structuredContent` is the same object; this pins that the two agree (the
+    `{"result": "<json>"}` wrapper is gone).
+    """
+    assert isinstance(res, ToolResult)
+    assert res.is_error is False
+    body = json.loads(res.content[0].text)
+    assert res.structured_content == body
+    return body
+
+
+def _md(res: ToolResult) -> str:
+    """Markdown / plain-text success result: return its text.
+
+    These carry no `structuredContent` (the text is not JSON).
+    """
+    assert isinstance(res, ToolResult)
+    assert res.is_error is False
+    assert res.structured_content is None
+    return res.content[0].text
 
 
 @pytest.fixture
