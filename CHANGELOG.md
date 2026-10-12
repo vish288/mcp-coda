@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0] - 2026-10-12
+
+### Features
+- feat: require a bearer token to expose HTTP transports off loopback (c5d0d80)
+- feat: add coda_get_export_status to poll page exports (ac17317)
+- feat!: report expected tool failures with isError (6a3b628)
+
+### Bug Fixes
+- fix: reject non-ASCII bearer tokens instead of 500ing; review polish (f4db04d)
+- fix: coda_publish_doc no longer lists docs in the public gallery by default (9d6d9ba)
+- fix: drop structuredContent from error results for strict MCP clients (7359db4)
+
+### Chores
+- chore: add pyright type checking (src, basic mode) (496946d)
+- chore: gate releases on CI, sign release commits, pin mcp-publisher, deprecate token flags, cap deps (25cf9c9)
+
+
 ## [0.8.0] - 2026-10-10
 
 ### Bug Fixes
