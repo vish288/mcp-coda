@@ -18,7 +18,7 @@ import respx
 from fastmcp import Client
 from httpx import Response
 
-from mcp_coda.servers import mcp
+from mcp_coda.servers import lifespan, mcp
 from tests.conftest import TEST_BASE_URL
 
 SERVERS = Path(__file__).resolve().parents[2] / "src" / "mcp_coda" / "servers"
@@ -66,6 +66,21 @@ async def test_prompts_registered(live_client: Client) -> None:
     prompts = await live_client.list_prompts()
     assert prompts
     assert len(prompts) == _decorators("prompt")
+
+
+async def test_lifespan_never_logs_the_token(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Startup INFO names the base URL and read-only mode, never the token value."""
+    secret = "sk-coda-SECRET-7f3a9b2c"
+    monkeypatch.setenv("CODA_API_TOKEN", secret)
+    monkeypatch.setenv("CODA_BASE_URL", TEST_BASE_URL)
+    monkeypatch.delenv("CODA_READ_ONLY", raising=False)
+    with caplog.at_level("INFO", logger="mcp_coda.servers"):
+        async with lifespan(mcp):
+            pass
+    assert any("starting" in r.message for r in caplog.records), "lifespan logged nothing"
+    assert secret not in caplog.text
 
 
 async def test_2026_07_28_mode(monkeypatch: pytest.MonkeyPatch) -> None:

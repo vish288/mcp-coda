@@ -54,6 +54,15 @@ class TestCodaConfig:
             config = CodaConfig.from_env()
         assert config.timeout == 60
 
+    def test_from_env_timeout_invalid(self) -> None:
+        """A non-integer CODA_TIMEOUT fails with a message naming the variable."""
+        env = {"CODA_API_TOKEN": "tok", "CODA_TIMEOUT": "abc"}
+        with (
+            patch.dict(os.environ, env, clear=False),
+            pytest.raises(ValueError, match="CODA_TIMEOUT"),
+        ):
+            CodaConfig.from_env()
+
     def test_from_env_with_coda_token(self) -> None:
         env = {"CODA_TOKEN": "tok-alias"}
         with patch.dict(os.environ, env, clear=False):

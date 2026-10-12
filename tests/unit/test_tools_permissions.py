@@ -131,6 +131,36 @@ class TestAddPermission:
         body = client.post.call_args[1]["json_data"]
         assert body["suppressEmail"] is True
 
+    async def test_suppress_email_absent_by_default(self) -> None:
+        """suppress_notification defaults False → no suppressEmail key on the wire.
+
+        Sending suppressEmail unconditionally would silence the invite email for
+        every grant, not just when the caller asked.
+        """
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "p5"})
+        ctx = _make_ctx(client)
+        await coda_add_permission(
+            ctx, doc_id="d1", access="write", principal_email="user@example.com"
+        )
+        body = client.post.call_args[1]["json_data"]
+        assert "suppressEmail" not in body
+
+    async def test_email_wins_over_domain(self) -> None:
+        """Both given → principal is the email (the if/elif precedence)."""
+        client = AsyncMock()
+        client.post = AsyncMock(return_value={"id": "p6"})
+        ctx = _make_ctx(client)
+        await coda_add_permission(
+            ctx,
+            doc_id="d1",
+            access="write",
+            principal_email="user@example.com",
+            principal_domain="example.com",
+        )
+        body = client.post.call_args[1]["json_data"]
+        assert body["principal"] == {"type": "email", "email": "user@example.com"}
+
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)

@@ -160,6 +160,19 @@ class TestUpdatePage:
         assert body["contentUpdate"]["canvasContent"]["format"] == "markdown"
         assert body["contentUpdate"]["canvasContent"]["content"] == "Updated text"
 
+    async def test_content_update_defaults_to_replace(self) -> None:
+        """insert_mode omitted → insertionMode 'replace' (overwrite), not append.
+
+        Append silently grows the page on every edit; replace is the safe
+        default the docstring promises.
+        """
+        client = AsyncMock()
+        client.put = AsyncMock(return_value={"id": "p1"})
+        ctx = _make_ctx(client)
+        await coda_update_page(ctx, doc_id="d1", page_id_or_name="p1", content="New text")
+        body = client.put.call_args[1]["json_data"]
+        assert body["contentUpdate"]["insertionMode"] == "replace"
+
     async def test_name_only_update(self) -> None:
         client = AsyncMock()
         client.put = AsyncMock(return_value={"id": "p1", "name": "Renamed"})
