@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError
@@ -33,7 +32,7 @@ from mcp_coda.servers.pages import (
 from mcp_coda.servers.pages import (
     coda_update_page as _coda_update_page,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_page = getattr(_coda_create_page, "fn", _coda_create_page)
@@ -56,7 +55,7 @@ class TestListPages:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_pages(ctx, doc_id="d1"))
+        result = _body(await coda_list_pages(ctx, doc_id="d1"))
         assert result["total_count"] == 1
         assert result["items"][0]["name"] == "Home"
 
@@ -73,7 +72,7 @@ class TestListPages:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_pages(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetPage:
@@ -81,7 +80,7 @@ class TestGetPage:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "p1", "name": "Home"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_page(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _body(await coda_get_page(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["id"] == "p1"
 
     async def test_error(self) -> None:
@@ -89,7 +88,7 @@ class TestGetPage:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_page(ctx, doc_id="d1", page_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestCreatePage:
@@ -97,7 +96,7 @@ class TestCreatePage:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "p2", "name": "New Page"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_create_page(ctx, doc_id="d1", name="New Page"))
+        result = _body(await coda_create_page(ctx, doc_id="d1", name="New Page"))
         assert result["id"] == "p2"
 
     async def test_with_content(self) -> None:
@@ -177,7 +176,7 @@ class TestUpdatePage:
         client = AsyncMock()
         client.put = AsyncMock(return_value={"id": "p1", "name": "Renamed"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_update_page(ctx, doc_id="d1", page_id_or_name="p1", name="Renamed")
         )
         assert result["name"] == "Renamed"
@@ -199,7 +198,7 @@ class TestUpdatePage:
         result = _err_body(
             await coda_update_page(ctx, doc_id="d1", page_id_or_name="p1", name="Blocked")
         )
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
@@ -208,7 +207,7 @@ class TestUpdatePage:
         result = _err_body(
             await coda_update_page(ctx, doc_id="d1", page_id_or_name="bad", name="X")
         )
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetPageContent:
@@ -216,7 +215,7 @@ class TestGetPageContent:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"content": "# Title"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_get_page_content(
                 ctx, doc_id="d1", page_id_or_name="p1", output_format="markdown"
             )
@@ -228,7 +227,7 @@ class TestGetPageContent:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_page_content(ctx, doc_id="d1", page_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestDeletePage:
@@ -236,21 +235,21 @@ class TestDeletePage:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _body(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["status"] == "deleted"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="p1"))
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_delete_page(ctx, doc_id="d1", page_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestDeletePageContent:
@@ -258,21 +257,21 @@ class TestDeletePageContent:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _body(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["status"] == "content_deleted"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_delete_page_content(ctx, doc_id="d1", page_id_or_name="p1"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestExportPage:
@@ -280,7 +279,7 @@ class TestExportPage:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "exp1", "status": "complete"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_export_page(ctx, doc_id="d1", page_id_or_name="p1"))
+        result = _body(await coda_export_page(ctx, doc_id="d1", page_id_or_name="p1"))
         assert result["status"] == "complete"
         body = client.post.call_args[1]["json_data"]
         assert body["outputFormat"] == "markdown"
@@ -298,7 +297,7 @@ class TestExportPage:
         client.post = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no page"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_export_page(ctx, doc_id="d1", page_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetExportStatus:
@@ -321,7 +320,7 @@ class TestGetExportStatus:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="req-1")
         )
         assert result["status"] == "complete"
@@ -331,7 +330,7 @@ class TestGetExportStatus:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"status": "failed", "error": "too big"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="req-1")
         )
         assert result["status"] == "failed"
@@ -344,5 +343,5 @@ class TestGetExportStatus:
         result = _err_body(
             await coda_get_export_status(ctx, doc_id="d1", page_id_or_name="p1", request_id="gone")
         )
-        assert result["isError"] is True
+        assert result["error"]
         assert result["status_code"] == 404

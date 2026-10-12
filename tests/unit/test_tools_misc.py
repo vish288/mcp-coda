@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 import respx
@@ -33,7 +32,7 @@ from mcp_coda.servers.misc import (
 from mcp_coda.servers.misc import (
     coda_unpublish_doc as _coda_unpublish_doc,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_trigger_automation = getattr(_coda_trigger_automation, "fn", _coda_trigger_automation)
@@ -51,7 +50,7 @@ class TestTriggerAutomation:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"requestId": "req1"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_trigger_automation(ctx, doc_id="d1", rule_id="r1"))
+        result = _body(await coda_trigger_automation(ctx, doc_id="d1", rule_id="r1"))
         assert result["requestId"] == "req1"
 
     async def test_with_payload(self) -> None:
@@ -74,7 +73,7 @@ class TestTriggerAutomation:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_trigger_automation(ctx, doc_id="d1", rule_id="r1"))
-        assert result["isError"] is True
+        assert result["error"]
         assert "CODA_READ_ONLY" in result["error"]
 
 
@@ -85,7 +84,7 @@ class TestListFormulas:
             return_value={"items": [{"id": "f1", "name": "TotalBudget", "value": 5000}]}
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_formulas(ctx, doc_id="d1"))
+        result = _body(await coda_list_formulas(ctx, doc_id="d1"))
         assert result["total_count"] == 1
         assert result["items"][0]["value"] == 5000
 
@@ -93,7 +92,7 @@ class TestListFormulas:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [], "nextPageToken": "next"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_formulas(ctx, doc_id="d1"))
+        result = _body(await coda_list_formulas(ctx, doc_id="d1"))
         assert result["has_more"] is True
 
     async def test_with_cursor(self) -> None:
@@ -109,7 +108,7 @@ class TestListFormulas:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_formulas(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetFormula:
@@ -117,9 +116,7 @@ class TestGetFormula:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "f1", "name": "TotalBudget", "value": 5000})
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_get_formula(ctx, doc_id="d1", formula_id_or_name="TotalBudget")
-        )
+        result = _body(await coda_get_formula(ctx, doc_id="d1", formula_id_or_name="TotalBudget"))
         assert result["name"] == "TotalBudget"
 
     async def test_error(self) -> None:
@@ -127,7 +124,7 @@ class TestGetFormula:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no formula"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_formula(ctx, doc_id="d1", formula_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListControls:
@@ -139,7 +136,7 @@ class TestListControls:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_controls(ctx, doc_id="d1"))
+        result = _body(await coda_list_controls(ctx, doc_id="d1"))
         assert result["total_count"] == 1
         assert result["items"][0]["controlType"] == "datePicker"
 
@@ -147,7 +144,7 @@ class TestListControls:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": []})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_controls(ctx, doc_id="d1"))
+        result = _body(await coda_list_controls(ctx, doc_id="d1"))
         assert result["total_count"] == 0
         assert result["has_more"] is False
 
@@ -164,7 +161,7 @@ class TestListControls:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_controls(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetControl:
@@ -174,9 +171,7 @@ class TestGetControl:
             return_value={"id": "ctrl1", "name": "DateFilter", "value": "2024-01-01"}
         )
         ctx = _make_ctx(client)
-        result = json.loads(
-            await coda_get_control(ctx, doc_id="d1", control_id_or_name="DateFilter")
-        )
+        result = _body(await coda_get_control(ctx, doc_id="d1", control_id_or_name="DateFilter"))
         assert result["value"] == "2024-01-01"
 
     async def test_error(self) -> None:
@@ -184,7 +179,7 @@ class TestGetControl:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no control"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_control(ctx, doc_id="d1", control_id_or_name="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListCategories:
@@ -194,14 +189,14 @@ class TestListCategories:
             return_value={"items": [{"name": "Project Management"}, {"name": "Education"}]}
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_categories(ctx))
+        result = _body(await coda_list_categories(ctx))
         assert result["total_count"] == 2
 
     async def test_empty(self) -> None:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": []})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_categories(ctx))
+        result = _body(await coda_list_categories(ctx))
         assert result["total_count"] == 0
 
     async def test_error(self) -> None:
@@ -209,7 +204,7 @@ class TestListCategories:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_categories(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestPublishDoc:
@@ -217,7 +212,7 @@ class TestPublishDoc:
         client = AsyncMock()
         client.put = AsyncMock(return_value={"browserLink": "https://coda.io/@user/my-doc"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_publish_doc(ctx, doc_id="d1"))
+        result = _body(await coda_publish_doc(ctx, doc_id="d1"))
         assert "browserLink" in result
 
     async def test_with_slug_and_categories(self) -> None:
@@ -264,13 +259,13 @@ class TestPublishDoc:
         client.put = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_publish_doc(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_publish_doc(ctx, doc_id="d1"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestUnpublishDoc:
@@ -278,11 +273,11 @@ class TestUnpublishDoc:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(await coda_unpublish_doc(ctx, doc_id="d1"))
+        result = _body(await coda_unpublish_doc(ctx, doc_id="d1"))
         assert result["status"] == "unpublished"
 
     async def test_read_only_blocked(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_unpublish_doc(ctx, doc_id="d1"))
-        assert result["isError"] is True
+        assert result["error"]

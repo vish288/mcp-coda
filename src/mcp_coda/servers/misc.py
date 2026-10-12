@@ -8,6 +8,7 @@ file so the tools no longer need a dozen modules.
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -35,7 +36,7 @@ async def coda_trigger_automation(
         dict[str, Any] | None,
         Field(description="Optional JSON payload to pass to the automation"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Trigger a Coda automation rule.
 
     Fires the specified automation rule, optionally passing a JSON payload.
@@ -71,7 +72,7 @@ async def coda_list_formulas(
         Field(description="Maximum number of formulas to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all named formulas in a Coda doc.
 
     Returns formula metadata including name, ID, and value. Named formulas are
@@ -97,7 +98,7 @@ async def coda_get_formula(
         str,
         Field(description="Formula ID or name"),
     ],
-) -> str:
+) -> ToolResult:
     """Get the current value of a named formula in a Coda doc.
 
     Returns the formula's name, ID, type, current value, and whether it has
@@ -126,7 +127,7 @@ async def coda_list_controls(
         Field(description="Maximum number of controls to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all controls (sliders, select lists, date pickers, etc.) in a Coda doc.
 
     Returns control metadata including name, ID, type, and current value.
@@ -152,7 +153,7 @@ async def coda_get_control(
         str,
         Field(description="Control ID or name"),
     ],
-) -> str:
+) -> ToolResult:
     """Get the current value of a control in a Coda doc.
 
     Returns the control's name, ID, type, and current value. Controls include
@@ -171,7 +172,7 @@ async def coda_get_control(
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
 )
 @tool_result
-async def coda_list_categories(ctx: Context) -> str:
+async def coda_list_categories(ctx: Context) -> ToolResult:
     """List all available publishing categories in Coda.
 
     Returns the categories that can be used when publishing a doc to the Coda
@@ -216,7 +217,7 @@ async def coda_publish_doc(
         Literal["view", "play", "edit"] | None,
         Field(description="Publishing mode. One of 'view', 'play', or 'edit'"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Publish a Coda doc to make it publicly accessible.
 
     Publishes the doc with optional gallery listing and URL slug. Publishing
@@ -245,7 +246,7 @@ async def coda_unpublish_doc(
         str,
         Field(description="The doc ID to unpublish"),
     ],
-) -> str:
+) -> ToolResult:
     """Unpublish a Coda doc, removing public access. Returns confirmation with doc_id.
 
     Reverts a previously published doc to private. The public URL will stop

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -27,7 +26,7 @@ from mcp_coda.servers.permissions import (
 from mcp_coda.servers.permissions import (
     coda_search_principals as _coda_search_principals,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_add_permission = getattr(_coda_add_permission, "fn", _coda_add_permission)
@@ -43,7 +42,7 @@ class TestGetSharingMetadata:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"canShare": True, "canShareWithOrg": False})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_sharing_metadata(ctx, doc_id="d1"))
+        result = _body(await coda_get_sharing_metadata(ctx, doc_id="d1"))
         assert result["canShare"] is True
 
     async def test_error(self) -> None:
@@ -51,7 +50,7 @@ class TestGetSharingMetadata:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_sharing_metadata(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestListPermissions:
@@ -64,7 +63,7 @@ class TestListPermissions:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_permissions(ctx, doc_id="d1"))
+        result = _body(await coda_list_permissions(ctx, doc_id="d1"))
         assert result["total_count"] == 1
         assert result["has_more"] is True
 
@@ -72,7 +71,7 @@ class TestListPermissions:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": []})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_permissions(ctx, doc_id="d1"))
+        result = _body(await coda_list_permissions(ctx, doc_id="d1"))
         assert result["has_more"] is False
 
     async def test_with_cursor(self) -> None:
@@ -88,7 +87,7 @@ class TestListPermissions:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_permissions(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestAddPermission:
@@ -96,7 +95,7 @@ class TestAddPermission:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "p2", "access": "write"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_add_permission(
                 ctx, doc_id="d1", access="write", principal_email="user@example.com"
             )
@@ -165,7 +164,7 @@ class TestAddPermission:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_add_permission(ctx, doc_id="d1", access="write"))
-        assert result["isError"] is True
+        assert result["error"]
         assert "CODA_READ_ONLY" in result["error"]
 
     async def test_requires_a_principal(self) -> None:
@@ -181,7 +180,7 @@ class TestDeletePermission:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
+        result = _body(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
         assert result["status"] == "deleted"
         assert result["permission_id"] == "p1"
 
@@ -189,7 +188,7 @@ class TestDeletePermission:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestSearchPrincipals:
@@ -199,7 +198,7 @@ class TestSearchPrincipals:
             return_value={"items": [{"type": "email", "email": "user@example.com"}]}
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_search_principals(ctx, doc_id="d1", query="user"))
+        result = _body(await coda_search_principals(ctx, doc_id="d1", query="user"))
         assert result["items"][0]["email"] == "user@example.com"
 
     async def test_error(self) -> None:
@@ -207,7 +206,7 @@ class TestSearchPrincipals:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_search_principals(ctx, doc_id="bad", query="x"))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetAclSettings:
@@ -217,7 +216,7 @@ class TestGetAclSettings:
             return_value={"allowEditorsToChangePermissions": True, "allowCopying": False}
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_acl_settings(ctx, doc_id="d1"))
+        result = _body(await coda_get_acl_settings(ctx, doc_id="d1"))
         assert result["allowEditorsToChangePermissions"] is True
 
     async def test_error(self) -> None:
@@ -225,4 +224,4 @@ class TestGetAclSettings:
         client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_acl_settings(ctx, doc_id="bad"))
-        assert result["isError"] is True
+        assert result["error"]

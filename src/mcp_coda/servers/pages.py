@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -25,7 +26,7 @@ async def coda_list_pages(
         Field(description="Maximum number of pages to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all pages in a Coda doc.
 
     Returns page metadata including name, ID, parent page, and icon. Pages are
@@ -52,7 +53,7 @@ async def coda_get_page(
         str,
         Field(description="Page ID or name (prefer ID — names are unstable)"),
     ],
-) -> str:
+) -> ToolResult:
     """Get metadata for a single page in a Coda doc.
 
     Returns the page's name, ID, parent, subtitle, icon, and image. Does NOT
@@ -93,7 +94,7 @@ async def coda_create_page(
         Literal["html", "markdown"] | None,
         Field(description="Format of the content parameter"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Create a new page in a Coda doc.
 
     Creates a page with optional initial content. Returns the new page's ID and
@@ -152,7 +153,7 @@ async def coda_update_page(
         Literal["replace", "append"] | None,
         Field(description="How to insert content: 'replace' overwrites, 'append' adds to end"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Update a page's name, subtitle, or content in a Coda doc.
 
     Updates page metadata and/or content. When updating content, 'replace' mode
@@ -194,7 +195,7 @@ async def coda_delete_page(
         str,
         Field(description="Page ID or name to delete"),
     ],
-) -> str:
+) -> ToolResult:
     """Permanently delete a page from a Coda doc.
 
     This is irreversible — the page and all its content will be removed. Child
@@ -224,7 +225,7 @@ async def coda_get_page_content(
         Literal["html", "markdown"],
         Field(description="Content output format"),
     ] = "markdown",
-) -> str:
+) -> ToolResult:
     """Get the text content of a page in a Coda doc.
 
     Returns the page's content in the specified format (HTML or markdown).
@@ -255,7 +256,7 @@ async def coda_delete_page_content(
         str,
         Field(description="Page ID or name to clear content from"),
     ],
-) -> str:
+) -> ToolResult:
     """Delete all content from a page, leaving it blank.
 
     Removes the page's text content but does NOT delete the page itself. The
@@ -285,7 +286,7 @@ async def coda_export_page(
         Literal["html", "markdown"],
         Field(description="Export format"),
     ] = "markdown",
-) -> str:
+) -> ToolResult:
     """Export a page's content, initiating an async export if needed.
 
     Starts an export job and returns the export status. For small pages, the
@@ -321,7 +322,7 @@ async def coda_get_export_status(
         str,
         Field(description="Export request ID returned by coda_export_page", min_length=1),
     ],
-) -> str:
+) -> ToolResult:
     """Check a page export started by coda_export_page.
 
     Pass the `id` from coda_export_page as request_id. `status` is inProgress,

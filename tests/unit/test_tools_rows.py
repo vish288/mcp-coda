@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError
@@ -27,7 +26,7 @@ from mcp_coda.servers.rows import (
 from mcp_coda.servers.rows import (
     coda_update_row as _coda_update_row,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx, _md
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_delete_row = getattr(_coda_delete_row, "fn", _coda_delete_row)
@@ -49,7 +48,7 @@ class TestListRows:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
+        result = _body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["total_count"] == 1
         assert result["items"][0]["values"]["Name"] == "Alice"
 
@@ -89,7 +88,7 @@ class TestListRows:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [{"id": "r1"}], "nextPageToken": "next1"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
+        result = _body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
         assert result["has_more"] is True
         assert result["next_cursor"] == "next1"
 
@@ -105,8 +104,10 @@ class TestListRows:
             }
         )
         ctx = _make_ctx(client)
-        result = await coda_list_rows(
-            ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+        result = _md(
+            await coda_list_rows(
+                ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+            )
         )
         assert "Row 1" in result
         assert "Alice" in result
@@ -116,8 +117,10 @@ class TestListRows:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [], "nextPageToken": None})
         ctx = _make_ctx(client)
-        result = await coda_list_rows(
-            ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+        result = _md(
+            await coda_list_rows(
+                ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+            )
         )
         assert "*No rows found.*" in result
 
@@ -130,8 +133,10 @@ class TestListRows:
             }
         )
         ctx = _make_ctx(client)
-        result = await coda_list_rows(
-            ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+        result = _md(
+            await coda_list_rows(
+                ctx, doc_id="d1", table_id_or_name="t1", response_format="markdown"
+            )
         )
         assert "more available" in result
         assert "cursor2" in result
@@ -141,7 +146,7 @@ class TestListRows:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "server error"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
-        assert result["isError"] is True
+        assert result["error"]
         assert result["status_code"] == 500
 
 
@@ -150,7 +155,7 @@ class TestGetRow:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "r1", "values": {"Name": "Bob"}})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_get_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
         )
         assert result["values"]["Name"] == "Bob"
@@ -162,7 +167,7 @@ class TestGetRow:
         result = _err_body(
             await coda_get_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
         )
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestInsertRows:
@@ -171,9 +176,7 @@ class TestInsertRows:
         client.post = AsyncMock(return_value={"requestId": "req-1"})
         ctx = _make_ctx(client)
         rows = [{"cells": [{"column": "Name", "value": "Carol"}]}]
-        result = json.loads(
-            await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=rows)
-        )
+        result = _body(await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=rows))
         assert result["requestId"] == "req-1"
 
     async def test_with_key_columns_upsert(self) -> None:
@@ -200,7 +203,7 @@ class TestUpdateRow:
         client.put = AsyncMock(return_value={"requestId": "req-3"})
         ctx = _make_ctx(client)
         cells = [{"column": "Status", "value": "Done"}]
-        result = json.loads(
+        result = _body(
             await coda_update_row(
                 ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1", cells=cells
             )
@@ -216,7 +219,7 @@ class TestUpdateRow:
                 ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1", cells=cells
             )
         )
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
@@ -228,7 +231,7 @@ class TestUpdateRow:
                 ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad", cells=cells
             )
         )
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestDeleteRow:
@@ -236,7 +239,7 @@ class TestDeleteRow:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
         )
         assert result["status"] == "deleted"
@@ -247,7 +250,7 @@ class TestDeleteRow:
         result = _err_body(
             await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
         )
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
@@ -256,7 +259,7 @@ class TestDeleteRow:
         result = _err_body(
             await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
         )
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestDeleteRows:
@@ -264,7 +267,7 @@ class TestDeleteRows:
         client = AsyncMock()
         client.delete = AsyncMock(return_value={"requestId": "req-5"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1", "r2"])
         )
         assert result["requestId"] == "req-5"
@@ -273,7 +276,7 @@ class TestDeleteRows:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
         assert result["status"] == "deleted"
@@ -285,7 +288,7 @@ class TestDeleteRows:
         result = _err_body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
@@ -294,7 +297,7 @@ class TestDeleteRows:
         result = _err_body(
             await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
         )
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestPushButton:
@@ -302,7 +305,7 @@ class TestPushButton:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"requestId": "req-4"})
         ctx = _make_ctx(client)
-        result = json.loads(
+        result = _body(
             await coda_push_button(
                 ctx,
                 doc_id="d1",
@@ -325,7 +328,7 @@ class TestPushButton:
                 column_id_or_name="btn",
             )
         )
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
@@ -340,4 +343,4 @@ class TestPushButton:
                 column_id_or_name="bad",
             )
         )
-        assert result["isError"] is True
+        assert result["error"]

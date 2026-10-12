@@ -3,6 +3,7 @@
 from typing import Annotated, Any
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -25,7 +26,7 @@ async def coda_list_folders(
         Field(description="Maximum number of folders to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List folders accessible to the current API token, one page at a time.
 
     Returns folder metadata (name, ID, parent folder) with pagination — the API
@@ -48,7 +49,7 @@ async def coda_get_folder(
         str,
         Field(description="The folder ID to get details for"),
     ],
-) -> str:
+) -> ToolResult:
     """Get metadata for a single folder.
 
     Returns the folder's name, ID, parent folder, and child items. Use
@@ -76,7 +77,7 @@ async def coda_create_folder(
         str | None,
         Field(description="Description for the folder"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Create a new folder in a Coda workspace.
 
     Creates a folder in the specified workspace. Returns the new folder's ID and
@@ -104,7 +105,7 @@ async def coda_update_folder(
         str | None,
         Field(description="New name for the folder"),
     ] = None,
-) -> str:
+) -> ToolResult:
     """Update a folder's name.
 
     Renames the specified folder. Returns the updated folder metadata.
@@ -129,7 +130,7 @@ async def coda_delete_folder(
         str,
         Field(description="The folder ID to delete"),
     ],
-) -> str:
+) -> ToolResult:
     """Delete a folder from the Coda workspace. Returns confirmation with folder_id.
 
     Permanently removes the folder. Docs inside the folder may be moved to

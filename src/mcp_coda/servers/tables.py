@@ -3,6 +3,7 @@
 from typing import Annotated, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -29,7 +30,7 @@ async def coda_list_tables(
         Field(description="Maximum number of tables to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all tables and views in a Coda doc.
 
     Returns table metadata including name, ID, type (table or view), row count,
@@ -52,7 +53,7 @@ async def coda_get_table(
         str,
         Field(description="Table ID or name"),
     ],
-) -> str:
+) -> ToolResult:
     """Get metadata for a single table or view in a Coda doc.
 
     Returns the table's name, ID, type, row count, parent page, and sort/filter
@@ -79,7 +80,7 @@ async def coda_list_columns(
         Field(description="Maximum number of columns to return (1-200)", ge=1, le=200),
     ] = 100,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all columns in a Coda table.
 
     Returns column metadata including name, ID, type (text, number, date, etc.),
@@ -112,7 +113,7 @@ async def coda_get_column(
         str,
         Field(description="Column ID or name"),
     ],
-) -> str:
+) -> ToolResult:
     """Get metadata for a single column in a Coda table.
 
     Returns the column's name, ID, type, format, and configuration details.

@@ -3,6 +3,7 @@
 from typing import Annotated, Any, Literal
 
 from fastmcp import Context
+from fastmcp.tools import ToolResult
 from pydantic import Field
 
 from . import mcp
@@ -20,7 +21,7 @@ async def coda_get_sharing_metadata(
         str,
         Field(description="The doc ID to get sharing metadata for"),
     ],
-) -> str:
+) -> ToolResult:
     """Get sharing metadata for a Coda doc.
 
     Returns whether the doc can be shared, copied, or has sharing restrictions.
@@ -46,7 +47,7 @@ async def coda_list_permissions(
         Field(description="Maximum number of permissions to return (1-200)", ge=1, le=200),
     ] = 50,
     cursor: Cursor = None,
-) -> str:
+) -> ToolResult:
     """List all permission entries (ACL) for a Coda doc.
 
     Returns who has access to the doc and their access level (read, write, etc.).
@@ -86,7 +87,7 @@ async def coda_add_permission(
         bool,
         Field(description="If True, don't send an email notification"),
     ] = False,
-) -> str:
+) -> ToolResult:
     """Add a permission entry to a Coda doc.
 
     Grants access to a user by email or to an entire domain. Specify either
@@ -128,7 +129,7 @@ async def coda_delete_permission(
         str,
         Field(description="The permission ID to delete (from coda_list_permissions)"),
     ],
-) -> str:
+) -> ToolResult:
     """Remove a permission entry from a Coda doc.
 
     Revokes the specified permission. The principal will lose access to the doc
@@ -154,7 +155,7 @@ async def coda_search_principals(
         str,
         Field(description="Search query (name or email prefix)"),
     ],
-) -> str:
+) -> ToolResult:
     """Search for users and groups that can be added to a doc's permissions.
 
     Returns matching principals (users and groups) based on the query string.
@@ -180,7 +181,7 @@ async def coda_get_acl_settings(
         str,
         Field(description="The doc ID to get ACL settings for"),
     ],
-) -> str:
+) -> ToolResult:
     """Get the ACL settings for a Coda doc.
 
     Returns doc-level access control settings such as whether the doc allows

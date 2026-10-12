@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -25,31 +24,32 @@ from mcp_coda.servers._helpers import (
     _parse_coda_doc_url,
     _truncate,
 )
-from tests.conftest import _make_ctx
+from tests.conftest import _body, _make_ctx
 
 
 class TestOk:
     def test_serializes_dict(self) -> None:
-        result = _ok({"key": "value"})
-        assert json.loads(result) == {"key": "value"}
+        assert _body(_ok({"key": "value"})) == {"key": "value"}
 
-    def test_serializes_list(self) -> None:
-        result = _ok([1, 2, 3])
-        assert json.loads(result) == [1, 2, 3]
+    def test_rejects_root_array(self) -> None:
+        """Shape C: structuredContent must be a JSON object, so a root array is
+        rejected (ToolResult raises); tool_result turns that into a logged bug."""
+        with pytest.raises(ValueError, match="dict"):
+            _ok([1, 2, 3])
 
     def test_handles_unicode(self) -> None:
         result = _ok({"name": "caf\u00e9"})
-        assert "caf\u00e9" in result
+        assert "caf\u00e9" in result.content[0].text
 
     def test_indented(self) -> None:
         result = _ok({"a": 1})
-        assert "\n" in result
+        assert "\n" in result.content[0].text
 
     def test_truncates_large_response(self) -> None:
         large_data = {"items": ["x" * 100 for _ in range(500)]}
-        result = _ok(large_data)
-        assert len(result) <= CHARACTER_LIMIT + 200  # truncation notice overhead
-        assert "truncated" in result
+        text = _ok(large_data).content[0].text
+        assert len(text) <= CHARACTER_LIMIT + 200  # truncation notice overhead
+        assert "truncated" in text
 
     def test_oversized_list_drops_items_and_clears_skipping_cursor(self) -> None:
         """Truncation must drop items, never slice the JSON string.
@@ -64,7 +64,7 @@ class TestOk:
             "has_more": True,
             "next_cursor": "cursor-abc",
         }
-        parsed = json.loads(_ok(data))  # would raise before the slicing fix
+        parsed = _body(_ok(data))  # would raise before the slicing fix
 
         assert parsed["next_cursor"] is None  # not "cursor-abc" (would skip rows)
         assert parsed["has_more"] is True
@@ -84,15 +84,17 @@ class TestOk:
             "items": [{"v": "x" * item_size} for _ in range(400)],
             "next_cursor": "c1",
         }
-        parsed = json.loads(_ok(data))
+        parsed = _body(_ok(data))
         # When items are dropped the skipping cursor is cleared; when the whole
         # page fits, the original cursor is passed through unchanged.
         assert parsed["next_cursor"] == (None if "truncated" in parsed else "c1")
 
     def test_oversized_non_list_still_truncates(self) -> None:
         result = _ok({"blob": "x" * (CHARACTER_LIMIT + 1000)})
-        assert len(result) <= CHARACTER_LIMIT + 200
-        assert "truncated" in result
+        assert result.structured_content is None  # sliced text is not valid JSON
+        text = result.content[0].text
+        assert len(text) <= CHARACTER_LIMIT + 200
+        assert "truncated" in text
 
 
 class TestTruncate:
@@ -113,7 +115,7 @@ class TestTruncate:
 
 class TestPage:
     def test_more_pages(self) -> None:
-        out = json.loads(_page({"items": [{"id": "a"}, {"id": "b"}], "nextPageToken": "c2"}))
+        out = _body(_page({"items": [{"id": "a"}, {"id": "b"}], "nextPageToken": "c2"}))
         assert out == {
             "items": [{"id": "a"}, {"id": "b"}],
             "has_more": True,
@@ -122,7 +124,7 @@ class TestPage:
         }
 
     def test_last_page(self) -> None:
-        out = json.loads(_page({"items": []}))
+        out = _body(_page({"items": []}))
         assert out == {"items": [], "has_more": False, "next_cursor": None, "total_count": 0}
 
     def test_oversized_page_does_not_emit_skipping_cursor(self) -> None:
@@ -134,7 +136,7 @@ class TestPage:
         the caller to retry this page at a smaller limit.
         """
         rows = [{"id": f"r-{n}", "values": {"text": "x" * 500}} for n in range(100)]
-        out = json.loads(_page({"items": rows, "nextPageToken": "T100"}))
+        out = _body(_page({"items": rows, "nextPageToken": "T100"}))
 
         assert len(out["items"]) < 100  # page was truncated
         assert out["next_cursor"] is None  # not "T100"
@@ -148,28 +150,34 @@ class TestPage:
 
 
 class TestErr:
+    """D-X1D3: the body no longer repeats `isError` (the ToolResult flag owns
+    that) and every expected failure carries an actionable `hint`."""
+
     def test_generic_exception(self) -> None:
         result = _err(ValueError("bad input"))
         assert result["error"] == "bad input"
-        assert result["isError"] is True
+        assert "isError" not in result
         assert "status_code" not in result
 
     def test_api_error(self) -> None:
         result = _err(CodaApiError(500, "ISE", "details"))
         assert result["status_code"] == 500
         assert result["body"] == "details"
-        assert result["isError"] is True
+        assert result["hint"]
+        assert "isError" not in result
 
     def test_rate_limit_error(self) -> None:
         result = _err(CodaRateLimitError(retry_after=3))
         assert result["status_code"] == 429
         assert result["retry_after"] == 3
-        assert result["isError"] is True
+        assert result["hint"]
+        assert "isError" not in result
 
     def test_write_disabled_error(self) -> None:
         result = _err(CodaWriteDisabledError())
         assert "CODA_READ_ONLY" in result["error"]
-        assert result["isError"] is True
+        assert result["hint"]
+        assert "isError" not in result
         assert "status_code" not in result
 
 

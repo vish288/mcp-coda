@@ -505,8 +505,12 @@ async def test_request_shape(
     tool, args, method, path, query, body = row
     client, router = tool_client
     route = router.request(method, path).mock(return_value=Response(200, json={"items": []}))
-    is_error, out = await _call(client, tool, args)
-    assert is_error is False
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    assert result.is_error is False
+    out = json.loads(result.content[0].text)
+    # Shape C: structuredContent is the JSON object itself, not {"result": "<json>"}.
+    # The equality alone proves the wrapper is gone (it would have been {"result": text}).
+    assert result.structured_content == out
     assert "isError" not in out, out
     req = route.calls.last.request
     assert req.method == method
@@ -525,8 +529,7 @@ async def test_forced_failure(
     router.request(method, path).mock(return_value=Response(status, text="nope"))
     is_error, out = await _call(client, tool, args)
     assert is_error is True
-    assert set(out) == {"isError", "error", "status_code", "body"}
-    assert out["isError"] is True
+    assert set(out) == {"error", "status_code", "body", "hint"}
     assert out["status_code"] == status
     assert out["body"] == "nope"
 
@@ -539,7 +542,6 @@ async def test_read_only_blocks_write(
     client, router = readonly_client
     is_error, out = await _call(client, tool, args)
     assert is_error is True
-    assert out["isError"] is True
     assert "CODA_READ_ONLY" in out["error"]
     assert not router.calls
 
@@ -547,14 +549,15 @@ async def test_read_only_blocks_write(
 async def test_api_error_is_an_error_result_with_hint(
     tool_client: tuple[Client, respx.MockRouter],
 ) -> None:
-    """A 404 is an isError result the caller can act on; its body is the text only."""
+    """A 404 is an isError result with an actionable hint; its body is text only."""
     client, router = tool_client
     router.get("/docs/d1").mock(return_value=Response(404, text="gone"))
     result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
     assert result.is_error is True
     out = json.loads(result.content[0].text)
-    assert out["isError"] is True
+    assert "isError" not in out  # D-X1D3: the flag lives on the result, not the body
     assert out["status_code"] == 404
+    assert out["hint"]
     assert result.structured_content is None
 
 
@@ -563,8 +566,8 @@ async def _assert_error_result(client: Client, tool: str, args: dict[str, Any]) 
     result = await client.call_tool(tool, args, raise_on_error=False)
     assert result.is_error is True
     body = json.loads(result.content[0].text)
-    assert body["isError"] is True
-    assert "error" in body
+    assert "isError" not in body
+    assert body["error"]
     assert result.structured_content is None
 
 
@@ -632,6 +635,64 @@ async def test_error_result_passes_strict_output_schema(
     assert result.is_error is True
     if result.structured_content is not None:
         jsonschema.validate(result.structured_content, _OUTPUT_SCHEMAS[tool])
+
+
+def test_no_tool_advertises_a_wrapped_schema() -> None:
+    """Shape C: no tool carries fastmcp's `{"result": …}` wrapper schema.
+
+    Every tool's `output_schema` is None (a typed schema is opt-in per tool
+    later via `@mcp.tool(output_schema=…)`); when one is present it must be an
+    object schema without `x-fastmcp-wrap-result`. Fails on pre-X2 code, where
+    every `-> str` tool advertised `{..., "x-fastmcp-wrap-result": true}`.
+    """
+    for t in asyncio.run(mcp.list_tools()):
+        schema = t.output_schema
+        assert schema is None or (
+            schema.get("type") == "object" and "x-fastmcp-wrap-result" not in schema
+        ), (t.name, schema)
+
+
+async def test_success_text_is_pinned_pretty_json(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """Golden pin: success text is byte-identical pretty JSON and structuredContent
+    is the same object (no `{"result": "<json>"}` wrapper)."""
+    client, router = tool_client
+    expected = {"id": "d1", "name": "My Doc"}
+    router.get("/docs/d1").mock(return_value=Response(200, json=expected))
+    result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is False
+    assert result.content[0].text == json.dumps(expected, indent=2, ensure_ascii=False)
+    assert result.structured_content == expected
+
+
+async def test_markdown_result_is_text_only(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """The two markdown tools return text only — no structuredContent (not JSON)."""
+    client, router = tool_client
+    router.get("/docs").mock(
+        return_value=Response(200, json={"items": [{"id": "d1", "name": "Doc"}]})
+    )
+    result = await client.call_tool(
+        "coda_list_docs", {"response_format": "markdown"}, raise_on_error=False
+    )
+    assert result.is_error is False
+    assert result.structured_content is None
+    assert "**Doc**" in result.content[0].text
+
+
+async def test_oversized_single_payload_is_text_only(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """A single non-list payload too large to fit is sliced to text, so it carries
+    no structuredContent (the sliced string is not valid JSON)."""
+    client, router = tool_client
+    router.get("/docs/d1").mock(return_value=Response(200, json={"id": "d1", "blob": "x" * 30000}))
+    result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is False
+    assert result.structured_content is None
+    assert "truncated" in result.content[0].text
 
 
 def _tools_decorated_write() -> set[str]:

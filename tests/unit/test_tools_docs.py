@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock
 
 from mcp_coda.exceptions import CodaApiError, CodaNotFoundError
@@ -21,7 +20,7 @@ from mcp_coda.servers.docs import (
 from mcp_coda.servers.docs import (
     coda_update_doc as _coda_update_doc,
 )
-from tests.conftest import _err_body, _make_ctx
+from tests.conftest import _body, _err_body, _make_ctx, _md
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_create_doc = getattr(_coda_create_doc, "fn", _coda_create_doc)
@@ -41,7 +40,7 @@ class TestListDocs:
             }
         )
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_docs(ctx, limit=10))
+        result = _body(await coda_list_docs(ctx, limit=10))
         assert result["total_count"] == 1
         assert result["has_more"] is True
         assert result["next_cursor"] == "cursor-2"
@@ -50,7 +49,7 @@ class TestListDocs:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": [{"id": "d1"}]})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_list_docs(ctx))
+        result = _body(await coda_list_docs(ctx))
         assert result["has_more"] is False
         assert result["next_cursor"] is None
 
@@ -95,7 +94,7 @@ class TestListDocs:
             }
         )
         ctx = _make_ctx(client)
-        result = await coda_list_docs(ctx, response_format="markdown")
+        result = _md(await coda_list_docs(ctx, response_format="markdown"))
         assert "**My Doc**" in result
         assert "1 items returned" in result
 
@@ -104,7 +103,7 @@ class TestListDocs:
         client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_list_docs(ctx))
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestGetDoc:
@@ -112,7 +111,7 @@ class TestGetDoc:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"id": "d1", "name": "My Doc"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_get_doc(ctx, doc_id="d1"))
+        result = _body(await coda_get_doc(ctx, doc_id="d1"))
         assert result["name"] == "My Doc"
 
     async def test_not_found(self) -> None:
@@ -121,7 +120,7 @@ class TestGetDoc:
         ctx = _make_ctx(client)
         result = _err_body(await coda_get_doc(ctx, doc_id="nope"))
         assert result["status_code"] == 404
-        assert result["isError"] is True
+        assert result["error"]
 
 
 class TestCreateDoc:
@@ -129,7 +128,7 @@ class TestCreateDoc:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "d2", "name": "New Doc"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_create_doc(ctx, title="New Doc"))
+        result = _body(await coda_create_doc(ctx, title="New Doc"))
         assert result["id"] == "d2"
 
     async def test_with_folder(self) -> None:
@@ -160,7 +159,7 @@ class TestUpdateDoc:
         client = AsyncMock()
         client.patch = AsyncMock(return_value={"id": "d1", "name": "Renamed"})
         ctx = _make_ctx(client)
-        result = json.loads(await coda_update_doc(ctx, doc_id="d1", title="Renamed"))
+        result = _body(await coda_update_doc(ctx, doc_id="d1", title="Renamed"))
         assert result["name"] == "Renamed"
 
     async def test_with_icon(self) -> None:
@@ -175,19 +174,19 @@ class TestUpdateDoc:
         client = AsyncMock()
         ctx = _make_ctx(client, read_only=True)
         result = _err_body(await coda_update_doc(ctx, doc_id="d1", title="Blocked"))
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_error(self) -> None:
         client = AsyncMock()
         client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
         ctx = _make_ctx(client)
         result = _err_body(await coda_update_doc(ctx, doc_id="bad", title="X"))
-        assert result["isError"] is True
+        assert result["error"]
 
     async def test_no_op_when_nothing_to_update(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client)
-        result = json.loads(await coda_update_doc(ctx, doc_id="d1"))
+        result = _body(await coda_update_doc(ctx, doc_id="d1"))
         assert result == {"unchanged": True, "doc_id": "d1"}
         client.patch.assert_not_called()
 
@@ -197,7 +196,7 @@ class TestDeleteDoc:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
         ctx = _make_ctx(client)
-        result = json.loads(await coda_delete_doc(ctx, doc_id="d1"))
+        result = _body(await coda_delete_doc(ctx, doc_id="d1"))
         assert result["status"] == "deleted"
         assert result["doc_id"] == "d1"
 
