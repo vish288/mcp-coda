@@ -6,13 +6,15 @@ request as respx sees it: method, path, query string, JSON body. One row per
 `@mcp.tool` in src/. Derived from each tool body, not guessed.
 
 Row: (tool_name, call_args, method, path, expected_query, expected_json_body).
-`method=None` marks a tool with no HTTP call; only its response shape is checked.
+Every tool in src/ issues one HTTP call, so every row names a method.
 """
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import json
+from pathlib import Path
 from typing import Any
 
 import jsonschema
@@ -21,8 +23,11 @@ import respx
 from fastmcp import Client
 from httpx import Response
 
+import mcp_coda.servers as servers_pkg
 from mcp_coda.client import CodaClient
 from mcp_coda.servers import mcp
+
+_SERVERS_DIR = Path(servers_pkg.__file__).parent
 
 ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
     # account
@@ -477,6 +482,7 @@ ROWS: list[tuple[str, dict[str, Any], str | None, str, dict[str, str], Any]] = [
 
 HTTP_ROWS = [r for r in ROWS if r[2] is not None]
 WRITE_TOOLS = {t.name for t in asyncio.run(mcp.list_tools()) if "write" in t.tags}
+WRITE_ROWS = [r for r in HTTP_ROWS if r[0] in WRITE_TOOLS]
 _IDS = [r[0] for r in ROWS]
 
 
@@ -498,12 +504,6 @@ async def test_request_shape(
 ) -> None:
     tool, args, method, path, query, body = row
     client, router = tool_client
-    if method is None:
-        is_error, out = await _call(client, tool, args)
-        assert is_error is False
-        assert "isError" not in out
-        assert not router.calls
-        return
     route = router.request(method, path).mock(return_value=Response(200, json={"items": []}))
     is_error, out = await _call(client, tool, args)
     assert is_error is False
@@ -531,9 +531,7 @@ async def test_forced_failure(
     assert out["body"] == "nope"
 
 
-@pytest.mark.parametrize(
-    "row", [r for r in HTTP_ROWS if r[0] in WRITE_TOOLS], ids=sorted(WRITE_TOOLS)
-)
+@pytest.mark.parametrize("row", WRITE_ROWS, ids=[r[0] for r in WRITE_ROWS])
 async def test_read_only_blocks_write(
     readonly_client: tuple[Client, respx.MockRouter], row: tuple[Any, ...]
 ) -> None:
@@ -634,6 +632,44 @@ async def test_error_result_passes_strict_output_schema(
     assert result.is_error is True
     if result.structured_content is not None:
         jsonschema.validate(result.structured_content, _OUTPUT_SCHEMAS[tool])
+
+
+def _tools_decorated_write() -> set[str]:
+    """Scan servers/*.py for async tools carrying `@tool_result(write=True)`.
+
+    Read from source (AST), independent of the registered tags, so this and
+    WRITE_TOOLS (derived from `tags`) can only agree if the decorator and the
+    "write" tag are declared together on every write tool.
+    """
+    names: set[str] = set()
+    for path in _SERVERS_DIR.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.AsyncFunctionDef):
+                continue
+            for dec in node.decorator_list:
+                if (
+                    isinstance(dec, ast.Call)
+                    and isinstance(dec.func, ast.Name)
+                    and dec.func.id == "tool_result"
+                    and any(
+                        kw.arg == "write"
+                        and isinstance(kw.value, ast.Constant)
+                        and kw.value.value is True
+                        for kw in dec.keywords
+                    )
+                ):
+                    names.add(node.name)
+    return names
+
+
+def test_write_decorator_matches_write_tag() -> None:
+    """Every `@tool_result(write=True)` tool is tagged "write", and vice versa.
+
+    A write tool missing `write=True` would skip `_check_write`, running in
+    read-only mode; one missing the tag would not be blocked by CODA_READ_ONLY.
+    """
+    assert _tools_decorated_write() == WRITE_TOOLS
 
 
 async def test_list_rows_sort_by_is_enum(

@@ -31,7 +31,7 @@ def _reset_auth() -> Iterator[None]:
 def test_sse_deprecation_warning(runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
     """Warn when --transport sse is used."""
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
-    with patch("mcp_coda.asyncio.run") as mock_run:
+    with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
         result = runner.invoke(main, ["--transport", "sse"])
         assert result.exit_code == 0
         assert "Warning: --transport sse uses the HTTP+SSE transport" in result.stderr
@@ -59,7 +59,7 @@ def test_coda_token_flag_still_works_and_warns(
     monkeypatch.delenv("CODA_API_TOKEN")
     monkeypatch.delenv("CODA_TOKEN", raising=False)
     monkeypatch.delenv("CODA_PAT", raising=False)
-    with patch("mcp_coda.asyncio.run") as mock_run:
+    with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
         result = runner.invoke(main, ["--coda-token", "argv-tok"])
         assert result.exit_code == 0
         mock_run.assert_called_once()
@@ -72,7 +72,7 @@ def test_coda_token_flag_still_works_and_warns(
 def test_env_coda_token_does_not_warn(runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
     """A token supplied via the env var does not emit the deprecation warning."""
     monkeypatch.setenv("CODA_API_TOKEN", "env-tok")
-    with patch("mcp_coda.asyncio.run") as mock_run:
+    with patch.object(server_mcp, "run_async", new_callable=AsyncMock) as mock_run:
         result = runner.invoke(main, [])
         assert result.exit_code == 0
         mock_run.assert_called_once()

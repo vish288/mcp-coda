@@ -21,7 +21,12 @@ class CodaConfig:
         token = os.getenv("CODA_API_TOKEN") or os.getenv("CODA_TOKEN") or os.getenv("CODA_PAT", "")
         base_url = os.getenv("CODA_BASE_URL", "https://coda.io/apis/v1").rstrip("/")
         read_only = os.getenv("CODA_READ_ONLY", "false").lower() in ("true", "1", "yes")
-        timeout = int(os.getenv("CODA_TIMEOUT", "30"))
+        raw_timeout = os.getenv("CODA_TIMEOUT", "30")
+        try:
+            timeout = int(raw_timeout)
+        except ValueError:
+            msg = f"CODA_TIMEOUT must be an integer number of seconds, got {raw_timeout!r}"
+            raise ValueError(msg) from None
         return cls(
             token=token,
             base_url=base_url,

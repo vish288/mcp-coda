@@ -30,6 +30,11 @@ class TestCodaClientInit:
         client = CodaClient(config)
         assert client._client.headers["authorization"] == f"Bearer {TEST_TOKEN}"
 
+    def test_passes_timeout_to_httpx(self) -> None:
+        """config.timeout reaches httpx; without it a hung API would hang forever."""
+        client = CodaClient(CodaConfig(token="tok", timeout=7))
+        assert client._client.timeout.read == 7.0
+
 
 class TestCodaClientRequest:
     """Tests using respx to mock httpx transport.
@@ -89,6 +94,17 @@ class TestCodaClientRequest:
             client = CodaClient(config)
             data = await client.post("/docs/d1/tables/t1/rows", json_data={"rows": []})
             assert data == {"requestId": "req-123"}
+
+    async def test_empty_200_body_is_none(self, config: CodaConfig) -> None:
+        """A 200 with no body returns None, not a JSON parse error.
+
+        Some Coda writes answer 200 with an empty body; parsing that as JSON
+        would raise CodaApiError instead of a clean success.
+        """
+        async with respx.mock:
+            respx.delete(f"{TEST_BASE_URL}/docs/d1").mock(return_value=httpx.Response(200))
+            client = CodaClient(config)
+            assert await client.delete("/docs/d1") is None
 
     async def test_params_filter_none(self, config: CodaConfig) -> None:
         async with respx.mock:
