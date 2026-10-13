@@ -135,17 +135,9 @@ class TestLoadHelper:
         assert "Rate Limits" in content
         assert len(content) > 100
 
-    def test_rejects_path_traversal_slash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid filename"):
-            _load("../pyproject.toml")
-
-    def test_rejects_path_traversal_backslash(self) -> None:
-        with pytest.raises(ValueError, match="Invalid filename"):
-            _load("..\\pyproject.toml")
-
-    def test_rejects_dotdot(self) -> None:
-        with pytest.raises(ValueError, match="Invalid filename"):
-            _load("..")
+    # Path-traversal rejection is pinned once, on `_load_file` itself, in
+    # test_helpers.py::TestLoadFile. `_load` is a thin wrapper over it, so the
+    # dotdot/slash/backslash cases are not repeated here.
 
     def test_missing_file_raises(self) -> None:
         with pytest.raises(FileNotFoundError):
