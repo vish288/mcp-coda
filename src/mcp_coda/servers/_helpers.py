@@ -22,6 +22,7 @@ from ..config import CodaConfig
 from ..exceptions import (
     CodaApiError,
     CodaAuthError,
+    CodaConnectionError,
     CodaError,
     CodaNotFoundError,
     CodaRateLimitError,
@@ -278,6 +279,10 @@ def _err(error: Exception) -> dict[str, Any]:
     detail: dict[str, Any] = {"error": str(error)}
     if isinstance(error, CodaWriteDisabledError):
         detail["hint"] = "Server is in read-only mode. Set CODA_READ_ONLY=false to enable writes."
+    elif isinstance(error, CodaConnectionError):
+        detail["hint"] = (
+            f"Cannot reach {error.url}. Check CODA_BASE_URL and network connectivity, then retry."
+        )
     elif isinstance(error, CodaRateLimitError):
         detail["status_code"] = 429
         detail["retry_after"] = error.retry_after
@@ -335,7 +340,11 @@ def tool_result(fn: Callable[..., Any] | None = None, *, write: bool = False) ->
                 if write:
                     _check_write(ctx)
                 return await f(ctx, *args, **kwargs)
-            except CodaError as e:
+            except (CodaError, ValueError) as e:
+                # CodaError: HTTP/transport/read-only failures the caller can act
+                # on. ValueError: bad input a tool body rejects before the call
+                # (e.g. coda_add_permission with no principal, an unsafe path
+                # segment) — actionable, not a server defect, so no traceback.
                 return _error_result(_err(e))
             except Exception as e:
                 _log.exception("%s failed", f.__name__)

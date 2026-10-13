@@ -11,6 +11,7 @@ from .config import CodaConfig
 from .exceptions import (
     CodaApiError,
     CodaAuthError,
+    CodaConnectionError,
     CodaNotFoundError,
     CodaRateLimitError,
 )
@@ -76,7 +77,14 @@ class CodaClient:
         if json_data is not None:
             kwargs["json"] = json_data
 
-        resp = await self._client.request(method, path, **kwargs)
+        try:
+            resp = await self._client.request(method, path, **kwargs)
+        except httpx.HTTPError as e:
+            # Transport failure (DNS, connect, timeout, …): the server was never
+            # reached. Surface it as an expected, actionable error rather than a
+            # bug with a traceback.
+            url = f"{self.config.base_url}{path}"
+            raise CodaConnectionError(url, str(e)) from e
 
         # Rate limit
         if resp.status_code == 429:
