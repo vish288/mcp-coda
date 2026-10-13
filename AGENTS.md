@@ -38,7 +38,7 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 
 ### Access control (three layers)
 
-1. **Server-level**: `CODA_READ_ONLY=true` blocks all write tools before any API call
+1. **Server-level**: `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) locks the server read-only — write tools and write-workflow prompts are hidden from `tools/list`/`prompts/list`, calling a hidden tool is an `Unknown tool` error, and `_check_write` still refuses on any path that reaches it. The lock is computed once at startup and cannot be lifted at runtime; `--read-only` can only raise it. It is a *deployment* control, not a per-user one: a Coda token has no scopes and there is no per-request auth, so it only holds when the deployer owns the launch (managed MCP config `env`, container/k8s env, deployer-run HTTP)
 2. **MCP annotations**: `readOnlyHint` / `destructiveHint` / `idempotentHint` drive client-side permission prompts
 3. **Coda token**: Coda's sharing settings enforce doc-level access. Tokens have no scopes and reach everything their owner can reach
 
@@ -136,7 +136,8 @@ uvx mcp-coda --read-only                                  # CODA_API_TOKEN from 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `CODA_API_TOKEN` | Yes | — | Coda API token |
-| `CODA_READ_ONLY` | No | `false` | `true`/`1`/`yes` disables every write tool |
+| `CODA_READ_ONLY` | No | `false` | Lock the server read-only: write tools and write-workflow prompts are not listed and are refused before any API call. Any value other than `false`/`0`/`no`/`off`/empty locks |
+| `MCP_READ_ONLY` | No | `false` | Shared alias for `CODA_READ_ONLY` across the mcp-* servers; either locking wins, any value other than `false`/`0`/`no`/`off`/empty locks, nothing lifts it at runtime, and `--read-only` can only raise the lock |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL (trailing slash stripped) |
 | `CODA_TIMEOUT` | No | `30` | HTTP timeout, seconds |
 | `CODA_HTTP_BEARER_TOKEN` | No | — | Bearer token (min 16 chars) required to bind an HTTP transport to a non-loopback host; clients send `Authorization: Bearer` |

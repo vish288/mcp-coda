@@ -12,7 +12,7 @@ mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assist
 - **Transport**: stdio (default), streamable-http (recommended for remote); sse (deprecated by MCP 2026-07-28, still works)
 - **Registry**: `io.github.vish288/mcp-coda`
 - **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
-- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_HTTP_BEARER_TOKEN` (required to bind an HTTP transport to a non-loopback host; min 16 chars)
+- **Optional env vars**: `CODA_READ_ONLY` / `MCP_READ_ONLY` (lock read-only; shared name across the mcp-* servers), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_HTTP_BEARER_TOKEN` (required to bind an HTTP transport to a non-loopback host; min 16 chars)
 
 ## Documentation
 

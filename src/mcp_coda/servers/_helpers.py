@@ -278,7 +278,10 @@ def _err(error: Exception) -> dict[str, Any]:
     """
     detail: dict[str, Any] = {"error": str(error)}
     if isinstance(error, CodaWriteDisabledError):
-        detail["hint"] = "Server is in read-only mode. Set CODA_READ_ONLY=false to enable writes."
+        detail["hint"] = (
+            "This server is deployed read-only; writes cannot be enabled from the client. "
+            "Ask the deployer."
+        )
     elif isinstance(error, CodaConnectionError):
         detail["hint"] = (
             f"Cannot reach {error.url}. Check CODA_BASE_URL and network connectivity, then retry."

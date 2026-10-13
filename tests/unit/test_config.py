@@ -11,6 +11,14 @@ from mcp_coda.config import CodaConfig
 
 
 class TestCodaConfig:
+    @pytest.fixture(autouse=True)
+    def _no_ambient_read_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Strip both read-only env vars so a ``MCP_READ_ONLY=true`` gate run (the
+        suite is required green with it exported) does not lock the config under tests
+        that set only ``CODA_READ_ONLY`` or none."""
+        monkeypatch.delenv("MCP_READ_ONLY", raising=False)
+        monkeypatch.delenv("CODA_READ_ONLY", raising=False)
+
     def test_defaults(self) -> None:
         config = CodaConfig()
         assert config.token == ""

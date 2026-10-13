@@ -12,7 +12,7 @@ mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assist
 - **Transport**: stdio (default), streamable-http (recommended for remote); sse (deprecated by MCP 2026-07-28, still works)
 - **Registry**: `io.github.vish288/mcp-coda`
 - **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
-- **Optional env vars**: `CODA_READ_ONLY` (disable writes), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_HTTP_BEARER_TOKEN` (required to bind an HTTP transport to a non-loopback host; min 16 chars)
+- **Optional env vars**: `CODA_READ_ONLY` / `MCP_READ_ONLY` (lock read-only; shared name across the mcp-* servers), `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_HTTP_BEARER_TOKEN` (required to bind an HTTP transport to a non-loopback host; min 16 chars)
 
 ## Documentation
 
@@ -359,14 +359,14 @@ Audits sharing and permissions, suggests tightening. Steps:
 
 ## Error results
 
-An expected failure -- a 404, a 401, a rate limit, or a write blocked by read-only mode -- comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. The result body is the text content: a JSON object with `error`, an actionable `hint`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` -- the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
+An expected failure -- a 404, a 401, a rate limit, or a write that reaches the read-only guard -- comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. (In locked read-only mode the write tools are hidden, so calling one returns an `Unknown tool` error; the error envelope below is the guard's own response, returned only when a client reaches a write tool anyway.) The result body is the text content: a JSON object with `error`, an actionable `hint`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` -- the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
 
 A successful result carries the Coda JSON object as `structuredContent` beside the pretty-printed text, and tools advertise no `outputSchema`: payloads pass the upstream fields through untyped, so strict clients validate nothing and receive the object directly rather than a double-encoded `{"result": "<json>"}` wrapper. A typed schema is opt-in per tool via `@mcp.tool(output_schema=...)`.
 
 ## Security
 
 - Token scope: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production.
-- Read-only mode: `CODA_READ_ONLY=true` disables all write operations server-side.
+- Read-only mode: `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) locks the server read-only — write tools and write-workflow prompts are not listed, calling a hidden tool is an `Unknown tool` error, and the `_check_write` guard still refuses on any path reaching it. The lock is computed once at startup and nothing lifts it at runtime; `--read-only` can only raise it. A Coda token has no scopes and the server has no per-request auth, so it is a deployment control: it only holds when the deployer owns the launch (managed MCP config `env`, container/k8s env, deployer-run HTTP).
 - MCP tool annotations: each tool declares readOnlyHint, destructiveHint, and idempotentHint.
 - SSL verification: enabled by default. Only disable for development against local proxies.
 - No credential storage: tokens are read from environment variables at startup, never persisted.

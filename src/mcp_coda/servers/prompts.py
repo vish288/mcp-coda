@@ -59,7 +59,7 @@ def design_table_schema(description: str) -> list[Message]:
     ]
 
 
-@mcp.prompt(tags={"coda", "migration"})
+@mcp.prompt(tags={"coda", "migration", "write"})
 def migrate_spreadsheet(
     doc_id: str,
     source_format: Literal["csv", "excel", "sheets"] = "csv",
@@ -82,7 +82,7 @@ def migrate_spreadsheet(
     ]
 
 
-@mcp.prompt(tags={"coda", "automations"})
+@mcp.prompt(tags={"coda", "automations", "write"})
 def setup_automation(
     doc_id: str,
     trigger_type: Literal["webhook", "button", "time"] = "webhook",

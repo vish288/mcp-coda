@@ -34,6 +34,7 @@ async def live_client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[Client]:
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
     monkeypatch.setenv("CODA_BASE_URL", TEST_BASE_URL)
     monkeypatch.delenv("CODA_READ_ONLY", raising=False)
+    monkeypatch.delenv("MCP_READ_ONLY", raising=False)
     with respx.mock(base_url=TEST_BASE_URL, assert_all_called=False) as router:
         router.get("/docs").mock(return_value=Response(200, json={"items": [{"id": "d1"}]}))
         router.get("/docs/d1/tables").mock(return_value=Response(200, json={"items": []}))
@@ -76,6 +77,7 @@ async def test_lifespan_never_logs_the_token(
     monkeypatch.setenv("CODA_API_TOKEN", secret)
     monkeypatch.setenv("CODA_BASE_URL", TEST_BASE_URL)
     monkeypatch.delenv("CODA_READ_ONLY", raising=False)
+    monkeypatch.delenv("MCP_READ_ONLY", raising=False)
     with caplog.at_level("INFO", logger="mcp_coda.servers"):
         async with lifespan(mcp):
             pass
@@ -87,6 +89,8 @@ async def test_2026_07_28_mode(monkeypatch: pytest.MonkeyPatch) -> None:
     """Prove the server works in MCP 2026-07-28 mode."""
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
     monkeypatch.setenv("CODA_BASE_URL", TEST_BASE_URL)
+    monkeypatch.delenv("CODA_READ_ONLY", raising=False)
+    monkeypatch.delenv("MCP_READ_ONLY", raising=False)
     with respx.mock(base_url=TEST_BASE_URL, assert_all_called=False) as router:
         router.get("/docs").mock(return_value=Response(200, json={"items": []}))
         async with Client(mcp, mode="2026-07-28") as client:

@@ -535,14 +535,17 @@ async def test_forced_failure(
 
 
 @pytest.mark.parametrize("row", WRITE_ROWS, ids=[r[0] for r in WRITE_ROWS])
-async def test_read_only_blocks_write(
+async def test_read_only_hides_every_write_tool(
     readonly_client: tuple[Client, respx.MockRouter], row: tuple[Any, ...]
 ) -> None:
+    """Locked read-only: a write tool is not in tools/list, so calling it (a client that
+    cached the list) is an "Unknown tool" error and never reaches the API. The envelope
+    from the ``_check_write`` guard is pinned in test_read_only_lock.py instead."""
     tool, args, *_ = row
     client, router = readonly_client
-    is_error, out = await _call(client, tool, args)
-    assert is_error is True
-    assert "CODA_READ_ONLY" in out["error"]
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    assert result.is_error is True
+    assert "unknown tool" in result.content[0].text.lower()
     assert not router.calls
 
 
@@ -582,14 +585,6 @@ async def test_every_expected_failure_is_an_error_result(
     await _assert_error_result(client, "coda_whoami", {})
     router.get("/docs/d2").mock(return_value=Response(429, text="slow down"))  # CodaRateLimitError
     await _assert_error_result(client, "coda_get_doc", {"doc_id": "d2"})
-
-
-async def test_read_only_failure_is_an_error_result(
-    readonly_client: tuple[Client, respx.MockRouter],
-) -> None:
-    """CodaWriteDisabledError (read-only) is an isError result carrying the error body as text."""
-    client, _ = readonly_client
-    await _assert_error_result(client, "coda_create_doc", {"title": "x"})
 
 
 async def test_unexpected_failure_is_a_tool_error(
