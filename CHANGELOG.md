@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.0] - 2026-10-13
+
+### Features
+- feat!: send tool results as structuredContent objects and drop the placeholder outputSchema (b78a06d)
+
+### Chores
+- chore(tests): fix write-tool id labels, pin silent defaults, drop run_async warning (b101125)
+
+
 ## [0.9.0] - 2026-10-12
 
 ### Features
