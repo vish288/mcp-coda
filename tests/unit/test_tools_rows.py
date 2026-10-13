@@ -1,65 +1,30 @@
-"""Tests for row tools."""
+"""Behaviour tests for row tools the wire contract does not pin.
+
+Happy-path passthrough, `test_error`, `test_read_only_blocked` and simple
+param-echo tests duplicated `test_tool_contract.py` and were removed. What
+remains asserts behaviour the contract table does not: the `use_column_names`
+default, the markdown branch (empty / populated / has-more) and the
+null-response shape of `coda_delete_rows`.
+"""
 
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
-from mcp_coda.exceptions import CodaApiError
-from mcp_coda.servers.rows import (
-    coda_delete_row as _coda_delete_row,
-)
 from mcp_coda.servers.rows import (
     coda_delete_rows as _coda_delete_rows,
 )
 from mcp_coda.servers.rows import (
-    coda_get_row as _coda_get_row,
-)
-from mcp_coda.servers.rows import (
-    coda_insert_rows as _coda_insert_rows,
-)
-from mcp_coda.servers.rows import (
     coda_list_rows as _coda_list_rows,
 )
-from mcp_coda.servers.rows import (
-    coda_push_button as _coda_push_button,
-)
-from mcp_coda.servers.rows import (
-    coda_update_row as _coda_update_row,
-)
-from tests.conftest import _body, _err_body, _make_ctx, _md
+from tests.conftest import _body, _make_ctx, _md
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
-coda_delete_row = getattr(_coda_delete_row, "fn", _coda_delete_row)
 coda_delete_rows = getattr(_coda_delete_rows, "fn", _coda_delete_rows)
-coda_get_row = getattr(_coda_get_row, "fn", _coda_get_row)
-coda_insert_rows = getattr(_coda_insert_rows, "fn", _coda_insert_rows)
 coda_list_rows = getattr(_coda_list_rows, "fn", _coda_list_rows)
-coda_push_button = getattr(_coda_push_button, "fn", _coda_push_button)
-coda_update_row = getattr(_coda_update_row, "fn", _coda_update_row)
 
 
 class TestListRows:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(
-            return_value={
-                "items": [{"id": "r1", "values": {"Name": "Alice"}}],
-                "nextPageToken": None,
-            }
-        )
-        ctx = _make_ctx(client)
-        result = _body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
-        assert result["total_count"] == 1
-        assert result["items"][0]["values"]["Name"] == "Alice"
-
-    async def test_with_query(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1", query='Status:"Active"')
-        call_params = client.get.call_args[1]["params"]
-        assert call_params["query"] == 'Status:"Active"'
-
     async def test_uses_column_names_by_default(self) -> None:
         client = AsyncMock()
         client.get = AsyncMock(return_value={"items": []})
@@ -67,30 +32,6 @@ class TestListRows:
         await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1")
         call_params = client.get.call_args[1]["params"]
         assert call_params["useColumnNames"] is True
-
-    async def test_with_sort_by(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1", sort_by="createdAt")
-        call_params = client.get.call_args[1]["params"]
-        assert call_params["sortBy"] == "createdAt"
-
-    async def test_with_cursor(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1", cursor="abc123")
-        call_params = client.get.call_args[1]["params"]
-        assert call_params["pageToken"] == "abc123"
-
-    async def test_pagination_has_more(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": [{"id": "r1"}], "nextPageToken": "next1"})
-        ctx = _make_ctx(client)
-        result = _body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
-        assert result["has_more"] is True
-        assert result["next_cursor"] == "next1"
 
     async def test_markdown_format(self) -> None:
         client = AsyncMock()
@@ -141,137 +82,8 @@ class TestListRows:
         assert "more available" in result
         assert "cursor2" in result
 
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "server error"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_list_rows(ctx, doc_id="d1", table_id_or_name="t1"))
-        assert result["error"]
-        assert result["status_code"] == 500
-
-
-class TestGetRow:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"id": "r1", "values": {"Name": "Bob"}})
-        ctx = _make_ctx(client)
-        result = _body(
-            await coda_get_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
-        )
-        assert result["values"]["Name"] == "Bob"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no such row"))
-        ctx = _make_ctx(client)
-        result = _err_body(
-            await coda_get_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
-        )
-        assert result["error"]
-
-
-class TestInsertRows:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"requestId": "req-1"})
-        ctx = _make_ctx(client)
-        rows = [{"cells": [{"column": "Name", "value": "Carol"}]}]
-        result = _body(await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=rows))
-        assert result["requestId"] == "req-1"
-
-    async def test_with_key_columns_upsert(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"requestId": "req-2"})
-        ctx = _make_ctx(client)
-        rows = [{"cells": [{"column": "Email", "value": "a@b.com"}]}]
-        await coda_insert_rows(
-            ctx, doc_id="d1", table_id_or_name="t1", rows=rows, key_columns=["Email"]
-        )
-        body = client.post.call_args[1]["json_data"]
-        assert body["keyColumns"] == ["Email"]
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(await coda_insert_rows(ctx, doc_id="d1", table_id_or_name="t1", rows=[]))
-        assert "CODA_READ_ONLY" in result["error"]
-
-
-class TestUpdateRow:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.put = AsyncMock(return_value={"requestId": "req-3"})
-        ctx = _make_ctx(client)
-        cells = [{"column": "Status", "value": "Done"}]
-        result = _body(
-            await coda_update_row(
-                ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1", cells=cells
-            )
-        )
-        assert result["requestId"] == "req-3"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        cells = [{"column": "Status", "value": "Done"}]
-        result = _err_body(
-            await coda_update_row(
-                ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1", cells=cells
-            )
-        )
-        assert result["error"]
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.put = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no row"))
-        ctx = _make_ctx(client)
-        cells = [{"column": "Status", "value": "Done"}]
-        result = _err_body(
-            await coda_update_row(
-                ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad", cells=cells
-            )
-        )
-        assert result["error"]
-
-
-class TestDeleteRow:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(return_value=None)
-        ctx = _make_ctx(client)
-        result = _body(
-            await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
-        )
-        assert result["status"] == "deleted"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(
-            await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="r1")
-        )
-        assert result["error"]
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no row"))
-        ctx = _make_ctx(client)
-        result = _err_body(
-            await coda_delete_row(ctx, doc_id="d1", table_id_or_name="t1", row_id_or_name="bad")
-        )
-        assert result["error"]
-
 
 class TestDeleteRows:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(return_value={"requestId": "req-5"})
-        ctx = _make_ctx(client)
-        result = _body(
-            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1", "r2"])
-        )
-        assert result["requestId"] == "req-5"
-
     async def test_success_null_response(self) -> None:
         client = AsyncMock()
         client.delete = AsyncMock(return_value=None)
@@ -281,66 +93,3 @@ class TestDeleteRows:
         )
         assert result["status"] == "deleted"
         assert result["row_count"] == 1
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(
-            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
-        )
-        assert result["error"]
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
-        ctx = _make_ctx(client)
-        result = _err_body(
-            await coda_delete_rows(ctx, doc_id="d1", table_id_or_name="t1", row_ids=["r1"])
-        )
-        assert result["error"]
-
-
-class TestPushButton:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"requestId": "req-4"})
-        ctx = _make_ctx(client)
-        result = _body(
-            await coda_push_button(
-                ctx,
-                doc_id="d1",
-                table_id_or_name="t1",
-                row_id_or_name="r1",
-                column_id_or_name="Push Me",
-            )
-        )
-        assert result["requestId"] == "req-4"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(
-            await coda_push_button(
-                ctx,
-                doc_id="d1",
-                table_id_or_name="t1",
-                row_id_or_name="r1",
-                column_id_or_name="btn",
-            )
-        )
-        assert result["error"]
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no button"))
-        ctx = _make_ctx(client)
-        result = _err_body(
-            await coda_push_button(
-                ctx,
-                doc_id="d1",
-                table_id_or_name="t1",
-                row_id_or_name="r1",
-                column_id_or_name="bad",
-            )
-        )
-        assert result["error"]

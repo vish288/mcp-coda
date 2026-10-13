@@ -1,51 +1,29 @@
-"""Tests for folder tools."""
+"""Behaviour tests for folder tools the wire contract does not pin.
+
+Happy-path passthrough, `test_error` and `test_read_only_blocked` duplicated
+`test_tool_contract.py` and were removed. What remains asserts the pagination
+envelope (CO-R05) and the no-op short-circuit, neither of which the contract
+table covers.
+"""
 
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
-from mcp_coda.exceptions import CodaApiError
-from mcp_coda.servers.folders import (
-    coda_create_folder as _coda_create_folder,
-)
-from mcp_coda.servers.folders import (
-    coda_delete_folder as _coda_delete_folder,
-)
-from mcp_coda.servers.folders import (
-    coda_get_folder as _coda_get_folder,
-)
 from mcp_coda.servers.folders import (
     coda_list_folders as _coda_list_folders,
 )
 from mcp_coda.servers.folders import (
     coda_update_folder as _coda_update_folder,
 )
-from tests.conftest import _body, _err_body, _make_ctx
+from tests.conftest import _body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
-coda_create_folder = getattr(_coda_create_folder, "fn", _coda_create_folder)
-coda_delete_folder = getattr(_coda_delete_folder, "fn", _coda_delete_folder)
-coda_get_folder = getattr(_coda_get_folder, "fn", _coda_get_folder)
 coda_list_folders = getattr(_coda_list_folders, "fn", _coda_list_folders)
 coda_update_folder = getattr(_coda_update_folder, "fn", _coda_update_folder)
 
 
 class TestListFolders:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": [{"id": "fl1", "name": "Projects"}]})
-        ctx = _make_ctx(client)
-        result = _body(await coda_list_folders(ctx))
-        assert result["total_count"] == 1
-        assert result["items"][0]["name"] == "Projects"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(500, "ISE", "fail"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_list_folders(ctx))
-        assert result["error"]
-
     async def test_paginates(self) -> None:
         # CO-R05: /folders defaults to 25 per page with a nextPageToken. The
         # tool must surface the cursor instead of pretending the list is whole.
@@ -59,90 +37,11 @@ class TestListFolders:
         assert params["limit"] == 25
         assert params["pageToken"] == "tok1"
 
-    async def test_workspace_filter(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        await coda_list_folders(ctx, workspace_id="ws1")
-        assert client.get.call_args[1]["params"]["workspaceId"] == "ws1"
-
-
-class TestGetFolder:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"id": "fl1", "name": "Projects"})
-        ctx = _make_ctx(client)
-        result = _body(await coda_get_folder(ctx, folder_id="fl1"))
-        assert result["name"] == "Projects"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_get_folder(ctx, folder_id="bad"))
-        assert result["error"]
-
-
-class TestCreateFolder:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"id": "fl2", "name": "New Folder"})
-        ctx = _make_ctx(client)
-        result = _body(await coda_create_folder(ctx, name="New Folder", workspace_id="ws1"))
-        assert result["id"] == "fl2"
-        body = client.post.call_args[1]["json_data"]
-        assert body["workspaceId"] == "ws1"
-
-    async def test_with_description(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"id": "fl3"})
-        ctx = _make_ctx(client)
-        await coda_create_folder(ctx, name="Sub", workspace_id="ws1", description="A folder")
-        body = client.post.call_args[1]["json_data"]
-        assert body["description"] == "A folder"
-        assert body["workspaceId"] == "ws1"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(await coda_create_folder(ctx, name="Blocked", workspace_id="ws1"))
-        assert result["error"]
-
 
 class TestUpdateFolder:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.patch = AsyncMock(return_value={"id": "fl1", "name": "Renamed"})
-        ctx = _make_ctx(client)
-        result = _body(await coda_update_folder(ctx, folder_id="fl1", name="Renamed"))
-        assert result["name"] == "Renamed"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.patch = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no folder"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_update_folder(ctx, folder_id="bad", name="X"))
-        assert result["error"]
-
     async def test_no_op_when_nothing_to_update(self) -> None:
         client = AsyncMock()
         ctx = _make_ctx(client)
         result = _body(await coda_update_folder(ctx, folder_id="fl1"))
         assert result == {"unchanged": True, "folder_id": "fl1"}
         client.patch.assert_not_called()
-
-
-class TestDeleteFolder:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(return_value=None)
-        ctx = _make_ctx(client)
-        result = _body(await coda_delete_folder(ctx, folder_id="fl1"))
-        assert result["status"] == "deleted"
-        assert result["folder_id"] == "fl1"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(await coda_delete_folder(ctx, folder_id="fl1"))
-        assert result["error"]

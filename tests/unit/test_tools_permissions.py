@@ -1,110 +1,27 @@
-"""Tests for permission tools."""
+"""Behaviour tests for permission tools the wire contract does not pin.
+
+Happy-path passthrough, `test_error`, `test_read_only_blocked` and the
+email-principal shape duplicated `test_tool_contract.py` and were removed. What
+remains asserts behaviour the contract table does not cover: the domain
+principal shape, the absent-by-default `suppressEmail`, the email-over-domain
+precedence, and the no-principal rejection (D3: now an expected error, not a
+ToolError bug).
+"""
 
 from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
-import pytest
-from fastmcp.exceptions import ToolError
-
-from mcp_coda.exceptions import CodaApiError
 from mcp_coda.servers.permissions import (
     coda_add_permission as _coda_add_permission,
 )
-from mcp_coda.servers.permissions import (
-    coda_delete_permission as _coda_delete_permission,
-)
-from mcp_coda.servers.permissions import (
-    coda_get_acl_settings as _coda_get_acl_settings,
-)
-from mcp_coda.servers.permissions import (
-    coda_get_sharing_metadata as _coda_get_sharing_metadata,
-)
-from mcp_coda.servers.permissions import (
-    coda_list_permissions as _coda_list_permissions,
-)
-from mcp_coda.servers.permissions import (
-    coda_search_principals as _coda_search_principals,
-)
-from tests.conftest import _body, _err_body, _make_ctx
+from tests.conftest import _err_body, _make_ctx
 
 # Unwrap FunctionTool → raw function (getattr handles plain functions too)
 coda_add_permission = getattr(_coda_add_permission, "fn", _coda_add_permission)
-coda_delete_permission = getattr(_coda_delete_permission, "fn", _coda_delete_permission)
-coda_get_acl_settings = getattr(_coda_get_acl_settings, "fn", _coda_get_acl_settings)
-coda_get_sharing_metadata = getattr(_coda_get_sharing_metadata, "fn", _coda_get_sharing_metadata)
-coda_list_permissions = getattr(_coda_list_permissions, "fn", _coda_list_permissions)
-coda_search_principals = getattr(_coda_search_principals, "fn", _coda_search_principals)
-
-
-class TestGetSharingMetadata:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"canShare": True, "canShareWithOrg": False})
-        ctx = _make_ctx(client)
-        result = _body(await coda_get_sharing_metadata(ctx, doc_id="d1"))
-        assert result["canShare"] is True
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_get_sharing_metadata(ctx, doc_id="bad"))
-        assert result["error"]
-
-
-class TestListPermissions:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(
-            return_value={
-                "items": [{"id": "p1", "access": "write"}],
-                "nextPageToken": "cur2",
-            }
-        )
-        ctx = _make_ctx(client)
-        result = _body(await coda_list_permissions(ctx, doc_id="d1"))
-        assert result["total_count"] == 1
-        assert result["has_more"] is True
-
-    async def test_no_more_pages(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        result = _body(await coda_list_permissions(ctx, doc_id="d1"))
-        assert result["has_more"] is False
-
-    async def test_with_cursor(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(return_value={"items": []})
-        ctx = _make_ctx(client)
-        await coda_list_permissions(ctx, doc_id="d1", cursor="abc")
-        params = client.get.call_args[1]["params"]
-        assert params["pageToken"] == "abc"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_list_permissions(ctx, doc_id="bad"))
-        assert result["error"]
 
 
 class TestAddPermission:
-    async def test_success_with_email(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"id": "p2", "access": "write"})
-        ctx = _make_ctx(client)
-        result = _body(
-            await coda_add_permission(
-                ctx, doc_id="d1", access="write", principal_email="user@example.com"
-            )
-        )
-        assert result["access"] == "write"
-        body = client.post.call_args[1]["json_data"]
-        assert body["principal"]["email"] == "user@example.com"
-        assert body["principal"]["type"] == "email"
-
     async def test_success_with_domain(self) -> None:
         client = AsyncMock()
         client.post = AsyncMock(return_value={"id": "p3"})
@@ -115,20 +32,6 @@ class TestAddPermission:
         body = client.post.call_args[1]["json_data"]
         assert body["principal"]["domain"] == "example.com"
         assert body["principal"]["type"] == "domain"
-
-    async def test_suppress_notification(self) -> None:
-        client = AsyncMock()
-        client.post = AsyncMock(return_value={"id": "p4"})
-        ctx = _make_ctx(client)
-        await coda_add_permission(
-            ctx,
-            doc_id="d1",
-            access="write",
-            principal_email="user@example.com",
-            suppress_notification=True,
-        )
-        body = client.post.call_args[1]["json_data"]
-        assert body["suppressEmail"] is True
 
     async def test_suppress_email_absent_by_default(self) -> None:
         """suppress_notification defaults False → no suppressEmail key on the wire.
@@ -160,68 +63,12 @@ class TestAddPermission:
         body = client.post.call_args[1]["json_data"]
         assert body["principal"] == {"type": "email", "email": "user@example.com"}
 
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(await coda_add_permission(ctx, doc_id="d1", access="write"))
-        assert result["error"]
-        assert "CODA_READ_ONLY" in result["error"]
-
     async def test_requires_a_principal(self) -> None:
+        """D3: a missing principal is bad input, so it comes back as an expected
+        isError result (ValueError is in the expected set) rather than a ToolError
+        bug logged with a traceback. The upstream call is never made."""
         client = AsyncMock()
         ctx = _make_ctx(client)
-        with pytest.raises(ToolError, match="principal_email or principal_domain required"):
-            await coda_add_permission(ctx, doc_id="d1", access="write")
+        result = _err_body(await coda_add_permission(ctx, doc_id="d1", access="write"))
+        assert "principal_email or principal_domain required" in result["error"]
         client.post.assert_not_called()
-
-
-class TestDeletePermission:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.delete = AsyncMock(return_value=None)
-        ctx = _make_ctx(client)
-        result = _body(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
-        assert result["status"] == "deleted"
-        assert result["permission_id"] == "p1"
-
-    async def test_read_only_blocked(self) -> None:
-        client = AsyncMock()
-        ctx = _make_ctx(client, read_only=True)
-        result = _err_body(await coda_delete_permission(ctx, doc_id="d1", permission_id="p1"))
-        assert result["error"]
-
-
-class TestSearchPrincipals:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(
-            return_value={"items": [{"type": "email", "email": "user@example.com"}]}
-        )
-        ctx = _make_ctx(client)
-        result = _body(await coda_search_principals(ctx, doc_id="d1", query="user"))
-        assert result["items"][0]["email"] == "user@example.com"
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_search_principals(ctx, doc_id="bad", query="x"))
-        assert result["error"]
-
-
-class TestGetAclSettings:
-    async def test_success(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(
-            return_value={"allowEditorsToChangePermissions": True, "allowCopying": False}
-        )
-        ctx = _make_ctx(client)
-        result = _body(await coda_get_acl_settings(ctx, doc_id="d1"))
-        assert result["allowEditorsToChangePermissions"] is True
-
-    async def test_error(self) -> None:
-        client = AsyncMock()
-        client.get = AsyncMock(side_effect=CodaApiError(404, "Not Found", "no doc"))
-        ctx = _make_ctx(client)
-        result = _err_body(await coda_get_acl_settings(ctx, doc_id="bad"))
-        assert result["error"]
