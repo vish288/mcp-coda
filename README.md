@@ -75,7 +75,8 @@ uv pip install mcp-coda
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `CODA_API_TOKEN` | **Yes** | - | Coda API token ([get one here](https://coda.io/account#apiSettings)) |
-| `CODA_READ_ONLY` | No | `false` | Set to `true` to disable write operations |
+| `CODA_READ_ONLY` | No | `false` | Lock the server read-only: write tools and write-workflow prompts are not listed and are refused before any API call. Any value other than `false`/`0`/`no`/`off`/empty locks |
+| `MCP_READ_ONLY` | No | `false` | Same as `CODA_READ_ONLY`; a shared name across the mcp-* servers. Either locking wins; any value other than `false`/`0`/`no`/`off`/empty locks, nothing turns it back off at runtime, and `--read-only` can only raise the lock |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL |
 | `CODA_TIMEOUT` | No | `30` | Request timeout in seconds |
 | `CODA_HTTP_BEARER_TOKEN` | No | - | Required to bind an HTTP transport to a non-loopback host. Clients send `Authorization: Bearer <token>`. Minimum 16 characters |
@@ -112,7 +113,7 @@ mcp-coda implements the **Model Context Protocol 2026-07-28** specification, oft
 
 ### Error results
 
-An expected failure — a 404, a 401, a rate limit, or a write blocked by read-only mode — comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. The result body is the text content: a JSON object with `error`, an actionable `hint`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` — the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
+An expected failure — a 404, a 401, a rate limit, or a write that reaches the read-only guard — comes back as a tool result with `isError: true` rather than a value the caller must inspect for an `error` key. (In locked read-only mode the write tools are hidden, so calling one returns an `Unknown tool` error; the error envelope below is the guard's own response, returned only when a client reaches a write tool anyway.) The result body is the text content: a JSON object with `error`, an actionable `hint`, and, where relevant, `status_code`, `body`, and `retry_after`. The result carries no `structuredContent` — the TypeScript MCP SDK validates `structuredContent` against the tool's output schema even when `isError` is true, so an error payload there would make strict clients reject the whole result. Unexpected exceptions (a bug in a tool) are also `isError: true`, their text is `TypeName: message`, and the server logs them with a traceback.
 
 A successful result carries the Coda JSON object as `structuredContent` beside the pretty-printed text, and tools advertise no `outputSchema`: payloads pass the upstream fields through untyped, so strict clients validate nothing and receive the object directly rather than a double-encoded `{"result": "<json>"}` wrapper. A typed schema is opt-in per tool via `@mcp.tool(output_schema=…)`.
 
@@ -335,7 +336,7 @@ The server provides [MCP prompts](https://modelcontextprotocol.io/docs/concepts/
 ## Security Considerations
 
 - **Token scope**: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production deployments to limit exposure.
-- **Read-only mode**: Set `CODA_READ_ONLY=true` to disable all write operations (create, update, delete). The server enforces read-only mode before any API call.
+- **Read-only mode**: Set `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) to lock the server read-only. Write tools and write-workflow prompts are then not listed at all — a client that calls one anyway gets an `Unknown tool` error, and the `_check_write` guard still refuses with a deployer-owned-read-only hint on any path that reaches it. The lock is computed once at startup and nothing (a later env var, a `.env`, tool arguments, client capabilities) can lift it; the `--read-only` flag can only raise it. Because a Coda API token carries no scopes and the server has no per-request auth that distinguishes reads from writes, this lock is the only read-only control — and it is only genuinely enforced when the **deployer owns the launch**: set the env var in a managed MCP config (Claude Code `managed-mcp.json` `env`), a container/k8s/systemd env, or a deployer-run HTTP deployment. A user who starts the server themselves can always set their own env, so read-only is a deployment control, not a per-user permission.
 - **MCP tool annotations**: Each tool declares `readOnlyHint`, `destructiveHint`, and `idempotentHint` for client-side permission prompts.
 - **No credential storage**: The server does not persist tokens. It reads credentials from environment variables at startup.
 - **HTTP transport auth**: Host/Origin protection is not authentication. Binding an HTTP transport to a non-loopback host requires `CODA_HTTP_BEARER_TOKEN` (min 16 chars); clients send `Authorization: Bearer <token>` and anything else gets a 401. Without it the server refuses to start on a non-loopback host.
@@ -372,7 +373,7 @@ Coda processes write operations (insert, update, delete rows) asynchronously. To
 
 | Layer | Mechanism |
 |-------|-----------|
-| Server-level | `CODA_READ_ONLY=true` blocks all write tools |
+| Server-level | `CODA_READ_ONLY=true` / `MCP_READ_ONLY=true` hides every write tool (deployer-owned launch required) |
 | MCP annotations | `readOnlyHint`, `destructiveHint`, `idempotentHint` for client-side prompts |
 | Coda token | Doc-level access enforced by Coda's sharing settings |
 
@@ -412,7 +413,7 @@ The server supports `stdio` (the default) and `streamable-http`. It also support
 
 ### Is mcp-coda read-only safe?
 
-Yes. Set `CODA_READ_ONLY=true` to disable every write tool. The server enforces read-only mode before any API call.
+Yes. Set `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) to lock the server read-only: write tools and write-workflow prompts are not listed and cannot be re-enabled from the client. The lock holds only when the deployer owns the launch — a Coda token has no scopes and the server has no per-request auth, so set the env var in a managed MCP config or a container/HTTP deployment you control.
 
 ### What token scopes does mcp-coda need?
 

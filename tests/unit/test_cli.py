@@ -139,6 +139,11 @@ async def test_bearer_middleware_streamable_http(
 ) -> None:
     """Wire check: with auth set, the streamable-http ASGI app enforces the token."""
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
+    # These two boot the real lifespan (app.router.lifespan_context), so strip the
+    # read-only env vars: a MCP_READ_ONLY=true gate run would otherwise lock the shared
+    # server mid-test and leak the hide into every later tool_client test.
+    monkeypatch.delenv("MCP_READ_ONLY", raising=False)
+    monkeypatch.delenv("CODA_READ_ONLY", raising=False)
     server_mcp.auth = _BearerTokenVerifier(_TOKEN32)
     try:
         app = server_mcp.http_app()
@@ -173,6 +178,11 @@ async def test_bearer_middleware_streamable_http(
 async def test_bearer_middleware_sse(monkeypatch: pytest.MonkeyPatch) -> None:
     """The bearer guard also covers the (deprecated) SSE transport endpoint."""
     monkeypatch.setenv("CODA_API_TOKEN", "tok")
+    # These two boot the real lifespan (app.router.lifespan_context), so strip the
+    # read-only env vars: a MCP_READ_ONLY=true gate run would otherwise lock the shared
+    # server mid-test and leak the hide into every later tool_client test.
+    monkeypatch.delenv("MCP_READ_ONLY", raising=False)
+    monkeypatch.delenv("CODA_READ_ONLY", raising=False)
     server_mcp.auth = _BearerTokenVerifier(_TOKEN32)
     try:
         app = server_mcp.http_app(transport="sse")

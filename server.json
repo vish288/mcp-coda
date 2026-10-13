@@ -31,6 +31,13 @@
           "isSecret": false
         },
         {
+          "name": "MCP_READ_ONLY",
+          "description": "Shared read-only switch across the mcp-* servers (true/false); either this or CODA_READ_ONLY locks the server read-only and nothing lifts it at runtime",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
           "name": "CODA_HTTP_BEARER_TOKEN",
           "description": "Bearer token (min 16 chars) to authenticate HTTP transports on a non-loopback host",
           "isRequired": false,

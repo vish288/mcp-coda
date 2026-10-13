@@ -13,9 +13,34 @@ from typing import Any
 from fastmcp import FastMCP
 
 from ..client import CodaClient
-from ..config import CodaConfig
+from ..config import CodaConfig, read_only_sources
 
 _log = logging.getLogger(__name__)
+
+_LOCK_SUFFIX = (
+    " This deployment is locked read-only: write tools are not listed and cannot be"
+    " enabled from the client."
+)
+
+
+def _lock_read_only(server: FastMCP, *, sources: list[str] | None = None) -> None:
+    """Hide every write tool and write-workflow prompt from a read-only server, for good.
+
+    fastmcp 4.0.10: ``disable(tags=...)`` appends a ``Visibility(False)`` transform, so
+    components carrying the ``write`` tag — tools and prompts alike — drop out of
+    ``tools/list`` / ``prompts/list`` and ``tools/call`` on them returns a "Unknown tool"
+    error. There is no client-reachable path to re-enable them: ``enable`` and
+    ``enable_components`` are server code only, and this server never calls them. The
+    ``_check_write`` guard stays as defence in depth. Idempotent off the appended
+    instructions sentence so a re-entered lifespan (tests) does not stack visibility
+    transforms — no separate module flag to reset.
+    """
+    if _LOCK_SUFFIX in (server.instructions or ""):
+        return
+    server.disable(tags={"write"})
+    server.instructions = (server.instructions or "") + _LOCK_SUFFIX
+    named = f" ({', '.join(sources)})" if sources else ""
+    _log.info("read-only: LOCKED%s — write tools and prompts hidden", named)
 
 
 @asynccontextmanager
@@ -26,7 +51,11 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
 
     pkg_version = version("mcp-coda")
     _log.info("mcp-coda %s starting", pkg_version)
-    _log.info("Coda API: %s (read-only: %s)", config.base_url, config.read_only)
+    if config.read_only:
+        _log.info("Coda API: %s", config.base_url)
+        _lock_read_only(server, sources=read_only_sources("CODA_READ_ONLY"))
+    else:
+        _log.info("Coda API: %s (read-only: %s)", config.base_url, config.read_only)
 
     client = CodaClient(config)
     try:

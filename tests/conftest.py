@@ -15,7 +15,7 @@ from fastmcp.tools import ToolResult
 
 from mcp_coda.client import CodaClient
 from mcp_coda.config import CodaConfig
-from mcp_coda.servers import mcp
+from mcp_coda.servers import _lock_read_only, mcp
 
 TEST_BASE_URL = "https://coda.io/apis/v1"
 TEST_TOKEN = "test-coda-token"
@@ -92,12 +92,22 @@ async def _serve(*, read_only: bool) -> AsyncIterator[tuple[Client, respx.MockRo
 
     original = mcp._lifespan
     mcp._lifespan = lifespan
+    # Snapshot visibility so a read-only client's lock does not leak into the shared
+    # module ``mcp`` that read-write tests reuse: truncate the appended Visibility
+    # transforms and restore instructions in ``finally``. Idempotency keys off the
+    # instructions suffix, so restoring instructions resets the lock — no flag.
+    tx = len(mcp._transforms)
+    instructions = mcp.instructions
     try:
+        if read_only:
+            _lock_read_only(mcp, sources=["CODA_READ_ONLY"])
         with respx.mock(base_url=TEST_BASE_URL) as router:
             async with Client(mcp) as mcp_client:
                 yield mcp_client, router
     finally:
         mcp._lifespan = original
+        del mcp._transforms[tx:]
+        mcp.instructions = instructions
 
 
 @pytest.fixture

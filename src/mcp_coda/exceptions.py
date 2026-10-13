@@ -59,7 +59,9 @@ class CodaConnectionError(CodaError):
 
 
 class CodaWriteDisabledError(CodaError):
-    """Write operations are disabled via CODA_READ_ONLY."""
+    """Write operations are disabled via MCP_READ_ONLY or CODA_READ_ONLY."""
 
     def __init__(self) -> None:
-        super().__init__("Write operations are disabled (CODA_READ_ONLY=true)")
+        super().__init__(
+            "Write operations are disabled (read-only: MCP_READ_ONLY or CODA_READ_ONLY)"
+        )
