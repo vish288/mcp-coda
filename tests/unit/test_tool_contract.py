@@ -614,6 +614,69 @@ async def test_unexpected_failure_is_a_tool_error(
     assert "Traceback" in caplog.text
 
 
+async def test_non_json_200_is_an_error_result_with_hint(
+    tool_client: tuple[Client, respx.MockRouter],
+) -> None:
+    """A 200 whose body is not JSON is an explicit API error, not a silent empty
+    success. `tool_result` broadened its catch to `ValueError`, and a
+    `json.JSONDecodeError` is a `ValueError`; the client must wrap the decode
+    failure as `CodaApiError` so the tool surfaces it as an isError result with a
+    hint instead of returning it as an expected, unlogged empty success.
+    """
+    client, router = tool_client
+    router.get("/docs/d1").mock(
+        return_value=Response(
+            200, text="not json at all", headers={"content-type": "application/json"}
+        )
+    )
+    result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is True
+    out = json.loads(result.content[0].text)
+    assert "isError" not in out
+    assert "JSON parse error" in out["error"]
+    assert out["hint"]
+    assert result.structured_content is None
+
+
+@pytest.mark.parametrize(
+    ("tool", "args", "path", "status"),
+    [
+        ("coda_delete_doc", {"doc_id": "d1"}, "/docs/d1", "deleted"),
+        ("coda_delete_folder", {"folder_id": "f1"}, "/folders/f1", "deleted"),
+        (
+            "coda_delete_page",
+            {"doc_id": "d1", "page_id_or_name": "p1"},
+            "/docs/d1/pages/p1",
+            "deleted",
+        ),
+        (
+            "coda_delete_page_content",
+            {"doc_id": "d1", "page_id_or_name": "p1"},
+            "/docs/d1/pages/p1/content",
+            "content_deleted",
+        ),
+        ("coda_unpublish_doc", {"doc_id": "d1"}, "/docs/d1/publish", "unpublished"),
+    ],
+)
+async def test_success_status_literals_are_pinned(
+    tool_client: tuple[Client, respx.MockRouter],
+    tool: str,
+    args: dict[str, Any],
+    path: str,
+    status: str,
+) -> None:
+    """Delete/unpublish tools synthesise a fixed `status` literal the wire
+    contract does not pin (the API body is discarded); a rename would silently
+    change the result shape callers branch on.
+    """
+    client, router = tool_client
+    router.delete(path).mock(return_value=Response(200, json={}))
+    result = await client.call_tool(tool, args, raise_on_error=False)
+    assert result.is_error is False
+    out = json.loads(result.content[0].text)
+    assert out["status"] == status
+
+
 async def test_network_error_is_an_error_result_with_hint(
     tool_client: tuple[Client, respx.MockRouter],
     caplog: pytest.LogCaptureFixture,
