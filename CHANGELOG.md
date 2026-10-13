@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.11.0] - 2026-10-13
+
+### Features
+- feat(errors): treat unreachable API and bad input as expected failures (9fb4454)
+
+### Tests
+- test(errors): pin non-JSON 200 error path and success status literals (9b9c66b)
+- test(suite): drop contract-duplicate .fn tests, dedupe guards (P8/P9, D4) (cd938b6)
+
+
 ## [0.10.0] - 2026-10-13
 
 ### Features
