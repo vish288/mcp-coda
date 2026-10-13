@@ -11,7 +11,12 @@
 
 **Install:** `uvx mcp-coda` | [PyPI](https://pypi.org/project/mcp-coda/) | [MCP Registry](https://registry.modelcontextprotocol.io) | [Changelog](https://github.com/vish288/mcp-coda/releases)
 
-**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **54 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client.
+```bash
+uvx mcp-coda                          # with writes
+MCP_READ_ONLY=true uvx mcp-coda       # locked read-only: write tools are not listed
+```
+
+**mcp-coda** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [Coda](https://coda.io). It lets an AI assistant read and write Coda docs, pages, tables, and rows through the [Coda API](https://coda.io/developers/apis/v1). It also runs formulas, manages permissions and folders, publishes docs, and triggers automations. The server exposes **54 tools**, **12 resources**, and **5 prompts**. It supports the MCP 2026-07-28 specification (often called MCP 2.0) and stays compatible with 2025-11-25 clients. It works with Claude Desktop, Claude Code, Cursor, Windsurf, VS Code Copilot, and any MCP-compatible client. Runs in one of two modes: with writes, or locked read-only (`MCP_READ_ONLY=true`) so the 21 write tools are never offered to the model.
 
 mcp-coda uses [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.python-httpx.org/), and [Pydantic](https://docs.pydantic.dev/).
 
@@ -32,7 +37,10 @@ mcp-coda uses [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.
 ### Claude Code
 
 ```bash
-claude mcp add coda -- uvx mcp-coda
+# with writes
+claude mcp add coda -e CODA_API_TOKEN=your-token-here -- uvx mcp-coda
+# locked read-only
+claude mcp add coda -e MCP_READ_ONLY=true -e CODA_API_TOKEN=your-token-here -- uvx mcp-coda
 ```
 
 ### Windsurf & IntelliJ
@@ -41,6 +49,7 @@ claude mcp add coda -- uvx mcp-coda
 **IntelliJ:** Add to `Settings | Tools | MCP Servers`
 
 > **Note:** The actual server config starts at `coda` inside the `mcpServers` object.
+> Remove `MCP_READ_ONLY` to allow writes.
 
 ```json
 {
@@ -49,7 +58,8 @@ claude mcp add coda -- uvx mcp-coda
       "command": "uvx",
       "args": ["mcp-coda"],
       "env": {
-        "CODA_API_TOKEN": "your-token-here"
+        "CODA_API_TOKEN": "your-token-here",
+        "MCP_READ_ONLY": "true"
       }
     }
   }
@@ -59,7 +69,33 @@ claude mcp add coda -- uvx mcp-coda
 ### Gemini CLI
 
 ```bash
+# with writes
 gemini mcp add -e CODA_API_TOKEN=your-token-here coda uvx mcp-coda
+# locked read-only
+gemini mcp add -s user -e MCP_READ_ONLY=true -e CODA_API_TOKEN=your-token-here coda uvx mcp-coda
+```
+
+### VS Code
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "coda": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-coda"],
+      "env": { "CODA_API_TOKEN": "your-token-here", "MCP_READ_ONLY": "true" }
+    }
+  }
+}
+```
+
+### Codex
+
+```bash
+codex mcp add coda --env MCP_READ_ONLY=true --env CODA_API_TOKEN=your-token-here -- uvx mcp-coda
 ```
 
 ### pip / uv
@@ -67,6 +103,8 @@ gemini mcp add -e CODA_API_TOKEN=your-token-here coda uvx mcp-coda
 ```bash
 uv pip install mcp-coda
 ```
+
+> Drop `MCP_READ_ONLY` to allow writes. On a shared or hosted server put it in the deployer's env, not the client config.
 
 </details>
 
@@ -401,6 +439,25 @@ CODA_API_TOKEN=your-token uvx mcp-coda --read-only
 
 The server loads `.env` files from the working directory automatically via `python-dotenv`.
 
+## Docker
+
+The image is a minimal, non-root `python:3.13-slim` build. Its example run is locked read-only by default — drop `MCP_READ_ONLY` to allow writes.
+
+```bash
+docker build -t mcp-coda .
+
+# stdio (default), locked read-only
+docker run -i --rm -e CODA_API_TOKEN=your-token -e MCP_READ_ONLY=true mcp-coda
+
+# HTTP transport on a non-loopback host requires a bearer token (min 16 chars);
+# clients then send Authorization: Bearer <token>
+docker run --rm -p 9000:9000 \
+  -e CODA_API_TOKEN=your-token \
+  -e MCP_READ_ONLY=true \
+  -e CODA_HTTP_BEARER_TOKEN=$(openssl rand -hex 32) \
+  mcp-coda --transport streamable-http --host 0.0.0.0 --port 9000
+```
+
 ## FAQ
 
 ### Does mcp-coda support MCP 2.0 (the 2026-07-28 spec)?
@@ -411,9 +468,9 @@ Yes. mcp-coda implements the MCP 2026-07-28 specification, commonly called MCP 2
 
 The server supports `stdio` (the default) and `streamable-http`. It also supports `sse`, but the 2026-07-28 specification deprecates it. Prefer `streamable-http` for remote connections.
 
-### Is mcp-coda read-only safe?
+### Can I run mcp-coda read-only so the assistant cannot change anything?
 
-Yes. Set `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) to lock the server read-only: write tools and write-workflow prompts are not listed and cannot be re-enabled from the client. The lock holds only when the deployer owns the launch — a Coda token has no scopes and the server has no per-request auth, so set the env var in a managed MCP config or a container/HTTP deployment you control.
+Yes. Start it with `MCP_READ_ONLY=true` (or `CODA_READ_ONLY=true`). The 21 write tools and the write-workflow prompts are then not listed at all, so the model never sees them; a call to one returns "Unknown tool", and nothing can turn writes back on while the process runs. Set it in a launch you control — a managed MCP config, a container or systemd env, or a hosted deployment — because a user who starts the server themselves can start it without the variable. A Coda token has no scopes, so this lock is the only read-only control.
 
 ### What token scopes does mcp-coda need?
 

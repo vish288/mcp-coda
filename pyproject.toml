@@ -1,7 +1,7 @@
 [project]
 name = "mcp-coda"
 version = "0.12.0"
-description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions, and automation"
+description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions and automation. Runs with writes or locked read-only with one env var"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -28,6 +28,8 @@ keywords = [
     "document-automation",
     "ai-integration",
     "fastmcp",
+    "read-only",
+    "read-only-mode",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
