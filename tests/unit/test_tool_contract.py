@@ -21,7 +21,7 @@ import jsonschema
 import pytest
 import respx
 from fastmcp import Client
-from httpx import Response
+from httpx import ConnectError, Response
 
 import mcp_coda.servers as servers_pkg
 from mcp_coda.client import CodaClient
@@ -612,6 +612,27 @@ async def test_unexpected_failure_is_a_tool_error(
     assert "RuntimeError: schema changed" in result.content[0].text
     assert "coda_get_doc failed" in caplog.text
     assert "Traceback" in caplog.text
+
+
+async def test_network_error_is_an_error_result_with_hint(
+    tool_client: tuple[Client, respx.MockRouter],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """D1: a transport failure (server unreachable) is an expected isError result
+    naming the URL — not a bug. It carries a "cannot reach <URL>" hint, no
+    structuredContent, and logs no ERROR/traceback."""
+    client, router = tool_client
+    router.get("/docs/d1").mock(side_effect=ConnectError("connection refused"))
+    with caplog.at_level("ERROR", logger="mcp_coda.servers._helpers"):
+        result = await client.call_tool("coda_get_doc", {"doc_id": "d1"}, raise_on_error=False)
+    assert result.is_error is True
+    assert result.structured_content is None
+    out = json.loads(result.content[0].text)
+    assert "isError" not in out
+    assert "cannot reach" in out["hint"].lower()
+    assert "/docs/d1" in out["hint"]
+    assert "coda_get_doc failed" not in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 _OUTPUT_SCHEMAS = {t.name: t.output_schema for t in asyncio.run(mcp.list_tools())}

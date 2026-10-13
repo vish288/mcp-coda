@@ -40,6 +40,24 @@ class CodaRateLimitError(CodaApiError):
         super().__init__(429, "Too Many Requests", body)
 
 
+class CodaConnectionError(CodaError):
+    """The Coda API could not be reached (network/transport failure).
+
+    Raised when httpx cannot complete the request at all (DNS, connect,
+    read/write timeout, …). It is an expected, actionable failure — the caller
+    can retry or fix connectivity — not a bug in the tool, so it carries no
+    traceback.
+    """
+
+    def __init__(self, url: str, detail: str = "") -> None:
+        self.url = url
+        self.detail = detail
+        msg = f"Cannot reach {url}"
+        if detail:
+            msg = f"{msg}: {detail}"
+        super().__init__(msg)
+
+
 class CodaWriteDisabledError(CodaError):
     """Write operations are disabled via CODA_READ_ONLY."""
 
