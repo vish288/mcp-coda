@@ -1,9 +1,10 @@
 # Minimal, non-root image for mcp-coda.
-# The default run is locked read-only (MCP_READ_ONLY=true); unset it to allow writes.
+# The default run is locked read-only (MCP_READ_ONLY=true); override with -e MCP_READ_ONLY=false to allow writes.
 FROM python:3.13-slim
 
-# uv for fast, locked installs (pinned by digest in uv.lock).
+# uv binary, version-pinned; dependencies come from the committed uv.lock.
 COPY --from=ghcr.io/astral-sh/uv:0.9.2 /uv /uvx /usr/local/bin/
+ENV UV_PYTHON_DOWNLOADS=never
 
 # Non-root user.
 RUN useradd --create-home --uid 10001 app

@@ -10,7 +10,7 @@ mcp-coda is an MCP server that wraps the Coda REST API v1. It gives an AI assist
 - **License**: MIT
 - **MCP protocol**: 2026-07-28 (MCP 2.0); compatible with 2025-11-25 clients
 - **Transport**: stdio (default), streamable-http (recommended for remote); sse (deprecated by MCP 2026-07-28, still works)
-- **Read-only mode**: `MCP_READ_ONLY=true` (or `CODA_READ_ONLY=true`) hides the 21 write tools and write-workflow prompts for the life of the process; any non-false value locks; set it in the deployer's env
+- **Read-only mode**: `MCP_READ_ONLY=true` (or `CODA_READ_ONLY=true`) hides the 20 write tools and write-workflow prompts for the life of the process; any non-false value locks; set it in the deployer's env
 - **Registry**: `io.github.vish288/mcp-coda`
 - **Required env vars**: `CODA_API_TOKEN` (also accepts `CODA_TOKEN` or `CODA_PAT`)
 - **Optional env vars**: `CODA_READ_ONLY` / `MCP_READ_ONLY`, `CODA_BASE_URL` (API base), `CODA_TIMEOUT` (request timeout), `CODA_HTTP_BEARER_TOKEN` (required to bind an HTTP transport to a non-loopback host; min 16 chars)
@@ -367,7 +367,7 @@ A successful result carries the Coda JSON object as `structuredContent` beside t
 ## Security
 
 - Token scope: Coda API tokens grant access to all docs the token owner can access. Use a dedicated service account for production.
-- Read-only mode: `CODA_READ_ONLY=true` (or the shared `MCP_READ_ONLY=true`) locks the server read-only — write tools and write-workflow prompts are not listed, calling a hidden tool is an `Unknown tool` error, and the `_check_write` guard still refuses on any path reaching it. The lock is computed once at startup and nothing lifts it at runtime; `--read-only` can only raise it. A Coda token has no scopes and the server has no per-request auth, so it is a deployment control: it only holds when the deployer owns the launch (managed MCP config `env`, container/k8s env, deployer-run HTTP).
+- **Read-only mode**: Set `MCP_READ_ONLY=true` (or `CODA_READ_ONLY=true`) in the launch you control and the server starts locked: the 20 write tools and the write-workflow prompts are not listed, a call to one returns "Unknown tool", and the guard refuses any write that still reaches it. Nothing lifts the lock at runtime — not a `false` from another source, not a `.env` file, not tool arguments; any value other than `false`/`0`/`no`/`off`/empty locks, and `--read-only` can only raise it. The lock is only as strong as the launch: set it where users cannot edit it (a managed MCP config such as Claude Code `managed-mcp.json`, a container, k8s or systemd env, or a hosted HTTP deployment). A user who starts the server themselves controls its environment. A Coda token has no scopes, so this lock is the only read-only control.
 - MCP tool annotations: each tool declares readOnlyHint, destructiveHint, and idempotentHint.
 - SSL verification: enabled by default. Only disable for development against local proxies.
 - No credential storage: tokens are read from environment variables at startup, never persisted.
