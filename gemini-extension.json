@@ -1,7 +1,7 @@
 {
   "name": "mcp-coda",
   "version": "0.12.0",
-  "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, formulas, permissions, automation.",
+  "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, automations; writes or read-only",
   "mcpServers": {
     "mcp-coda": {
       "command": "uvx",
@@ -31,7 +31,7 @@
     },
     {
       "name": "CODA_HTTP_BEARER_TOKEN",
-      "description": "Bearer token (min 16 chars) to authenticate HTTP transports on a non-loopback host",
+      "description": "Bearer token (min 16 chars) required to bind an HTTP transport to a non-loopback host; clients send it as 'Authorization: Bearer <token>'",
       "required": false,
       "sensitive": true
     }

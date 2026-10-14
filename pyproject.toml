@@ -1,7 +1,7 @@
 [project]
 name = "mcp-coda"
 version = "0.12.0"
-description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions and automation. Runs with writes or locked read-only with one env var"
+description = "MCP server for Coda — docs, pages, tables, rows, formulas, permissions and automation. Runs with writes, or locked read-only via MCP_READ_ONLY"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

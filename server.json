@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.vish288/mcp-coda",
-  "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, formulas, permissions, automation.",
+  "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, automations; writes or read-only",
   "repository": {
     "url": "https://github.com/vish288/mcp-coda",
     "source": "github"
@@ -39,7 +39,7 @@
         },
         {
           "name": "CODA_HTTP_BEARER_TOKEN",
-          "description": "Bearer token (min 16 chars) to authenticate HTTP transports on a non-loopback host",
+          "description": "Bearer token (min 16 chars) required to bind an HTTP transport to a non-loopback host; clients send it as 'Authorization: Bearer <token>'",
           "isRequired": false,
           "format": "string",
           "isSecret": true
