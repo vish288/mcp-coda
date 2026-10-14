@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.1] - 2026-10-14
+
+### Bug Fixes
+- fix(ci): keep retry.sh stdout clean so captured ids aren't corrupted (dd4cc52)
+- fix(ci): create the release draft by id, no list-lookup race (9366a75)
+
+### Documentation
+- docs(read-only): correct write-tool count to 20 and align review copy (7f5a8c8)
+- docs(read-only): surface both run modes; add a non-root Dockerfile (e7790e6)
+
+### Other
+- ci: recoverable publish pipeline (split jobs, idempotent targets, reconcile) (1fe0f04)
+
+
 ### Notes
 - Source distributions up to and including 0.12.0 accidentally bundled `mcp-publisher.tar.gz` (about 7.3 MB), the MCP Registry publisher binary that the publish workflow downloaded into the build tree before `uv build`. Wheels were never affected and `pip`/`uv` install the wheel, so there is no runtime impact and those versions are not yanked. The bundled file is a third-party build from modelcontextprotocol/registry (MIT, transitioning to Apache-2.0 per its LICENSE) and was redistributed without its licence text. From this release the build asserts that the sdist contains only tracked files.
 
