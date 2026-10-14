@@ -163,8 +163,10 @@ gh workflow run release.yml -f bump=major               # 0.4.0 → 1.0.0
 gh workflow run release.yml -f bump=minor -f dry_run=true   # preview changelog, no push
 ```
 
-1. `release.yml` (workflow_dispatch) runs `tests.yml` and `lint.yml` on the released commit first (`needs: [test, lint]`), bumps the `pyproject.toml` version, regenerates `uv.lock`, generates `CHANGELOG.md`, and creates the release commit + tag via the GitHub API. The commit is created with `GITHUB_TOKEN` and no author/committer, so GitHub signs it as `github-actions[bot]` (verification `verified: true`); only the `main` and tag ref updates use `RELEASE_PAT` (needed to trigger `publish.yml` and to bypass the branch ruleset)
-2. `publish.yml` (triggered by the `v*` tag push) pins and sha256-verifies `mcp-publisher`, validates `server.json`, builds the wheel, publishes to PyPI, and creates the GitHub Release
+1. `release.yml` (workflow_dispatch) runs `tests.yml` and `lint.yml` on the released commit first (`needs: [test, lint]`), bumps the `pyproject.toml` version, regenerates `uv.lock`, generates `CHANGELOG.md`, and creates the release commit + tag via the GitHub API. The commit is created with `GITHUB_TOKEN` and no author/committer, so GitHub signs it as `github-actions[bot]` (verification `verified: true`); only the `main` and tag ref updates use `RELEASE_PAT` (needed to bypass the branch ruleset); `release.yml` dispatches `publish.yml`, and the PAT's tag push is a duplicate that no-ops
+2. `publish.yml` runs as split, idempotent jobs (`status → build → pypi → github-release → registry`): each target is checked first and written only when not already done, so PyPI, the GitHub release and the MCP Registry each complete independently and recoverably
+3. Recovery of a failed publish is `gh run rerun <id> --failed` or `gh workflow run publish.yml --ref refs/tags/vX.Y.Z`; both are no-ops for targets that are already done
+4. `reconcile.yml` does this unattended — about 5 min after a failed publish run, then every 6 h on a schedule — scanning the last three tags and dispatching `publish.yml` as needed, capped at 8 failed attempts per tag before it asks for a human
 
 > The `chore(release)` commits are GitHub-verified, but regular `Vish` commits merged into `main` show unsigned: the ruleset allows only rebase merges, and GitHub rewrites rebased PR commits with a new committer and no signature. PR review plus the required `test`/`lint` checks are the integrity control there.
 
