@@ -168,7 +168,7 @@ gh workflow run release.yml -f bump=minor -f dry_run=true   # preview changelog,
 3. Recovery of a failed publish is `gh run rerun <id> --failed` or `gh workflow run publish.yml --ref refs/tags/vX.Y.Z`; both are no-ops for targets that are already done
 4. `reconcile.yml` does this unattended — about 5 min after a failed publish run, then every 6 h on a schedule — scanning the last three tags and dispatching `publish.yml` as needed, capped at 8 failed attempts per tag before it asks for a human. A tag pushed by hand outside release.yml publishes only via a manual `gh workflow run publish.yml --ref refs/tags/vX.Y.Z` or the reconcile cron (there is no tag-push trigger).
 
-> The `chore(release)` commits are GitHub-verified, but regular `Vish` commits merged into `main` show unsigned: the ruleset allows only rebase merges, and GitHub rewrites rebased PR commits with a new committer and no signature. PR review plus the required `test`/`lint` checks are the integrity control there.
+> PR commits land signed via a local signed rebase + fast-forward push of the branch to `main`, never GitHub's rebase-merge, squash, or merge-commit buttons; the `chore(release)` commit is GitHub-signed (`github-actions[bot]`, Verified). `main` requires signed commits and linear history.
 
 Rules:
 
