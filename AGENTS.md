@@ -98,7 +98,7 @@ uv run ruff format --check .
 uv run pyright                          # type check (src only, basic mode)
 ```
 
-CI: `tests.yml` runs the suite on Python 3.10–3.13 and uploads coverage from 3.13; `lint.yml` runs the two ruff commands. Ruff config lives in `pyproject.toml` (line-length 100, rule set `E,F,B,W,I,N,UP,S,C4,EM,ISC`; `tests/**` ignores `S101,S105,S106`).
+CI: `tests.yml` runs the suite on Python 3.10–3.13 and uploads coverage from 3.13; `lint.yml` runs the two ruff commands and `pyright`. Ruff config lives in `ruff.toml` (line-length 100, rule set `E,F,B,W,I,N,UP,S,C4,EM,ISC`; `tests/**` ignores `S101,S105,S106,S104`).
 
 Running locally:
 
@@ -156,6 +156,14 @@ The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — 
 
 Releases run through GitHub Actions. Never bump versions or create tags by hand.
 
+The six workflows (`tests`, `lint`, `link-check`, `release`, `publish`, `reconcile`) are thin stubs
+that call reusable `workflow_call` workflows in [`vish288/.github`](https://github.com/vish288/.github),
+pinned by commit SHA with a `# vX.Y.Z` comment so Dependabot bumps them. The shared `scripts/ci/*.sh`
+and `scripts/derive_artifacts.py` live there too; this repo no longer carries its own copies. The stubs
+are Copier-owned (`.copier-answers.yml`): change CI in `vish288/.github` and run `copier update` here,
+not by editing these files directly. A CI fix is one PR in `vish288/.github` plus a tag bump, not a
+change in each server.
+
 ```bash
 gh workflow run release.yml -f bump=minor               # 0.3.0 → 0.4.0
 gh workflow run release.yml -f bump=patch               # 0.4.0 → 0.4.1
@@ -164,7 +172,7 @@ gh workflow run release.yml -f bump=minor -f dry_run=true   # preview changelog,
 ```
 
 1. `release.yml` (workflow_dispatch) runs `tests.yml` and `lint.yml` on the released commit first (`needs: [test, lint]`), bumps the `pyproject.toml` version, regenerates `uv.lock`, generates `CHANGELOG.md`, and creates the release commit + tag via the GitHub API. The commit is created with `GITHUB_TOKEN` and no author/committer, so GitHub signs it as `github-actions[bot]` (verification `verified: true`); only the `main` and tag ref updates use `RELEASE_PAT` (needed to bypass the branch ruleset); `release.yml` dispatches `publish.yml`, and the PAT's tag push no longer triggers publish (publish.yml is dispatch-only)
-2. `publish.yml` runs as split, idempotent jobs (`status → build → pypi → github-release → registry`): each target is checked first and written only when not already done, so PyPI, the GitHub release and the MCP Registry each complete independently and recoverably
+2. `publish.yml` runs as split, idempotent jobs: the reusable `publish-prepare.yml` (`status → build`), then a **local top-level `pypi` job** with `environment: pypi` (PyPI trusted publishing checks the OIDC `job_workflow_ref`, so the `pypa/gh-action-pypi-publish` job must stay in this repo's `publish.yml`), then the reusable `publish-finish.yml` (`confirm-pypi → github-release → registry`). Each target is checked first and written only when not already done, so PyPI, the GitHub release and the MCP Registry each complete independently and recoverably
 3. Recovery of a failed publish is `gh run rerun <id> --failed` or `gh workflow run publish.yml --ref refs/tags/vX.Y.Z`; both are no-ops for targets that are already done
 4. `reconcile.yml` does this unattended — about 5 min after a failed publish run, then every 6 h on a schedule — scanning the last three tags and dispatching `publish.yml` as needed, capped at 8 failed attempts per tag before it asks for a human. A tag pushed by hand outside release.yml publishes only via a manual `gh workflow run publish.yml --ref refs/tags/vX.Y.Z` or the reconcile cron (there is no tag-push trigger).
 
@@ -190,6 +198,8 @@ Any changeset that adds, removes, or modifies tools, resources, or prompts MUST 
 - `src/mcp_coda/resources/**.md` — the rules/guides shipped to clients; they must only name tools that exist
 
 Check: `uv run pytest tests/test_doc_parity.py` re-derives every count, tool name and version string from the source and fails on drift. To count the total: `grep -c '^async def coda_' src/mcp_coda/servers/*.py`. Also confirm the category list is complete and new tools appear in the right sections with parameters and annotations.
+
+`llms.txt` and `gemini-extension.json` are derived from `llms-full.txt` / `server.json` by `derive_artifacts.py`, which now lives in [`vish288/.github`](https://github.com/vish288/.github) and is run by the `release.yml` pipeline (with coda's `\n## Setup Examples` split marker). Do not hand-edit them; to preview locally, run the script from a `vish288/.github` checkout against this repo root: `LLMS_SPLIT_MARKER=$'\n## Setup Examples' python /path/to/.github/scripts/derive_artifacts.py`.
 
 ## Known limitations
 
