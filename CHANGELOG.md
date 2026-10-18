@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.2] - 2026-10-18
+
+### Bug Fixes
+- fix(ci): dispatch publish with RELEASE_PAT so reconcile's failure path fires (cae9159)
+- fix(ci): dispatch-only publish.yml and wait for PyPI propagation (04df35f)
+
+### Documentation
+- docs: describe signed rebase + fast-forward landing in AGENTS.md (c1fcc77)
+
+### Chores
+- chore: adopt the vish288/.github Copier template (v1.1.0) (7264468)
+
+
 ## [0.12.1] - 2026-10-14
 
 ### Bug Fixes

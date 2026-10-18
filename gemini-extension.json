@@ -1,6 +1,6 @@
 {
   "name": "mcp-coda",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, automations; writes or read-only",
   "mcpServers": {
     "mcp-coda": {
