@@ -87,6 +87,9 @@ class CodaConfig:
         except ValueError:
             msg = f"CODA_TIMEOUT must be an integer number of seconds, got {raw_timeout!r}"
             raise ValueError(msg) from None
+        if timeout <= 0:
+            msg = f"CODA_TIMEOUT must be a positive integer number of seconds, got {raw_timeout!r}"
+            raise ValueError(msg)
         return cls(
             token=token,
             base_url=base_url,

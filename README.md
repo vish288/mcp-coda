@@ -393,7 +393,7 @@ Two defaults changed. Both are breaking for callers that relied on the old behav
 
 ### Rate Limits
 
-Coda enforces per-token rate limits (varies by plan). When Coda rate-limits a request, the tool returns a 429 error with `retry_after` seconds. The server does not retry. Wait that many seconds, then retry. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100). Use `limit` to adjust.
+Coda enforces per-token rate limits (varies by plan). When Coda rate-limits a request, the tool returns a 429 error with `retry_after` seconds. The client retries a 429 once when its `Retry-After` is ≤ 5s (GET only, with jitter, also covering 502/503/504); otherwise it surfaces `retry_after` without retrying — wait that many seconds, then retry. Writes are never retried. Most paginated endpoints default to 50 results per page (`coda_list_docs` 25, `coda_list_columns` 100). Use `limit` to adjust.
 
 ### Async Mutations
 

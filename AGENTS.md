@@ -19,9 +19,9 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 - `src/mcp_coda/servers/_helpers.py` — shared `_get_client`, `_ok`, `_ok_markdown`, `_err`, `_check_write`, `_format_list_as_markdown`
 - `src/mcp_coda/servers/resources.py` / `prompts.py` — MCP resources and prompts
 - `src/mcp_coda/resources/` — static markdown backing the rules/guides resources
-- `src/mcp_coda/client.py` — async httpx client wrapping every Coda API call
-- `src/mcp_coda/config.py` — `CodaConfig` dataclass built from env vars
-- `src/mcp_coda/exceptions.py` — `CodaApiError`, `CodaNotFoundError`, `CodaRateLimitError`, …
+- `src/mcp_coda/client.py` — async httpx client wrapping every Coda API call. Transport (R2): a per-phase `httpx.Timeout` with the connect phase capped at 10s and `AsyncHTTPTransport(retries=2)` for connection errors; a single `_send` path adds GET-only status retries (502/503/504 with jitter, 429 when `Retry-After` ≤ 5s, max 2 attempts, writes never retried) and splits a timeout (`CodaTimeoutError`) from an unreachable host (`CodaConnectionError`; a `ConnectTimeout` counts as unreachable). Worst-case latency against a hard-down host is roughly `2 × (3 × connect-cap + timeout) + jitter` — the connect cap is 10s, the two outer attempts are the GET status-retry and each wraps httpx's three connect tries (`retries=2`)
+- `src/mcp_coda/config.py` — `CodaConfig` dataclass built from env vars; `CODA_TIMEOUT` is validated with a named error
+- `src/mcp_coda/exceptions.py` — `CodaApiError`, `CodaNotFoundError`, `CodaRateLimitError`, `CodaTimeoutError`, `CodaConnectionError`, …
 - `tests/unit/` — ~307 tool- and unit-level tests; `tests/conftest.py` holds shared fixtures
 - `tests/test_doc_parity.py` — re-derives tool/resource/prompt counts, tool names and version strings from the source and asserts the docs match; `tests/test_links.py` checks external URLs
 - `evaluations/eval.xml` — question / expected-answer / expected-tool pairs used to sanity-check tool selection
@@ -33,7 +33,7 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 - Every tool returns a fastmcp `ToolResult`. Success: `_ok`/`_page` put the Coda JSON object in `structuredContent` beside the pretty text; the two markdown branches use `_text` (text only, no `structuredContent`). Expected failures come from `_error_result(_err(e))`. Tools advertise no `outputSchema` (payloads pass upstream fields through untyped); a typed schema is opt-in per tool via `@mcp.tool(output_schema=…)`
 - Write tools are declared `@tool_result(write=True)`, which runs `_check_write(ctx)` before the body
 - List responses go through `_page(data)` and include `{items, has_more, next_cursor, total_count}`; most paginated endpoints default to `limit=50` (`coda_list_docs` 25, `coda_list_columns` 100)
-- Rate-limit errors carry `retry_after` seconds; the server does **not** retry 429s itself
+- Rate-limit errors carry `retry_after` seconds; the client retries a 429 **once** when its `Retry-After` is ≤ 5s (jittered GET-only retries also cover 502/503/504), and otherwise surfaces `retry_after` without retrying. Writes are never retried
 - Row writes are async server-side: they return a `requestId`, poll it with `coda_get_mutation_status`
 
 ### Access control (three layers)
@@ -148,7 +148,7 @@ The token is read from `CODA_API_TOKEN`, then `CODA_TOKEN`, then `CODA_PAT` — 
 
 - Browser URLs are not API IDs — run `coda_resolve_browser_link` first to get doc/page/table/row IDs
 - The API cannot insert or execute pack formulas (DrawFlowchart, Mermaid, etc.)
-- Rate limits are per-token and vary by plan; a 429 returns `retry_after` seconds and the server does not retry itself
+- Rate limits are per-token and vary by plan; a 429 returns `retry_after` seconds. The client retries a 429 once when `Retry-After` ≤ 5s (and 502/503/504 with jitter), GET-only; otherwise it surfaces `retry_after` without retrying
 - Analytics endpoints generally require doc ownership, not only Viewer access
 - Minimum doc roles: Viewer for reads; Editor for page/row writes, folder management, and triggering automations; Doc Owner for permissions and publishing
 

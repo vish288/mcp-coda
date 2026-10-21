@@ -11,8 +11,10 @@ from mcp_coda.config import CodaConfig
 from mcp_coda.exceptions import (
     CodaApiError,
     CodaAuthError,
+    CodaConnectionError,
     CodaNotFoundError,
     CodaRateLimitError,
+    CodaTimeoutError,
 )
 from tests.conftest import TEST_BASE_URL, TEST_TOKEN
 
@@ -116,14 +118,17 @@ class TestCodaClientRequest:
             assert "folderId" not in str(route.calls[0].request.url)
 
     async def test_rate_limit_429(self, config: CodaConfig) -> None:
+        # A long Retry-After (> 5s) is not auto-retried: the 429 surfaces its
+        # retry_after for the caller to wait on.
         async with respx.mock:
-            respx.get(f"{TEST_BASE_URL}/docs").mock(
-                return_value=httpx.Response(429, headers={"Retry-After": "5"}, text="slow down")
+            route = respx.get(f"{TEST_BASE_URL}/docs").mock(
+                return_value=httpx.Response(429, headers={"Retry-After": "30"}, text="slow down")
             )
             client = CodaClient(config)
             with pytest.raises(CodaRateLimitError) as exc_info:
                 await client.get("/docs")
-            assert exc_info.value.retry_after == 5
+            assert exc_info.value.retry_after == 30
+            assert route.call_count == 1
 
     async def test_rate_limit_default_retry(self, config: CodaConfig) -> None:
         async with respx.mock:
@@ -265,3 +270,174 @@ class TestCodaClientClose:
         client = CodaClient(config)
         await client.close()
         assert client._client.is_closed
+
+
+class TestCodaClientTransport:
+    """R2: GET-only retries, Retry-After, and the timeout-vs-unreachable split."""
+
+    @pytest.fixture
+    def _no_jitter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import mcp_coda.client as client_mod
+
+        monkeypatch.setattr(client_mod._jitter, "uniform", lambda _a, _b: 0.0)
+
+    async def test_get_retries_on_503_then_succeeds(
+        self, config: CodaConfig, _no_jitter: None
+    ) -> None:
+        async with respx.mock:
+            route = respx.get(f"{TEST_BASE_URL}/docs").mock(
+                side_effect=[
+                    httpx.Response(503, headers={"Retry-After": "1"}, text="unavailable"),
+                    httpx.Response(200, json={"items": []}),
+                ]
+            )
+            client = CodaClient(config)
+            result = await client.get("/docs")
+            assert result == {"items": []}
+            assert route.call_count == 2
+
+    async def test_get_retries_on_429_with_short_retry_after(self, config: CodaConfig) -> None:
+        async with respx.mock:
+            route = respx.get(f"{TEST_BASE_URL}/docs").mock(
+                side_effect=[
+                    httpx.Response(429, headers={"Retry-After": "0"}, text="slow down"),
+                    httpx.Response(200, json={"items": []}),
+                ]
+            )
+            client = CodaClient(config)
+            result = await client.get("/docs")
+            assert result == {"items": []}
+            assert route.call_count == 2
+
+    async def test_post_is_never_retried(self, config: CodaConfig) -> None:
+        async with respx.mock:
+            route = respx.post(f"{TEST_BASE_URL}/docs").mock(
+                side_effect=[
+                    httpx.Response(503, text="unavailable"),
+                    httpx.Response(200, json={}),
+                ]
+            )
+            client = CodaClient(config)
+            with pytest.raises(CodaApiError) as exc_info:
+                await client.post("/docs", json_data={})
+            assert exc_info.value.status_code == 503
+            assert route.call_count == 1
+
+    async def test_timeout_is_distinct_from_unreachable(self, config: CodaConfig) -> None:
+        async with respx.mock:
+            respx.get(f"{TEST_BASE_URL}/docs").mock(side_effect=httpx.ReadTimeout("slow"))
+            client = CodaClient(config)
+            with pytest.raises(CodaTimeoutError):
+                await client.get("/docs")
+
+    async def test_connect_error_is_unreachable(self, config: CodaConfig) -> None:
+        async with respx.mock:
+            respx.get(f"{TEST_BASE_URL}/docs").mock(side_effect=httpx.ConnectError("refused"))
+            client = CodaClient(config)
+            with pytest.raises(CodaConnectionError):
+                await client.get("/docs")
+
+    def test_connect_timeout_capped(self) -> None:
+        client = CodaClient(CodaConfig(token="tok", timeout=50))
+        assert client._client.timeout.connect == 10  # min(10, 50)
+        assert client._client.timeout.read == 50
+
+    async def test_connect_timeout_is_unreachable(self, config: CodaConfig) -> None:
+        # ConnectTimeout is a TimeoutException subclass but means the host was
+        # never reached, so it maps to the connection (unreachable) error.
+        async with respx.mock:
+            respx.get(f"{TEST_BASE_URL}/docs").mock(side_effect=httpx.ConnectTimeout("no route"))
+            client = CodaClient(config)
+            with pytest.raises(CodaConnectionError):
+                await client.get("/docs")
+
+    async def test_get_gives_up_after_two_attempts(
+        self, config: CodaConfig, _no_jitter: None
+    ) -> None:
+        async with respx.mock:
+            route = respx.get(f"{TEST_BASE_URL}/docs").mock(
+                return_value=httpx.Response(503, text="unavailable")
+            )
+            client = CodaClient(config)
+            with pytest.raises(CodaApiError) as exc_info:
+                await client.get("/docs")
+            assert exc_info.value.status_code == 503
+            assert route.call_count == 2
+
+    async def test_cancellation_propagates_without_retry(
+        self, config: CodaConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The retry loop must not swallow cancellation; it propagates on the
+        # first attempt. (respx cannot carry a BaseException side_effect.)
+        import asyncio
+
+        client = CodaClient(config)
+        calls = 0
+
+        async def _boom(*_a, **_k):
+            nonlocal calls
+            calls += 1
+            raise asyncio.CancelledError
+
+        monkeypatch.setattr(client._client, "request", _boom)
+        with pytest.raises(asyncio.CancelledError):
+            await client.get("/docs")
+        assert calls == 1
+
+    def test_url_userinfo_stripped_from_error(self) -> None:
+        # A credential embedded in the base URL must not leak into error text.
+        import asyncio
+
+        cfg = CodaConfig(token="tok", base_url="https://user:secret@coda.example.com/apis/v1")
+
+        async def _run() -> None:
+            async with respx.mock(assert_all_called=False) as router:
+                router.get(url__regex=r".*/docs").mock(side_effect=httpx.ConnectError("refused"))
+                client = CodaClient(cfg)
+                with pytest.raises(CodaConnectionError) as exc_info:
+                    await client.get("/docs")
+                assert "secret" not in str(exc_info.value)
+
+        asyncio.run(_run())
+
+
+class TestRetryAfterParsing:
+    """_retry_after_seconds handles both forms, clamps, and rejects non-finite."""
+
+    @staticmethod
+    def _resp(retry_after: str | None) -> httpx.Response:
+        headers = {"Retry-After": retry_after} if retry_after is not None else {}
+        return httpx.Response(429, headers=headers)
+
+    def test_delta_seconds(self) -> None:
+        import mcp_coda.client as client_mod
+
+        assert client_mod._retry_after_seconds(self._resp("5")) == 5.0
+
+    def test_http_date(self) -> None:
+        from datetime import datetime, timedelta, timezone
+        from email.utils import format_datetime
+
+        import mcp_coda.client as client_mod
+
+        when = format_datetime(datetime.now(timezone.utc) + timedelta(seconds=100))
+        secs = client_mod._retry_after_seconds(self._resp(when))
+        assert secs is not None
+        assert 80 <= secs <= 100
+
+    def test_past_date_and_negative_clamped(self) -> None:
+        import mcp_coda.client as client_mod
+
+        assert client_mod._retry_after_seconds(self._resp("Wed, 21 Oct 2015 07:28:00 GMT")) == 0.0
+        assert client_mod._retry_after_seconds(self._resp("-5")) == 0.0
+
+    def test_non_finite_rejected(self) -> None:
+        import mcp_coda.client as client_mod
+
+        assert client_mod._retry_after_seconds(self._resp("nan")) is None
+        assert client_mod._retry_after_seconds(self._resp("inf")) is None
+
+    def test_absent(self) -> None:
+        import mcp_coda.client as client_mod
+
+        assert client_mod._retry_after_seconds(self._resp(None)) is None

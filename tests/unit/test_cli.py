@@ -193,3 +193,23 @@ async def test_bearer_middleware_sse(monkeypatch: pytest.MonkeyPatch) -> None:
         assert no_header.status_code == 401
     finally:
         server_mcp.auth = None
+
+
+def test_missing_config_exits_2_with_one_line(runner: CliRunner) -> None:
+    """D7: a missing token is one clear ``Error:`` line and exit 2, not a traceback."""
+    with patch.dict(os.environ, {}, clear=True):
+        result = runner.invoke(main, [])
+    assert result.exit_code == 2
+    lines = [ln for ln in result.stderr.splitlines() if ln.strip()]
+    assert len(lines) == 1
+    assert lines[0].startswith("Error:")
+    assert "CODA_API_TOKEN" in lines[0]
+    assert result.exception is None or isinstance(result.exception, SystemExit)
+
+
+def test_invalid_timeout_exits_2(runner: CliRunner) -> None:
+    """A bad CODA_TIMEOUT is surfaced as the same one-line exit-2 error."""
+    with patch.dict(os.environ, {"CODA_API_TOKEN": "tok", "CODA_TIMEOUT": "abc"}, clear=True):
+        result = runner.invoke(main, [])
+    assert result.exit_code == 2
+    assert "CODA_TIMEOUT" in result.stderr

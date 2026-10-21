@@ -71,6 +71,15 @@ class TestCodaConfig:
         ):
             CodaConfig.from_env()
 
+    def test_from_env_timeout_non_positive(self) -> None:
+        """A zero or negative CODA_TIMEOUT is rejected as not positive."""
+        env = {"CODA_API_TOKEN": "tok", "CODA_TIMEOUT": "0"}
+        with (
+            patch.dict(os.environ, env, clear=False),
+            pytest.raises(ValueError, match="positive"),
+        ):
+            CodaConfig.from_env()
+
     def test_from_env_with_coda_token(self) -> None:
         env = {"CODA_TOKEN": "tok-alias"}
         with patch.dict(os.environ, env, clear=False):

@@ -26,6 +26,7 @@ from ..exceptions import (
     CodaError,
     CodaNotFoundError,
     CodaRateLimitError,
+    CodaTimeoutError,
     CodaWriteDisabledError,
 )
 
@@ -282,6 +283,11 @@ def _err(error: Exception) -> dict[str, Any]:
             "This server is deployed read-only; writes cannot be enabled from the client. "
             "Ask the deployer."
         )
+    elif isinstance(error, CodaTimeoutError):
+        detail["hint"] = (
+            f"Timed out reaching {error.url}. The request may be slow; retry, or raise "
+            "CODA_TIMEOUT."
+        )
     elif isinstance(error, CodaConnectionError):
         detail["hint"] = (
             f"Cannot reach {error.url}. Check CODA_BASE_URL and network connectivity, then retry."
@@ -290,8 +296,8 @@ def _err(error: Exception) -> dict[str, Any]:
         detail["status_code"] = 429
         detail["retry_after"] = error.retry_after
         detail["hint"] = (
-            "Rate limited. Wait retry_after seconds before retrying; "
-            "the server does not retry 429s itself."
+            "Rate limited. The server retries a 429 once when Retry-After is <= 5s; "
+            "otherwise wait retry_after seconds before retrying."
         )
     elif isinstance(error, CodaAuthError):
         detail["status_code"] = error.status_code

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import math
+import random
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
@@ -14,7 +19,59 @@ from .exceptions import (
     CodaConnectionError,
     CodaNotFoundError,
     CodaRateLimitError,
+    CodaTimeoutError,
 )
+
+# Transport retry policy (R2). Idempotent GETs are retried on a transient
+# upstream status; writes are never retried. httpx's AsyncHTTPTransport(retries=)
+# already covers connection-level failures, so this layer only adds status
+# retries. "Max 2 attempts" = the initial request plus at most one retry.
+_RETRY_STATUSES = frozenset({502, 503, 504})
+_MAX_ATTEMPTS = 2
+_MAX_RETRY_AFTER = 5.0  # only honour a 429 Retry-After at most this long (seconds)
+_jitter = random.SystemRandom()  # jitter source; SystemRandom sidesteps the S311 lint
+
+
+def _retry_after_seconds(resp: httpx.Response) -> float | None:
+    """Parse a ``Retry-After`` header to seconds-from-now, or None when absent.
+
+    Both forms are handled: delta-seconds, and an HTTP-date (RFC 7231), which is
+    converted to the delay from now. The result is clamped to >= 0 (a past date
+    means "retry now") and non-finite values are rejected."""
+    raw = resp.headers.get("Retry-After")
+    if raw is None:
+        return None
+    raw = raw.strip()
+    try:
+        seconds = float(raw)
+    except ValueError:
+        try:
+            when = parsedate_to_datetime(raw)
+        except (TypeError, ValueError):
+            return None
+        if when is None:
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        seconds = (when - datetime.now(timezone.utc)).total_seconds()
+    if not math.isfinite(seconds):
+        return None
+    return max(0.0, seconds)
+
+
+def _retry_delay(resp: httpx.Response) -> float | None:
+    """Seconds to wait before retrying this response, or None to not retry.
+
+    502/503/504 get a jittered backoff; a 429 is retried only when it names a
+    ``Retry-After`` of at most ``_MAX_RETRY_AFTER`` seconds."""
+    if resp.status_code in _RETRY_STATUSES:
+        return _jitter.uniform(0.5, 1.5)
+    if resp.status_code == 429:
+        after = _retry_after_seconds(resp)
+        if after is not None and after <= _MAX_RETRY_AFTER:
+            return after
+    return None
+
 
 # Segments httpx resolves away when joining onto base_url. An id containing one
 # silently retargets the request at a *different* endpoint: "/docs/../../whoami"
@@ -48,12 +105,50 @@ class CodaClient:
                 "Authorization": f"Bearer {self.config.token}",
                 "Content-Type": "application/json",
             },
-            timeout=self.config.timeout,
+            timeout=httpx.Timeout(self.config.timeout, connect=min(10, self.config.timeout)),
+            transport=httpx.AsyncHTTPTransport(retries=2),
         )
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""
         await self._client.aclose()
+
+    async def _send(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """One send path with the R2 retry policy. Idempotent GETs are retried on
+        a transient upstream status (502/503/504, or a 429 naming a short
+        ``Retry-After``) with jitter; writes are never retried. Connection-level
+        failures are retried beneath this by ``AsyncHTTPTransport(retries=2)``.
+
+        A timeout and an unreachable host become distinct expected errors (the
+        split is ported from mcp-argocd) rather than a single "cannot reach"."""
+        # Strip any userinfo so a credential embedded in the URL never lands in
+        # an error (as mcp-argocd/mcp-gitlab do).
+        safe = httpx.URL(f"{self.config.base_url}{path}").copy_with(username=None, password=None)
+        url = str(safe)
+        resp: httpx.Response
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            try:
+                resp = await self._client.request(method, path, **kwargs)
+            except httpx.ConnectTimeout as e:
+                # A connect timeout means the host was never reached — treat it as
+                # unreachable, not slow (it is a TimeoutException subclass, so it
+                # must be caught before the timeout branch).
+                raise CodaConnectionError(url, str(e)) from e
+            except httpx.TimeoutException as e:
+                raise CodaTimeoutError(url, str(e)) from e
+            except httpx.TransportError as e:
+                raise CodaConnectionError(url, str(e)) from e
+            except httpx.RequestError as e:
+                # Any other request-level failure (e.g. DecodingError,
+                # TooManyRedirects): still "could not complete the request".
+                raise CodaConnectionError(url, str(e)) from e
+            if method == "GET" and attempt < _MAX_ATTEMPTS:
+                delay = _retry_delay(resp)
+                if delay is not None:
+                    await asyncio.sleep(delay)
+                    continue
+            return resp
+        return resp  # pragma: no cover — the loop always returns
 
     async def _request(
         self,
@@ -77,23 +172,13 @@ class CodaClient:
         if json_data is not None:
             kwargs["json"] = json_data
 
-        try:
-            resp = await self._client.request(method, path, **kwargs)
-        except httpx.HTTPError as e:
-            # Transport failure (DNS, connect, timeout, …): the server was never
-            # reached. Surface it as an expected, actionable error rather than a
-            # bug with a traceback.
-            url = f"{self.config.base_url}{path}"
-            raise CodaConnectionError(url, str(e)) from e
+        resp = await self._send(method, path, **kwargs)
 
-        # Rate limit
+        # Rate limit. A short Retry-After (<= 5s) was already retried once in
+        # _send; whatever reaches here is surfaced with its Retry-After (both the
+        # delta-seconds and HTTP-date forms are parsed), falling back to 1s.
         if resp.status_code == 429:
-            # Retry-After is delta-seconds or an HTTP-date; we only act on the
-            # numeric form and fall back to 1s rather than failing to parse.
-            try:
-                retry_after = int(resp.headers.get("Retry-After", "1"))
-            except ValueError:
-                retry_after = 1
+            retry_after = _retry_after_seconds(resp) or 1
             raise CodaRateLimitError(retry_after=retry_after, body=resp.text)
 
         # Auth errors

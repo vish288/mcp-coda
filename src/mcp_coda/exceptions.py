@@ -35,7 +35,7 @@ class CodaNotFoundError(CodaApiError):
 class CodaRateLimitError(CodaApiError):
     """Rate limit exceeded (429)."""
 
-    def __init__(self, retry_after: int = 1, body: str = "") -> None:
+    def __init__(self, retry_after: float = 1, body: str = "") -> None:
         self.retry_after = retry_after
         super().__init__(429, "Too Many Requests", body)
 
@@ -43,16 +43,34 @@ class CodaRateLimitError(CodaApiError):
 class CodaConnectionError(CodaError):
     """The Coda API could not be reached (network/transport failure).
 
-    Raised when httpx cannot complete the request at all (DNS, connect,
-    read/write timeout, …). It is an expected, actionable failure — the caller
-    can retry or fix connectivity — not a bug in the tool, so it carries no
-    traceback.
+    Raised when httpx cannot complete the request at all (DNS, connect, TLS,
+    …) and it is not a timeout — timeouts get ``CodaTimeoutError``. It is an
+    expected, actionable failure — the caller can retry or fix connectivity —
+    not a bug in the tool, so it carries no traceback.
     """
 
     def __init__(self, url: str, detail: str = "") -> None:
         self.url = url
         self.detail = detail
         msg = f"Cannot reach {url}"
+        if detail:
+            msg = f"{msg}: {detail}"
+        super().__init__(msg)
+
+
+class CodaTimeoutError(CodaError):
+    """A request to the Coda API exceeded its deadline (connect/read/write).
+
+    Split out from ``CodaConnectionError`` (ported from mcp-argocd) so "the
+    server is slow" is distinguishable from "the server is unreachable": a
+    timeout is often transient and worth retrying, a connect failure usually
+    means a wrong URL or a down host.
+    """
+
+    def __init__(self, url: str, detail: str = "") -> None:
+        self.url = url
+        self.detail = detail
+        msg = f"Timed out reaching {url}"
         if detail:
             msg = f"{msg}: {detail}"
         super().__init__(msg)
