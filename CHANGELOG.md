@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.3] - 2026-10-22
+
+### Bug Fixes
+- fix(transport): GET retries, timeout split, clean startup (R2) (9b29bec)
+
+### Chores
+- chore(fleet): template v1.1.1 (62c58a5)
+
+
 ## [0.12.2] - 2026-10-18
 
 ### Bug Fixes
