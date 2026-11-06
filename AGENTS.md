@@ -98,7 +98,7 @@ uv run ruff format --check .
 uv run pyright                          # type check (src only, basic mode)
 ```
 
-CI: `tests.yml` runs the suite on Python 3.10–3.13 and uploads coverage from 3.13; `lint.yml` runs the two ruff commands and `pyright`. Ruff config lives in `ruff.toml` (line-length 100, rule set `E,F,B,W,I,N,UP,S,C4,EM,ISC`; `tests/**` ignores `S101,S105,S106,S104`).
+CI: `tests.yml` runs the suite on Python 3.11–3.14 and uploads coverage from 3.14; `lint.yml` runs the two ruff commands and `pyright`. Ruff config lives in `ruff.toml` (line-length 100, rule set `E,F,B,W,I,N,UP,S,C4,EM,ISC`; `tests/**` ignores `S101,S105,S106,S104`).
 
 Running locally:
 
