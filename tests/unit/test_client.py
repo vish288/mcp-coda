@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC
+
 import httpx
 import pytest
 import respx
@@ -415,12 +417,12 @@ class TestRetryAfterParsing:
         assert client_mod._retry_after_seconds(self._resp("5")) == 5.0
 
     def test_http_date(self) -> None:
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
         from email.utils import format_datetime
 
         import mcp_coda.client as client_mod
 
-        when = format_datetime(datetime.now(timezone.utc) + timedelta(seconds=100))
+        when = format_datetime(datetime.now(UTC) + timedelta(seconds=100))
         secs = client_mod._retry_after_seconds(self._resp(when))
         assert secs is not None
         assert 80 <= secs <= 100
