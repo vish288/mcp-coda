@@ -66,12 +66,21 @@ async def lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
 
 mcp = FastMCP(
     name="Coda MCP Server",
+    version=version("mcp-coda"),
+    website_url="https://vish288.github.io/mcp-install?server=mcp-coda",
     instructions=(
         "Provides tools for interacting with the Coda API — "
         "docs, pages, tables, rows, formulas, controls, permissions, folders, "
         "publishing, automations, and analytics."
     ),
     lifespan=lifespan,
+    # 2026-07-28 cache hints on list results: a modern client stops re-listing the
+    # tools/prompts/resources each turn (#155). cacheScope is private because
+    # resources/read can vary by the per-user token; the TTL is 5 minutes. Inert for
+    # legacy clients. (cacheScope is fixed at construction, before the per-process
+    # read-only decision, so it stays private rather than public-when-locked.)
+    cache_ttl=300,
+    cache_scope="private",
 )
 
 
