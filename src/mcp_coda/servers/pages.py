@@ -183,6 +183,7 @@ async def coda_update_page(
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_page(
@@ -244,6 +245,7 @@ async def coda_get_page_content(
 @mcp.tool(
     tags={"coda", "pages", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_page_content(

@@ -23,6 +23,9 @@ from ._helpers import (
 @mcp.tool(
     tags={"coda", "rows", "read"},
     annotations={"openWorldHint": True, "readOnlyHint": True, "idempotentHint": True},
+    # Raise the 50k-char persist-to-disk threshold (max 500k): a wide table page
+    # can exceed it. A different meta key from the destructive-tool approval flag.
+    meta={"anthropic/maxResultSizeChars": 200000},
 )
 @tool_result
 async def coda_list_rows(
@@ -226,6 +229,7 @@ async def coda_update_row(
 @mcp.tool(
     tags={"coda", "rows", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_row(
@@ -262,6 +266,7 @@ async def coda_delete_row(
 @mcp.tool(
     tags={"coda", "rows", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_rows(

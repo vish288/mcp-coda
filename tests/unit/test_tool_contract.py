@@ -827,3 +827,21 @@ async def test_list_rows_sort_by_is_enum(
     assert "createdAt" in flat
     assert "natural" in flat
     assert "updatedAt" in flat
+
+
+async def test_destructive_tools_require_user_interaction():
+    """Exactly the destructiveHint tools carry the ``anthropic/requiresUserInteraction``
+    meta (G8): Claude Code then forces a permission prompt on every destructive call and
+    never on a read. ``maxResultSizeChars`` on a bulk reader is a different meta key and
+    must not count as requiresUserInteraction.
+    """
+    for t in await mcp.list_tools():
+        destructive = bool(t.annotations and t.annotations.destructive_hint)
+        requires = bool((t.meta or {}).get("anthropic/requiresUserInteraction"))
+        assert destructive == requires, t.name
+
+
+async def test_bulk_reader_raises_result_size_cap():
+    """coda_list_rows lifts the 50k persist-to-disk cap so a wide page survives."""
+    rows = next(t for t in await mcp.list_tools() if t.name == "coda_list_rows")
+    assert (rows.meta or {}).get("anthropic/maxResultSizeChars") == 200000

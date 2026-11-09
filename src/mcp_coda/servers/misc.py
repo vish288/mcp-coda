@@ -238,6 +238,7 @@ async def coda_publish_doc(
 @mcp.tool(
     tags={"coda", "publishing", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_unpublish_doc(

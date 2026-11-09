@@ -175,6 +175,7 @@ async def coda_update_doc(
 @mcp.tool(
     tags={"coda", "docs", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_doc(

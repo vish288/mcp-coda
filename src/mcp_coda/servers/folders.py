@@ -122,6 +122,7 @@ async def coda_update_folder(
 @mcp.tool(
     tags={"coda", "folders", "write"},
     annotations={"openWorldHint": True, "destructiveHint": True, "readOnlyHint": False},
+    meta={"anthropic/requiresUserInteraction": True},
 )
 @tool_result(write=True)
 async def coda_delete_folder(
