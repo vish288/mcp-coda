@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Coda MCP server">
+  <title>Coda MCP server</title>
+  <rect x="4" y="4" width="120" height="120" rx="14" fill="#847492" stroke="#6f6080" stroke-width="8" />
+  <g fill="none" stroke="#0b0c0f" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter">
+        <rect x="33" y="35" width="62" height="60" />
+        <rect x="33" y="35" width="62" height="17" fill="#0b0c0f" stroke="none" />
+        <path d="M56 52V95" />
+        <path d="M33 74H95" />
+        </g>
+  
+</svg>

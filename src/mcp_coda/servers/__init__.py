@@ -11,6 +11,7 @@ from importlib.metadata import version
 from typing import Any
 
 from fastmcp import FastMCP
+from mcp.types import Icon
 
 from ..client import CodaClient
 from ..config import CodaConfig, read_only_sources
@@ -68,6 +69,13 @@ mcp = FastMCP(
     name="Coda MCP Server",
     version=version("mcp-coda"),
     website_url="https://vish288.github.io/mcp-install?server=mcp-coda",
+    icons=[
+        Icon(
+            src="https://raw.githubusercontent.com/vish288/mcp-coda/main/assets/icon.svg",
+            mime_type="image/svg+xml",
+            sizes=["any"],
+        )
+    ],
     instructions=(
         "Provides tools for interacting with the Coda API — "
         "docs, pages, tables, rows, formulas, controls, permissions, folders, "
