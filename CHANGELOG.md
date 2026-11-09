@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.14.0] - 2026-11-09
+
+### Features
+- feat: add server icon (registry and identity) (7c37487)
+- feat: cache hints and server identity (499c44d)
+
+### Bug Fixes
+- fix(annotations): require approval on destructive tools (44aa471)
+- fix(registry): title, websiteUrl and runtimeHint in server.json (8e68e66)
+
+### Documentation
+- docs: link contributing and security policy (a9cfdf6)
+
+### Chores
+- chore(fleet): template v1.4.1 (f1625d7)
+- chore(fleet): template v1.4.0 (fd84b68)
+- chore(deps): weekly patch 2026-11-08 (8e1f8ca)
+- chore(deps): weekly patch 2026-11-06 (74a6a4e)
+
+
 ## [0.13.0] - 2026-11-06
 
 ### Features
