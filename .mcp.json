@@ -3,7 +3,7 @@
     "coda": {
       "command": "uvx",
       "args": [
-        "mcp-coda@0.14.0"
+        "mcp-coda@0.15.0"
       ],
       "env": {
         "CODA_API_TOKEN": "${user_config.coda_api_token}",
