@@ -11,6 +11,15 @@ mcp-coda runs on FastMCP. PyPI hosts it as the `mcp-coda` package. Install it wi
 - Transports: `stdio` (default) and `streamable-http` (recommended for remote). `sse` still works, but the 2026-07-28 spec deprecates it, so the server prints a warning.
 - Uses tools, resources, and prompts only. No Roots, Sampling, Logging, elicitation, or resource subscriptions, so the 2026-07-28 deprecations do not affect it.
 
+## Observability
+
+HTTP transports expose `GET /health` (a `@mcp.custom_route` in `servers/__init__.py`): an
+unauthenticated liveness probe returning `{"status", "name", "version"}` and nothing else —
+FastMCP's auth guards `/mcp`, not custom routes, so it carries no config or secrets. FastMCP 4
+emits OpenTelemetry spans for `tools/call` and propagates trace context by default;
+`OTEL_EXPORTER_OTLP_ENDPOINT` with `opentelemetry-instrument` exports them, and
+`FASTMCP_TELEMETRY_MODE=off` disables it. Tested via `httpx.ASGITransport(mcp.http_app())`.
+
 ## Layout
 
 - `src/mcp_coda/__init__.py` — click CLI, loads `.env` via python-dotenv, runs the FastMCP server

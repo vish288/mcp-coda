@@ -155,6 +155,28 @@ The server checks these environment variables in order — first match wins:
 
 Generate tokens at [coda.io/account#apiSettings](https://coda.io/account#apiSettings). Tokens grant access to all docs accessible by the token owner. Tokens have no scope restrictions. Coda's sharing settings control doc-level access.
 
+## Observability
+
+An HTTP transport exposes `GET /health`, an unauthenticated liveness probe that returns the
+server name and version (no config, no secrets) for container and load-balancer checks:
+
+```bash
+curl -s http://127.0.0.1:9000/health
+# {"status":"ok","name":"Coda MCP Server","version":"0.14.0"}
+```
+
+FastMCP emits OpenTelemetry spans for `tools/call` and propagates trace context by default — no
+opt-in needed. Point it at a collector with the standard OTel environment and launch under the
+auto-instrumentation wrapper:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
+  opentelemetry-instrument uvx mcp-coda --transport streamable-http --port 9000
+```
+
+Set `FASTMCP_TELEMETRY_MODE=off` to disable tracing entirely (`propagation_only` keeps trace-context
+propagation without emitting spans).
+
 ## Compatibility
 
 | Client | Supported | Install Method |

@@ -13,6 +13,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 from mcp.types import Icon
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from ..client import CodaClient
 from ..config import CodaConfig, read_only_sources
@@ -153,6 +155,17 @@ mcp = FastMCP(
     cache_ttl=300,
     cache_scope="private",
 )
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(_request: Request) -> JSONResponse:
+    """Unauthenticated liveness probe for container and remote (HTTP transport) deployments.
+
+    FastMCP's auth guards ``/mcp``, not custom routes, so this stays reachable with no
+    credentials; it returns only the server name and package version — no config, no
+    secrets, no upstream call.
+    """
+    return JSONResponse({"status": "ok", "name": mcp.name, "version": version("mcp-coda")})
 
 
 def _register_tools() -> None:
