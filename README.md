@@ -118,9 +118,32 @@ Drop `MCP_READ_ONLY` to allow writes. On a shared or hosted server put it in the
 | `CODA_API_TOKEN` | **Yes** | - | Coda API token ([get one here](https://coda.io/account#apiSettings)) |
 | `MCP_READ_ONLY` | No | `false` | Shared name across the mcp-* servers. Any value other than `false`/`0`/`no`/`off`/empty locks the server read-only: the 20 write tools and write-workflow prompts are not listed, and nothing can turn it back off at runtime |
 | `CODA_READ_ONLY` | No | `false` | Per-server alias for `MCP_READ_ONLY`; either one locks the server read-only. `--read-only` can only raise the lock |
+| `MCP_TOOLSETS` | No | all | Comma list of tool groups to expose (see Toolsets); unset or `all` lists every tool. `MCP_READ_ONLY` still applies after the selection |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL |
 | `CODA_TIMEOUT` | No | `30` | Request timeout in seconds |
 | `CODA_HTTP_BEARER_TOKEN` | No | - | Required to bind an HTTP transport to a non-loopback host. Clients send `Authorization: Bearer <token>`. Minimum 16 characters |
+
+### Toolsets
+
+Clients cap how many tools they forward (Cursor warns past 40, across all servers). `MCP_TOOLSETS`
+(or `--toolsets`) shrinks `tools/list` to one or more named groups; unset or `all` lists every
+tool. Names are lowercase and comma-separated; an unknown name exits 2 with the valid list. The
+`core` tags (account lookups) are always included. `MCP_READ_ONLY` still applies afterward and only
+ever removes more tools (the read-only column).
+
+| Group | Raw tags | Tools | Read-only |
+|-------|----------|-------|-----------|
+| `content` | docs, pages | 17 | 10 |
+| `data` | tables, rows, formulas, controls, automations | 19 | 13 |
+| `admin` | permissions, folders, publishing | 17 | 10 |
+| `analytics` | analytics | 10 | 10 |
+| `core` | account | always included | 3 |
+| `all` (default) | every tag | 54 | 34 |
+
+```bash
+MCP_TOOLSETS=content uvx mcp-coda       # docs + pages (plus the always-on account tools)
+uvx mcp-coda --toolsets data,analytics  # tables/rows/formulas/controls/automations + analytics
+```
 
 ### Supported Token Types
 

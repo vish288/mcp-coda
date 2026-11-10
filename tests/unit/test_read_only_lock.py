@@ -316,13 +316,16 @@ def test_lock_is_idempotent(lock_mcp) -> None:
 
 
 def test_src_has_no_runtime_toggle_or_unlock() -> None:
-    """``src/`` must not re-enable components, mutate the transform list, or clear the lock
-    after config is final: no ``.enable(``, ``enable_components``, ``disable_components``,
-    ``reset_visibility``, ``add_transform(``, ``._transforms`` write, or ``read_only =
-    False``. The lock is one ``disable`` at boot and nothing undoes it.
+    """``src/`` must not undo the read-only lock: no re-enabling of the ``write`` tag, no
+    component re-enable/disable helpers, no transform-list surgery, no clearing the lock
+    after config is final. The lock is one ``disable(tags={"write"})`` and nothing reverses it.
+
+    ``.enable(`` itself is allowed only for the MCP_TOOLSETS allowlist (``_apply_toolsets``),
+    which runs *before* the lock and never names the ``write`` tag, so the lock still wins; a
+    separate assertion pins that ordering. Any ``.enable(`` mentioning ``write`` is banned.
     """
     banned = (
-        r"\.enable\(",
+        r"\.enable\([^)]*['\"]write['\"]",
         r"enable_components\(",
         r"disable_components\(",
         r"reset_visibility\(",
@@ -334,3 +337,12 @@ def test_src_has_no_runtime_toggle_or_unlock() -> None:
         text = path.read_text(encoding="utf-8")
         for pattern in banned:
             assert not re.search(pattern, text), f"{pattern} found in {path}"
+
+
+def test_toolset_allowlist_applied_before_read_only_lock() -> None:
+    """The MCP_TOOLSETS allowlist must run before the lock, so read-only still removes every
+    write tool from an allowlisted group (the lock is the last visibility transform)."""
+    src = (_SRC_DIR / "mcp_coda" / "servers" / "__init__.py").read_text(encoding="utf-8")
+    body = src.split("async def lifespan", 1)[1]
+    assert "_apply_toolsets(" in body
+    assert body.index("_apply_toolsets(") < body.index("_lock_read_only(")

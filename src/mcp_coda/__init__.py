@@ -50,6 +50,11 @@ class _BearerTokenVerifier(TokenVerifier):
 @click.option("--host", default="127.0.0.1", help="Host for SSE/HTTP transport.")
 @click.option("--coda-token", hidden=True, help="Deprecated: set CODA_API_TOKEN instead.")
 @click.option("--read-only", is_flag=True, help="Disable all write operations.")
+@click.option(
+    "--toolsets",
+    envvar="MCP_TOOLSETS",
+    help="Comma list of tool groups to expose (content, data, admin, analytics; default: all).",
+)
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -58,6 +63,7 @@ def main(
     host: str,
     coda_token: str | None,
     read_only: bool,
+    toolsets: str | None,
 ) -> None:
     """Run the Coda MCP server."""
     load_dotenv()
@@ -79,6 +85,19 @@ def main(
 
     try:
         CodaConfig.from_env().validate()
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        ctx.exit(2)
+
+    # Validate --toolsets / MCP_TOOLSETS up front so an unknown group is one clear line and
+    # exit 2, not a traceback from inside the lifespan. --toolsets writes the env the lifespan
+    # reads. parse_toolsets raises UnknownToolsetError (a ValueError) on a bad name.
+    if toolsets:
+        os.environ["MCP_TOOLSETS"] = toolsets
+    from .servers import parse_toolsets
+
+    try:
+        parse_toolsets(os.getenv("MCP_TOOLSETS"))
     except ValueError as e:
         click.echo(f"Error: {e}", err=True)
         ctx.exit(2)

@@ -107,6 +107,7 @@ uvx mcp-coda                                              # stdio (default)
 uvx mcp-coda --transport sse --host 127.0.0.1 --port 8000
 uvx mcp-coda --transport streamable-http --port 9000
 uvx mcp-coda --read-only                                  # CODA_API_TOKEN from env (--coda-token is deprecated, hidden, warns on stderr)
+uvx mcp-coda --toolsets content,data                      # shrink tools/list to named groups (MCP_TOOLSETS)
 ```
 
 ## Tool inventory (54)
@@ -123,6 +124,29 @@ uvx mcp-coda --read-only                                  # CODA_API_TOKEN from 
 | misc | 8 | read/write | list/get formulas, list/get controls, list categories, publish/unpublish, trigger automation |
 | analytics | 7 | read | doc/page/pack analytics + summaries, last-updated day |
 
+### Tool surface (MCP_TOOLSETS)
+
+`MCP_TOOLSETS` (or `--toolsets`) switches `tools/list` to an allowlist of coarse groups — named
+sets of the raw domain tags the tools already carry — so a client with a tool budget sees fewer.
+The `core` tags (account) are unioned into every selection (resolve_browser_link and
+get_mutation_status are needed by every job); naming `core` explicitly is accepted but adds nothing.
+Resources and prompts stay listed regardless (fastmcp `enable(components=...)` re-lists them after
+the `enable(tags=..., only=True)` allowlist), and the read-only lock runs after the allowlist so it
+only ever removes more tools. Unset or `all` lists every tool; an unknown name exits 2.
+
+| Group | Raw tags | Tools | Read-only |
+|---|---|---|---|
+| `content` | docs, pages | 17 | 10 |
+| `data` | tables, rows, formulas, controls, automations | 19 | 13 |
+| `admin` | permissions, folders, publishing | 17 | 10 |
+| `analytics` | analytics | 10 | 10 |
+| `core` | account | always included | 3 |
+| `all` (default) | every tag | 54 | 34 |
+
+The map is `TOOLSET_GROUPS` (+ `CORE_TAGS`) in `servers/__init__.py`; `_apply_toolsets` runs in the
+lifespan before `_lock_read_only`. A test asserts every tool's one domain tag belongs to exactly
+one group or `core`.
+
 ## Common workflows
 
 - **Table data**: `coda_list_docs` → `coda_list_tables` → `coda_list_columns` → `coda_list_rows` → `coda_insert_rows` / `coda_update_row`
@@ -138,6 +162,7 @@ uvx mcp-coda --read-only                                  # CODA_API_TOKEN from 
 | `CODA_API_TOKEN` | Yes | — | Coda API token |
 | `CODA_READ_ONLY` | No | `false` | Lock the server read-only: write tools and write-workflow prompts are not listed and are refused before any API call. Any value other than `false`/`0`/`no`/`off`/empty locks |
 | `MCP_READ_ONLY` | No | `false` | Shared alias for `CODA_READ_ONLY` across the mcp-* servers; either locking wins, any value other than `false`/`0`/`no`/`off`/empty locks, nothing lifts it at runtime, and `--read-only` can only raise the lock |
+| `MCP_TOOLSETS` | No | all | Comma list of tool groups (`content`, `data`, `admin`, `analytics`); unset or `all` lists every tool. `core` (account) is always included. Validated at startup (unknown name exits 2); `MCP_READ_ONLY` applies after the selection |
 | `CODA_BASE_URL` | No | `https://coda.io/apis/v1` | API base URL (trailing slash stripped) |
 | `CODA_TIMEOUT` | No | `30` | HTTP timeout, seconds |
 | `CODA_HTTP_BEARER_TOKEN` | No | — | Bearer token (min 16 chars) required to bind an HTTP transport to a non-loopback host; clients send `Authorization: Bearer` |
