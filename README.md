@@ -22,6 +22,13 @@ mcp-coda uses [FastMCP](https://github.com/jlowin/fastmcp), [httpx](https://www.
 
 ## 1-Click Installation
 
+**Claude Code plugin** — one command adds the fleet marketplace, the next installs the server, prompts for `CODA_API_TOKEN` (stored in the credential store, never written to a config file), and keeps it updated:
+
+```bash
+claude plugin marketplace add vish288/.github
+claude plugin install mcp-coda@vish288-mcp
+```
+
 [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://vish288.github.io/mcp-install?server=mcp-coda&install=cursor)
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vish288.github.io/mcp-install?server=mcp-coda&install=vscode-insiders)
