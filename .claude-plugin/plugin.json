@@ -1,0 +1,28 @@
+{
+  "name": "mcp-coda",
+  "displayName": "Coda",
+  "version": "0.14.0",
+  "description": "Coda MCP server (MCP 2026-07-28): docs, pages, tables, rows, automations; writes or read-only",
+  "author": {
+    "name": "vish288"
+  },
+  "homepage": "https://vish288.github.io/mcp-install?server=mcp-coda",
+  "repository": "https://github.com/vish288/mcp-coda",
+  "license": "MIT",
+  "userConfig": {
+    "coda_api_token": {
+      "type": "string",
+      "title": "CODA_API_TOKEN",
+      "description": "Coda API token (also accepts CODA_TOKEN or CODA_PAT)",
+      "required": true,
+      "sensitive": true
+    },
+    "mcp_read_only": {
+      "type": "string",
+      "title": "MCP_READ_ONLY",
+      "description": "Locks the server read-only: write tools and write-workflow prompts are not listed and nothing lifts the lock at runtime. Shared name across the mcp-* servers; set it in the deployer's env",
+      "required": false,
+      "sensitive": false
+    }
+  }
+}

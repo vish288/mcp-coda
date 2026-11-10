@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "coda": {
+      "command": "uvx",
+      "args": [
+        "mcp-coda@0.14.0"
+      ],
+      "env": {
+        "CODA_API_TOKEN": "${user_config.coda_api_token}",
+        "MCP_READ_ONLY": "${user_config.mcp_read_only}"
+      }
+    }
+  }
+}
