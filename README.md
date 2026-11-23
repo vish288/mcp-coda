@@ -498,13 +498,11 @@ The server loads `.env` files from the working directory automatically via `pyth
 
 ## Docker
 
-The image is a minimal, non-root `python:3.13-slim` build. The image defaults to locked read-only (`MCP_READ_ONLY=true`); pass `-e MCP_READ_ONLY=false` to allow writes.
+The image is a minimal, non-root `python:3.13-slim` build, published to GHCR for linux/amd64 and linux/arm64. It defaults to locked read-only (`MCP_READ_ONLY=true`); pass `-e MCP_READ_ONLY=false` to allow writes.
 
 ```bash
-docker build -t mcp-coda .
-
 # stdio (default), locked read-only
-docker run -i --rm -e CODA_API_TOKEN=your-token mcp-coda
+docker run -i --rm -e CODA_API_TOKEN=your-token ghcr.io/vish288/mcp-coda:0.16.0
 
 # HTTP transport on a non-loopback host requires a bearer token (min 16 chars);
 # clients then send Authorization: Bearer <token>
@@ -512,8 +510,17 @@ BEARER=$(openssl rand -hex 32)
 docker run --rm -p 9000:9000 \
   -e CODA_API_TOKEN=your-token \
   -e CODA_HTTP_BEARER_TOKEN="$BEARER" \
-  mcp-coda --transport streamable-http --host 0.0.0.0 --port 9000
+  ghcr.io/vish288/mcp-coda:0.16.0 --transport streamable-http --host 0.0.0.0 --port 9000
 ```
+
+Verify the build provenance before you run it. The attestation is signed by the shared
+publish workflow in `vish288/.github`, not by this repo, hence `--signer-repo`:
+
+```bash
+gh attestation verify oci://ghcr.io/vish288/mcp-coda:0.16.0 -R vish288/mcp-coda --signer-repo vish288/.github
+```
+
+To build from source instead, run `docker build -t mcp-coda .` and use `mcp-coda` as the image name.
 
 ## FAQ
 
