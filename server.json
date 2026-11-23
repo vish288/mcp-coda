@@ -7,7 +7,7 @@
     "url": "https://github.com/vish288/mcp-coda",
     "source": "github"
   },
-  "version": "0.16.0",
+  "version": "0.16.1",
   "websiteUrl": "https://vish288.github.io/mcp-install?server=mcp-coda",
   "icons": [
     {
@@ -22,7 +22,7 @@
     {
       "registryType": "pypi",
       "identifier": "mcp-coda",
-      "version": "0.16.0",
+      "version": "0.16.1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -67,7 +67,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/vish288/mcp-coda:0.16.0",
+      "identifier": "ghcr.io/vish288/mcp-coda:0.16.1",
       "transport": {
         "type": "stdio"
       },

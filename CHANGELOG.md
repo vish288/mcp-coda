@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.1] - 2026-11-23
+
+### Features
+- feat(release): list the GHCR image in the MCP registry (d3596c9)
+
+### Tests
+- test: compare badge host via urlparse in link check (ea0b82f)
+
+
 ## [0.16.0] - 2026-11-23
 
 ### Chores
